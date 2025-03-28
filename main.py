@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from datetime import datetime
 import json, os
@@ -29,7 +29,7 @@ class Account(BaseModel):
     email: str
     first_name: str
     last_name: str
-    password: str  # NEW
+    password: str  # 🔒 NEW
 
 class LoginRequest(BaseModel):
     username: str
@@ -78,7 +78,7 @@ def create_account(account: Account):
         "email": account.email,
         "first_name": account.first_name,
         "last_name": account.last_name,
-        "password": account.password,  # NEW
+        "password": account.password,
         "created": str(datetime.now()),
         "oracles": [],
         "guild": None
@@ -163,3 +163,18 @@ def join_guild(req: GuildJoinRequest):
     save_data(DATA_FILES["guilds"], guilds)
     save_data(DATA_FILES["accounts"], accounts)
     return {"message": f"{req.username} joined guild {req.guild_name}"}
+
+# === ADMIN ONLY WIPE 🔥 ===
+
+ADMIN_DELETE_KEY = "flame-of-reset-9321"  # Change this to your secret
+
+@app.delete("/delete_all_accounts")
+def delete_all_accounts(request: Request):
+    key = request.headers.get("X-Admin-Key")
+    if key != ADMIN_DELETE_KEY:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+
+    save_data(DATA_FILES["accounts"], {})
+    save_data(DATA_FILES["oracles"], {})
+
+    return {"message": "🔥 All accounts and oracles purged from the Pantheon."}

@@ -29,6 +29,11 @@ class Account(BaseModel):
     email: str
     first_name: str
     last_name: str
+    password: str  # NEW
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 class OracleRequest(BaseModel):
     username: str
@@ -36,24 +41,15 @@ class OracleRequest(BaseModel):
     time_of_birth: str
     location: str
     chart: dict
-    rulership: str = "modern"  # NEW
+    rulership: str = "modern"
 
 class GuildJoinRequest(BaseModel):
     username: str
     guild_name: str
 
 # === UTILITY FUNCTIONS ===
-def generate_oracle_name(dob):
-    date = datetime.strptime(dob, "%Y-%m-%d")
-    m, d = date.month, date.day
-    if (m == 4 and d >= 10) or (m == 5 and d <= 10): return "Oracle of the First Flame"
-    elif (m == 6 or m == 7): return "Seer of the Shifting Waters"
-    elif (m == 8 or m == 9): return "Echo of the Stormheart"
-    else: return "Warden of the Silent Gate"
-
 def assign_ruler(dob, system="modern"):
-    date = datetime.strptime(dob, "%Y-%m-%d")
-    m, d = date.month, date.day
+    m, d = int(dob[5:7]), int(dob[8:10])
     if (m == 3 and d >= 21) or (m == 4 and d <= 19): return "Mars"
     elif (m == 4 and d >= 20) or (m == 5 and d <= 20): return "Venus"
     elif (m == 5 and d >= 21) or (m == 6 and d <= 20): return "Mercury"
@@ -61,14 +57,11 @@ def assign_ruler(dob, system="modern"):
     elif (m == 7 and d >= 23) or (m == 8 and d <= 22): return "Sun"
     elif (m == 8 and d >= 23) or (m == 9 and d <= 22): return "Mercury"
     elif (m == 9 and d >= 23) or (m == 10 and d <= 22): return "Venus"
-    elif (m == 10 and d >= 23) or (m == 11 and d <= 21):
-        return "Pluto" if system == "modern" else "Mars"
+    elif (m == 10 and d >= 23) or (m == 11 and d <= 21): return "Pluto" if system == "modern" else "Mars"
     elif (m == 11 and d >= 22) or (m == 12 and d <= 21): return "Jupiter"
     elif (m == 12 and d >= 22) or (m == 1 and d <= 19): return "Saturn"
-    elif (m == 1 and d >= 20) or (m == 2 and d <= 18):
-        return "Uranus" if system == "modern" else "Saturn"
-    elif (m == 2 and d >= 19) or (m == 3 and d <= 20):
-        return "Neptune" if system == "modern" else "Jupiter"
+    elif (m == 1 and d >= 20) or (m == 2 and d <= 18): return "Uranus" if system == "modern" else "Saturn"
+    elif (m == 2 and d >= 19) or (m == 3 and d <= 20): return "Neptune" if system == "modern" else "Jupiter"
     return "Unknown"
 
 # === ROUTES ===
@@ -85,12 +78,22 @@ def create_account(account: Account):
         "email": account.email,
         "first_name": account.first_name,
         "last_name": account.last_name,
+        "password": account.password,  # NEW
         "created": str(datetime.now()),
         "oracles": [],
         "guild": None
     }
     save_data(DATA_FILES["accounts"], accounts)
     return {"message": f"Account created for {account.first_name} {account.last_name}"}
+
+@app.post("/login")
+def login(creds: LoginRequest):
+    accounts = load_data(DATA_FILES["accounts"])
+    if creds.username not in accounts:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if accounts[creds.username]["password"] != creds.password:
+        raise HTTPException(status_code=401, detail="Incorrect password")
+    return {"message": f"Welcome back, {creds.username}"}
 
 @app.post("/create_oracle")
 def create_oracle(data: OracleRequest):
@@ -106,7 +109,7 @@ def create_oracle(data: OracleRequest):
 
     oracle_data = {
         "username": data.username,
-        "oracle_name": generate_oracle_name(data.date_of_birth),
+        "oracle_name": "Oracle of the Flame",
         "planetary_ruler": assign_ruler(data.date_of_birth, data.rulership),
         "date_of_birth": data.date_of_birth,
         "time_of_birth": data.time_of_birth,
@@ -127,14 +130,6 @@ def create_oracle(data: OracleRequest):
     save_data(DATA_FILES["accounts"], accounts)
 
     return {"message": f"Oracle created for {data.username}", **oracle_data}
-
-@app.get("/oracle/{username}")
-def get_oracle(username: str):
-    oracles = load_data(DATA_FILES["oracles"])
-    found = [o for o in oracles.values() if o["username"] == username]
-    if not found:
-        raise HTTPException(status_code=404, detail="No Oracles found for this user")
-    return {"oracles": found}
 
 @app.post("/initiate_player_prophecy/{username}")
 def initiate_prophecy(username: str):
@@ -158,21 +153,13 @@ def join_guild(req: GuildJoinRequest):
     if req.username not in accounts:
         raise HTTPException(status_code=404, detail="Account not found")
 
-    guild_name = req.guild_name
-    if guild_name not in guilds:
-        guilds[guild_name] = {"members": []}
+    if req.guild_name not in guilds:
+        guilds[req.guild_name] = {"members": []}
 
-    if req.username not in guilds[guild_name]["members"]:
-        guilds[guild_name]["members"].append(req.username)
-        accounts[req.username]["guild"] = guild_name
+    if req.username not in guilds[req.guild_name]["members"]:
+        guilds[req.guild_name]["members"].append(req.username)
+        accounts[req.username]["guild"] = req.guild_name
 
     save_data(DATA_FILES["guilds"], guilds)
     save_data(DATA_FILES["accounts"], accounts)
-    return {"message": f"{req.username} joined guild {guild_name}"}
-
-@app.get("/guild_status/{guild_name}")
-def guild_status(guild_name: str):
-    guilds = load_data(DATA_FILES["guilds"])
-    if guild_name not in guilds:
-        raise HTTPException(status_code=404, detail="Guild not found")
-    return {"guild": guild_name, "members": guilds[guild_name]["members"]}
+    return {"message": f"{req.username} joined guild {req.guild_name}"}

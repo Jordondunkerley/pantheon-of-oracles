@@ -29,7 +29,7 @@ class Account(BaseModel):
     email: str
     first_name: str
     last_name: str
-    password: str  # 🔒 NEW
+    password: str
 
 class LoginRequest(BaseModel):
     username: str
@@ -47,7 +47,7 @@ class GuildJoinRequest(BaseModel):
     username: str
     guild_name: str
 
-# === UTILITY FUNCTIONS ===
+# === UTILITY ===
 def assign_ruler(dob, system="modern"):
     m, d = int(dob[5:7]), int(dob[8:10])
     if (m == 3 and d >= 21) or (m == 4 and d <= 19): return "Mars"
@@ -164,17 +164,9 @@ def join_guild(req: GuildJoinRequest):
     save_data(DATA_FILES["accounts"], accounts)
     return {"message": f"{req.username} joined guild {req.guild_name}"}
 
-# === ADMIN ONLY WIPE 🔥 ===
-
-ADMIN_DELETE_KEY = "flame-of-reset-9321"  # Change this to your secret
-
+# === TEMPORARY OPEN FLAME WIPE ===
 @app.delete("/delete_all_accounts")
-def delete_all_accounts(request: Request):
-    key = request.headers.get("X-Admin-Key")
-    if key != ADMIN_DELETE_KEY:
-        raise HTTPException(status_code=403, detail="Unauthorized access")
-
+def delete_all_accounts():
     save_data(DATA_FILES["accounts"], {})
     save_data(DATA_FILES["oracles"], {})
-
     return {"message": "🔥 All accounts and oracles purged from the Pantheon."}

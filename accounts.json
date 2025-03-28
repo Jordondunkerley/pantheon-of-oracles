@@ -1,0 +1,12 @@
+{
+    "jordon": {
+        "email": "jordon@example.com",
+        "first_name": "Jordan",
+        "last_name": "Dunkerley",
+        "created": "2025-03-27 16:06:31.157814",
+        "oracles": [
+            "jordon_1993-04-21"
+        ],
+        "guild": null
+    }
+}

@@ -163,10 +163,3 @@ def join_guild(req: GuildJoinRequest):
     save_data(DATA_FILES["guilds"], guilds)
     save_data(DATA_FILES["accounts"], accounts)
     return {"message": f"{req.username} joined guild {req.guild_name}"}
-
-# === TEMPORARY OPEN FLAME WIPE ===
-@app.delete("/delete_all_accounts")
-def delete_all_accounts():
-    save_data(DATA_FILES["accounts"], {})
-    save_data(DATA_FILES["oracles"], {})
-    return {"message": "🔥 All accounts and oracles purged from the Pantheon."}

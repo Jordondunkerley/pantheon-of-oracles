@@ -88,11 +88,53 @@ def upload_oracle_profile(username: str, file: UploadFile = File(...)):
     save_data(DATA_FILES["oracles"], oracles)
     return {"message": f"Oracle profile uploaded for {username}"}
 
-# === DUNGEON & RAID PLACEHOLDER ===
+# === DUNGEON & RAID SYSTEM ===
 @app.post("/raid_join/{username}")
 def raid_join(username: str):
-    return {"message": f"{username} has joined the raid party. (Placeholder)"}
+    accounts = load_data(DATA_FILES["accounts"])
+    if username not in accounts:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    accounts[username]["in_raid"] = True
+    save_data(DATA_FILES["accounts"], accounts)
+    return {"message": f"{username} has joined the raid party."}
+
+@app.post("/raid_start")
+def raid_start():
+    accounts = load_data(DATA_FILES["accounts"])
+    raid_party = [u for u, d in accounts.items() if d.get("in_raid")]
+
+    if not raid_party:
+        raise HTTPException(status_code=400, detail="No one is currently joined to the raid.")
+
+    boss_defeated = random.choice([True, False])
+    mvp = random.choice(raid_party)
+    loot_rolls = {user: random.randint(1, 100) for user in raid_party}
+
+    for user in raid_party:
+        accounts[user]["in_raid"] = False
+
+    save_data(DATA_FILES["accounts"], accounts)
+
+    return {
+        "message": "🔥 The raid has been completed!",
+        "boss_defeated": boss_defeated,
+        "mvp": mvp,
+        "loot_rolls": loot_rolls,
+        "party": raid_party
+    }
 
 @app.post("/dungeon_enter/{username}")
 def dungeon_enter(username: str):
-    return {"message": f"{username} enters the dungeon of shifting fate. (Placeholder)"}
+    accounts = load_data(DATA_FILES["accounts"])
+    if username not in accounts:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    result = {
+        "username": username,
+        "result": random.choice(["victory", "defeat"]),
+        "loot": random.randint(1, 100),
+        "timestamp": str(datetime.now())
+    }
+
+    return {"message": f"{username} ventures into the dungeon and meets {result['result']}!", "details": result}

@@ -62,23 +62,30 @@ def upload_astrology(username: str, file: UploadFile = File(...)):
     if username not in accounts:
         raise HTTPException(status_code=404, detail="Account not found")
 
-    contents = json.load(file.file)
-    accounts[username]["astrology"] = contents
+    try:
+        contents = json.load(file.file)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+
+    accounts[username]["astrology_chart"] = contents
     save_data(DATA_FILES["accounts"], accounts)
 
     return {"message": f"Astrology chart uploaded for {username}"}
 
-@app.post("/upload_oracle/{username}")
-def upload_oracle(username: str, file: UploadFile = File(...)):
+@app.post("/upload_oracle_profile/{username}")
+def upload_oracle_profile(username: str, file: UploadFile = File(...)):
     oracles = load_data(DATA_FILES["oracles"])
-    oracle_id = f"{username}_custom"
-    contents = json.load(file.file)
+    try:
+        contents = json.load(file.file)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+
+    oracle_id = f"{username}_uploaded"
     contents["username"] = username
     contents["uploaded"] = str(datetime.now())
-
     oracles[oracle_id] = contents
-    save_data(DATA_FILES["oracles"], oracles)
 
+    save_data(DATA_FILES["oracles"], oracles)
     return {"message": f"Oracle profile uploaded for {username}"}
 
 # === DUNGEON & RAID PLACEHOLDER ===

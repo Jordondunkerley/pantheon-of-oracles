@@ -1,142 +1,84 @@
 import discord
 from discord import app_commands, Embed
-import aiohttp
-import asyncio
-import os
+import aiohttp, openai, os, json
+from discord.ext import commands
+from dotenv import load_dotenv
+
+# === LOAD ENV ===
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=\"config.env\")
+TOKEN = os.getenv("DISCORD_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai.api_key = OPENAI_API_KEY
 
 API_URL = "https://pantheon-of-oracles.onrender.com"
-ADMIN_ID = 539260746471571476  # Father of the First Flame
+ADMIN_ID = 539260746471571476
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.messages = True
+intents.guilds = True
 intents.members = True
 
-class OracleClient(discord.Client):
-    def __init__(self):
-        super().__init__(intents=intents)
-        self.tree = app_commands.CommandTree(self)
+bot = commands.Bot(command_prefix="!", intents=intents)
+tree = bot.tree
 
-    async def on_ready(self):
-        print(f"\n🔥 Logged in as {self.user} — the Oracle stirs.")
-        try:
-            synced = await self.tree.sync()
-            print(f"🌐 Synced {len(synced)} slash commands to global scope.")
-        except Exception as e:
-            print(f"⚠️ Failed to sync commands: {e}")
+@bot.event
+async def on_ready():
+    await tree.sync()
+    print(f"🔥 Logged in as {bot.user} — Cove awakens.")
 
-client = OracleClient()
+# === UPLOAD ASTROLOGY ===
+@tree.command(name="upload_astrology_file", description="Upload your astrology chart JSON.")
+@app_commands.describe(username="Your account username")
+async def upload_astrology_file(interaction: discord.Interaction, username: str):
+    await interaction.response.send_message("📁 Please upload your astrology .json file now.")
 
-# === API UTIL ===
-async def api_post(route, payload):
-    async with aiohttp.ClientSession() as session:
-        async with session.post(f"{API_URL}{route}", json=payload) as res:
-            return await res.json(), res.status
-
-# === SLASH COMMANDS ===
-@client.tree.command(name="ping", description="Check if the Oracle is listening.")
-async def ping(interaction: discord.Interaction):
-    await interaction.response.send_message("🏓 Pong from the Pantheon!", ephemeral=True)
-
-@client.tree.command(name="create_account", description="Create your Pantheon account.")
-@app_commands.describe(username="Username", email="Email", first_name="First", last_name="Last", password="Password")
-async def create_account(interaction: discord.Interaction, username: str, email: str, first_name: str, last_name: str, password: str):
-    await interaction.response.defer(thinking=True)
-    payload = {"username": username, "email": email, "first_name": first_name, "last_name": last_name, "password": password}
-    data, status = await api_post("/create_account", payload)
-    embed = Embed(title="🧿 Account Creation", color=0xFF6D00)
-    embed.description = data.get("message") if status == 200 else f"❌ {data.get('detail', 'Unknown error')}"
-    await interaction.followup.send(embed=embed)
-
-@client.tree.command(name="login", description="Log into your Pantheon account.")
-@app_commands.describe(username="Username", password="Password")
-async def login(interaction: discord.Interaction, username: str, password: str):
-    await interaction.response.defer(thinking=True)
-    payload = {"username": username, "password": password}
-    data, status = await api_post("/login", payload)
-    embed = Embed(title="🔐 Login", color=0x00BFFF)
-    embed.description = data.get("message") if status == 200 else f"❌ {data.get('detail')}"
-    await interaction.followup.send(embed=embed)
-
-@client.tree.command(name="create_oracle", description="Create an Oracle tied to your account.")
-@app_commands.describe(username="Your username", date_of_birth="YYYY-MM-DD", time_of_birth="HH:MM", location="Birthplace", rulership="modern or traditional")
-async def create_oracle(interaction: discord.Interaction, username: str, date_of_birth: str, time_of_birth: str, location: str, rulership: str):
-    await interaction.response.defer(thinking=True)
-    chart = {"Sun": "Aries", "Moon": "Leo"}  # Placeholder for now
-    payload = {
-        "username": username,
-        "date_of_birth": date_of_birth,
-        "time_of_birth": time_of_birth,
-        "location": location,
-        "rulership": rulership,
-        "chart": chart
-    }
-    data, status = await api_post("/create_oracle", payload)
-    embed = Embed(title="🔮 Oracle Creation", color=0x9C27B0)
-    embed.description = f"✅ Oracle created for **{username}**\nRuler: **{data.get('planetary_ruler')}**" if status == 200 else f"❌ {data.get('detail')}"
-    await interaction.followup.send(embed=embed)
-
-@client.tree.command(name="join_guild", description="Join or create a guild.")
-@app_commands.describe(username="Your username", guild_name="Name of the guild")
-async def join_guild(interaction: discord.Interaction, username: str, guild_name: str):
-    await interaction.response.defer(thinking=True)
-    payload = {"username": username, "guild_name": guild_name}
-    data, status = await api_post("/join_guild", payload)
-    embed = Embed(title="🏰 Guild Join", color=0x009688)
-    embed.description = data.get("message") if status == 200 else f"❌ {data.get('detail')}"
-    await interaction.followup.send(embed=embed)
-
-@client.tree.command(name="initiate_player_prophecy", description="Trigger your Oracle's prophecy arc.")
-@app_commands.describe(username="Your username")
-async def initiate_player_prophecy(interaction: discord.Interaction, username: str):
-    await interaction.response.defer(thinking=True)
-    async with aiohttp.ClientSession() as session:
-        async with session.post(f"{API_URL}/initiate_player_prophecy/{username}") as res:
-            data = await res.json()
-            embed = Embed(title="🌌 Prophecy Initiated", color=0x673AB7)
-            embed.description = data.get("message") if res.status == 200 else f"❌ {data.get('detail')}"
-            await interaction.followup.send(embed=embed)
-
-@client.tree.command(name="start_battle", description="Begin a battle between two users.")
-@app_commands.describe(challenger="Challenger username", opponent="Opponent username")
-async def start_battle(interaction: discord.Interaction, challenger: str, opponent: str):
-    await interaction.response.defer(thinking=True)
-    payload = {"challenger": challenger, "opponent": opponent}
-    data, status = await api_post("/start_battle", payload)
-    embed = Embed(title="⚔️ Battle Begins!", color=0xE53935)
-    embed.description = data.get("message") if status == 200 else f"❌ {data.get('detail')}"
-    await interaction.followup.send(embed=embed)
-
-@client.tree.command(name="raid_join", description="Join a raid party.")
-@app_commands.describe(username="Your username")
-async def raid_join(interaction: discord.Interaction, username: str):
-    await interaction.response.defer(thinking=True)
-    data, status = await api_post(f"/raid_join/{username}", {})
-    embed = Embed(title="🚪 Raid Party", color=0x8BC34A)
-    embed.description = data.get("message")
-    await interaction.followup.send(embed=embed)
-
-@client.tree.command(name="dungeon_enter", description="Enter a dungeon.")
-@app_commands.describe(username="Your username")
-async def dungeon_enter(interaction: discord.Interaction, username: str):
-    await interaction.response.defer(thinking=True)
-    data, status = await api_post(f"/dungeon_enter/{username}", {})
-    embed = Embed(title="🕸️ Dungeon Descent", color=0x607D8B)
-    embed.description = data.get("message")
-    await interaction.followup.send(embed=embed)
-
-@client.tree.command(name="reset_server", description="🔥 Admin only: wipe all accounts + oracles")
-async def reset_server(interaction: discord.Interaction):
-    if interaction.user.id != ADMIN_ID:
-        await interaction.response.send_message("🚫 Unauthorized.", ephemeral=True)
+# === ON MESSAGE: CONVERSATION MODE ===
+@bot.event
+async def on_message(message):
+    if message.author == bot.user or message.author.bot:
         return
-    headers = {"X-Admin-Key": "flame-of-reset-9321"}
-    async with aiohttp.ClientSession() as session:
-        async with session.delete(f"{API_URL}/delete_all_accounts", headers=headers) as res:
-            data = await res.json()
-            embed = Embed(title="🔥 Server Reset by Father of the First Flame", color=0xD32F2F)
-            embed.description = data.get("message")
-            await interaction.response.send_message(embed=embed)
 
-# === START BOT ===
-TOKEN = os.getenv("DISCORD_TOKEN")
-client.run(TOKEN)
+    if message.attachments:
+        for attachment in message.attachments:
+            if attachment.filename.endswith(".json"):
+                # Send to backend
+                username = message.content.strip() or message.author.name
+                async with aiohttp.ClientSession() as session:
+                    form = aiohttp.FormData()
+                    form.add_field("file", await attachment.read(), filename=attachment.filename, content_type="application/json")
+                    async with session.post(f"{API_URL}/upload_astrology/{username}", data=form) as res:
+                        data = await res.json()
+                        await message.channel.send(f"✅ {data.get('message')}")
+                        return
+
+    # GPT CONVERSATION VIA COVE
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{API_URL}/oracles.json") as res:
+            oracles = await res.json()
+
+    username = message.author.name
+    user_oracle = next((o for o in oracles.values() if o.get("username") == username), None)
+
+    system_prompt = "You are Cove, the dynamic Oracle of the Pantheon. Speak in mythic language and shift tone based on title, guild, and planetary ruler."
+    if user_oracle:
+        title = user_oracle.get("oracle_name", "Wanderer")
+        ruler = user_oracle.get("planetary_ruler", "Mystery")
+        status = user_oracle.get("prophecy_arc", {}).get("status", "Unawakened")
+        system_prompt += f"\nThe user is titled {title}, ruled by {ruler}, and their prophecy is {status}."
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message.content}
+            ]
+        )
+        reply = response.choices[0].message.content
+        await message.channel.send(reply)
+    except Exception as e:
+        await message.channel.send("⚠️ The Flame flickers. Cove cannot speak right now.")
+
+bot.run(TOKEN)

@@ -1,16 +1,28 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from pydantic import BaseModel
 from datetime import datetime
-import json, os, random
+import json, os, random, uuid
+from typing import Optional
+from router import (
+    create_oracle as gpt_create_oracle,
+    upload_chart, start_battle as gpt_start_battle,
+    start_raid as gpt_start_raid, do_directive, do_dungeon,
+    oracle_ritual, oracle_action, codex_entry
+)
 
-app = FastAPI()
+app = FastAPI(
+    title="Pantheon of Oracles API",
+    version="1.0.0",
+    description="Multiplayer backend API + GPT Router integration"
+)
 
 DATA_FILES = {
     "accounts": "accounts.json",
     "oracles": "oracles.json",
     "guilds": "guilds.json",
     "codex": "codex.json",
-    "battles": "battles.json"
+    "battles": "battles.json",
+    "memory": "gpt_user_memory.json"
 }
 
 # === FILE UTIL ===
@@ -25,116 +37,109 @@ def save_data(file, data):
     with open(file, "w") as f:
         json.dump(data, f, indent=4)
 
-# === MODELS ===
-class BattleRequest(BaseModel):
-    challenger: str
-    opponent: str
+# === INPUT MODELS ===
+class Account(BaseModel):
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+    password: str
 
-# === BATTLE SYSTEM ===
-@app.post("/start_battle")
-def start_battle(req: BattleRequest):
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class OracleRequest(BaseModel):
+    session_token: str
+    date_of_birth: str
+    time_of_birth: str
+    location: str
+    chart: dict
+    rulership: str = "modern"
+
+class UploadRequest(BaseModel):
+    username: str
+    data: dict
+
+class MessageRequest(BaseModel):
+    username: str
+    message: str
+    oracle_id: Optional[str] = None
+    context: Optional[dict] = None
+
+class OracleInput(BaseModel):
+    planet: str
+
+class ChartInput(BaseModel):
+    chart: dict
+
+class BattleInput(BaseModel):
+    mode: str = "standard"
+
+class RaidInput(BaseModel):
+    raidType: str = "planetary"
+
+class DirectiveInput(BaseModel):
+    directiveId: str
+
+class DungeonInput(BaseModel):
+    difficulty: str = "normal"
+
+class RitualInput(BaseModel):
+    ritualType: str
+
+class OracleActionInput(BaseModel):
+    oracleId: str
+    action: str
+
+class CodexInput(BaseModel):
+    entry: str
+
+# === SESSION UTIL ===
+def get_user_by_token(token: str):
     accounts = load_data(DATA_FILES["accounts"])
-    if req.challenger not in accounts or req.opponent not in accounts:
-        raise HTTPException(status_code=404, detail="Both users must have accounts")
+    for username, data in accounts.items():
+        if data.get("session_token") == token:
+            return username, accounts
+    return None, accounts
 
-    winner = random.choice([req.challenger, req.opponent])
-    loser = req.opponent if winner == req.challenger else req.challenger
+@app.get("/")
+def index():
+    return {"message": "Pantheon of Oracles API is alive 🔥"}
 
-    result = {
-        "challenger": req.challenger,
-        "opponent": req.opponent,
-        "winner": winner,
-        "loser": loser,
-        "timestamp": str(datetime.now())
-    }
+# === ROUTES FOR GPT ROUTER ===
+@app.post("/oracle/create")
+def oracle_route(data: OracleInput):
+    return gpt_create_oracle(data.planet)
 
-    battles = load_data(DATA_FILES["battles"])
-    battle_id = f"{req.challenger}_vs_{req.opponent}_{int(datetime.now().timestamp())}"
-    battles[battle_id] = result
-    save_data(DATA_FILES["battles"], battles)
+@app.post("/chart/upload")
+def chart_route(data: ChartInput):
+    return upload_chart(data.chart)
 
-    return {"message": f"{winner} wins the battle against {loser}!", "battle": result}
+@app.post("/battle/start")
+def battle_route(data: BattleInput):
+    return gpt_start_battle(data.mode)
 
-# === JSON FILE UPLOAD ===
-@app.post("/upload_astrology/{username}")
-def upload_astrology(username: str, file: UploadFile = File(...)):
-    accounts = load_data(DATA_FILES["accounts"])
-    if username not in accounts:
-        raise HTTPException(status_code=404, detail="Account not found")
+@app.post("/raid/start")
+def raid_route(data: RaidInput):
+    return gpt_start_raid(data.raidType)
 
-    try:
-        contents = json.load(file.file)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+@app.post("/directive/do")
+def directive_route(data: DirectiveInput):
+    return do_directive(data.directiveId)
 
-    accounts[username]["astrology_chart"] = contents
-    save_data(DATA_FILES["accounts"], accounts)
+@app.post("/dungeon/do")
+def dungeon_route(data: DungeonInput):
+    return do_dungeon(data.difficulty)
 
-    return {"message": f"Astrology chart uploaded for {username}"}
+@app.post("/ritual/do")
+def ritual_route(data: RitualInput):
+    return oracle_ritual(data.ritualType)
 
-@app.post("/upload_oracle_profile/{username}")
-def upload_oracle_profile(username: str, file: UploadFile = File(...)):
-    oracles = load_data(DATA_FILES["oracles"])
-    try:
-        contents = json.load(file.file)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+@app.post("/oracle/action")
+def oracle_action_route(data: OracleActionInput):
+    return oracle_action(data.oracleId, data.action)
 
-    oracle_id = f"{username}_uploaded"
-    contents["username"] = username
-    contents["uploaded"] = str(datetime.now())
-    oracles[oracle_id] = contents
-
-    save_data(DATA_FILES["oracles"], oracles)
-    return {"message": f"Oracle profile uploaded for {username}"}
-
-# === DUNGEON & RAID SYSTEM ===
-@app.post("/raid_join/{username}")
-def raid_join(username: str):
-    accounts = load_data(DATA_FILES["accounts"])
-    if username not in accounts:
-        raise HTTPException(status_code=404, detail="Account not found")
-
-    accounts[username]["in_raid"] = True
-    save_data(DATA_FILES["accounts"], accounts)
-    return {"message": f"{username} has joined the raid party."}
-
-@app.post("/raid_start")
-def raid_start():
-    accounts = load_data(DATA_FILES["accounts"])
-    raid_party = [u for u, d in accounts.items() if d.get("in_raid")]
-
-    if not raid_party:
-        raise HTTPException(status_code=400, detail="No one is currently joined to the raid.")
-
-    boss_defeated = random.choice([True, False])
-    mvp = random.choice(raid_party)
-    loot_rolls = {user: random.randint(1, 100) for user in raid_party}
-
-    for user in raid_party:
-        accounts[user]["in_raid"] = False
-
-    save_data(DATA_FILES["accounts"], accounts)
-
-    return {
-        "message": "🔥 The raid has been completed!",
-        "boss_defeated": boss_defeated,
-        "mvp": mvp,
-        "loot_rolls": loot_rolls,
-        "party": raid_party
-    }
-
-@app.post("/dungeon_enter/{username}")
-def dungeon_enter(username: str):
-    accounts = load_data(DATA_FILES["accounts"])
-    if username not in accounts:
-        raise HTTPException(status_code=404, detail="Account not found")
-
-    result = {
-        "username": username,
-        "result": random.choice(["victory", "defeat"]),
-        "loot": random.randint(1, 100),
-        "timestamp": str(datetime.now())
-    }
-
-    return {"message": f"{username} ventures into the dungeon and meets {result['result']}!", "details": result}
+@app.post("/codex/entry")
+def codex_route(data: CodexInput):
+    return codex_entry(data.entry)

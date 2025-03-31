@@ -1,14 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from pydantic import BaseModel
 from datetime import datetime
-import json, os, random, uuid, requests
-from dotenv import load_dotenv
-
-# === Load Environment ===
-load_dotenv(dotenv_path="config.env")
-API_KEY = os.getenv("API_KEY")
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
+import json, os, random, uuid
 
 app = FastAPI()
 
@@ -160,6 +153,15 @@ def create_oracle(data: OracleRequest):
     save_data(DATA_FILES["accounts"], accounts)
 
     return {"message": f"Oracle created for {username}", **oracle_data}
+
+# === GET ORACLE INFO ===
+@app.get("/oracle/info")
+def get_oracle_info(username: str):
+    oracles = load_data(DATA_FILES["oracles"])
+    matching = [o for o in oracles.values() if o.get("username") == username]
+    if not matching:
+        raise HTTPException(status_code=404, detail="No Oracle found for user")
+    return matching[0]
 
 # === UPLOAD CHART FILES ===
 @app.post("/upload_astrology/{username}")

@@ -3,3 +3,6 @@ uvicorn
 python-multipart
 requests
 python-dotenv
+discord.py
+aiohttp
+openai

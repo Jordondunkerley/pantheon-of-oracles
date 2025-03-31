@@ -1,0 +1,20 @@
+# Python / FastAPI Router Ignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+env/
+venv/
+.venv/
+
+# Secrets
+.env
+APItoGPT.env
+
+# Logs
+*.log
+
+# OS
+.DS_Store

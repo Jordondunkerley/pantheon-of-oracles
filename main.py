@@ -2,6 +2,13 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from pydantic import BaseModel
 from datetime import datetime
 import json, os, random, uuid
+import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 app = FastAPI()
 
@@ -46,45 +53,68 @@ class OracleRequest(BaseModel):
     rulership: str = "modern"
 
 # === SESSION UTIL ===
-def get_user_by_token(token: str):
-    accounts = load_data(DATA_FILES["accounts"])
-    for username, data in accounts.items():
-        if data.get("session_token") == token:
-            return username, accounts
-    return None, accounts
+async def get_user_by_token_supabase(token: str):
+    async with httpx.AsyncClient() as client:
+        res = await client.get(
+            f"{SUPABASE_URL}/rest/v1/accounts",
+            headers={
+                "apikey": SUPABASE_SERVICE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}"
+            },
+            params={"session_token": f"eq.{token}"}
+        )
+        if res.status_code == 200 and res.json():
+            return res.json()[0]["username"]
+        return None
 
 # === ACCOUNT SYSTEM ===
 @app.post("/create_account")
-def create_account(account: Account):
-    accounts = load_data(DATA_FILES["accounts"])
-    if account.username in accounts:
-        raise HTTPException(status_code=400, detail="Username already exists")
+async def create_account(account: Account):
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{SUPABASE_URL}/rest/v1/accounts",
+            headers={
+                "apikey": SUPABASE_SERVICE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            },
+            json={
+                "username": account.username,
+                "email": account.email,
+                "first_name": account.first_name,
+                "last_name": account.last_name,
+                "password": account.password,
+                "created": str(datetime.now()),
+                "session_token": str(uuid.uuid4())
+            }
+        )
 
-    session_token = str(uuid.uuid4())
-    accounts[account.username] = {
-        "email": account.email,
-        "first_name": account.first_name,
-        "last_name": account.last_name,
-        "password": account.password,
-        "created": str(datetime.now()),
-        "oracles": [],
-        "guild": None,
-        "session_token": session_token
-    }
-    save_data(DATA_FILES["accounts"], accounts)
-    return {"message": f"Account created for {account.first_name}", "session_token": session_token}
+        if response.status_code != 201:
+            raise HTTPException(status_code=400, detail="Account creation failed")
+
+        return response.json()[0]
 
 @app.post("/login")
 def login(creds: LoginRequest):
-    accounts = load_data(DATA_FILES["accounts"])
-    user = accounts.get(creds.username)
-    if not user or user["password"] != creds.password:
+    url = f"{SUPABASE_URL}/rest/v1/accounts?username=eq.{creds.username}&select=*"
+    res = httpx.get(url, headers={
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}"
+    })
+
+    if res.status_code != 200 or not res.json():
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user = res.json()[0]
+    if user["password"] != creds.password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
     return {"message": f"Welcome back, {creds.username}", "session_token": user["session_token"]}
 
 @app.get("/whoami/{session_token}")
-def whoami(session_token: str):
-    username, _ = get_user_by_token(session_token)
+async def whoami(session_token: str):
+    username = await get_user_by_token_supabase(session_token)
     if not username:
         raise HTTPException(status_code=404, detail="Session not recognized")
     return {"username": username}
@@ -120,17 +150,14 @@ def start_battle(req: BattleRequest):
 
 # === CREATE ORACLE ===
 @app.post("/create_oracle")
-def create_oracle(data: OracleRequest):
-    username, accounts = get_user_by_token(data.session_token)
+async def create_oracle(data: OracleRequest):
+    username = await get_user_by_token_supabase(data.session_token)
     if not username:
         raise HTTPException(status_code=401, detail="Invalid session token")
 
-    oracles = load_data(DATA_FILES["oracles"])
     oracle_id = f"{username}_{data.date_of_birth}"
-    if oracle_id in oracles:
-        raise HTTPException(status_code=400, detail="Oracle already exists")
-
     oracle_data = {
+        "oracle_id": oracle_id,
         "username": username,
         "oracle_name": "Oracle of the Flame",
         "planetary_ruler": "Unknown",
@@ -143,16 +170,26 @@ def create_oracle(data: OracleRequest):
         "prophecy_arc": {
             "status": "uninitiated",
             "seasonal_seed": None
-        }
+        },
+        "created_at": str(datetime.now())
     }
 
-    oracles[oracle_id] = oracle_data
-    accounts[username]["oracles"].append(oracle_id)
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{SUPABASE_URL}/rest/v1/oracles",
+            headers={
+                "apikey": SUPABASE_SERVICE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            },
+            json=oracle_data
+        )
 
-    save_data(DATA_FILES["oracles"], oracles)
-    save_data(DATA_FILES["accounts"], accounts)
+        if response.status_code != 201:
+            raise HTTPException(status_code=400, detail="Oracle creation failed")
 
-    return {"message": f"Oracle created for {username}", **oracle_data}
+        return response.json()[0]
 
 # === GET ORACLE INFO ===
 @app.get("/oracle/info")

@@ -300,3 +300,75 @@ def dungeon_enter(username: str):
     }
 
     return {"message": f"{username} ventures into the dungeon and meets {result['result']}!", "details": result}
+
+
+
+from fastapi import FastAPI, Request, Header, HTTPException
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime
+import pytz
+
+app = FastAPI()
+
+# Metadata structure with full alignment and identity context
+class Metadata(BaseModel):
+    patch: str
+    core_faction: Optional[str]
+    planetary_faction: Optional[str]
+    guild: Optional[str]
+    warband: Optional[str]
+    context: str  # e.g., 'battle', 'ritual', 'fusion', 'oricron'
+    oracle_tier: str  # Tier 1–10 or 'Ascended'
+    oracle_level: int  # 0–100
+    ascended_rank: Optional[int]  # 0–300 if applicable
+    oracle_form: Optional[str]  # e.g., 'Ascendant Fusion'
+    codex_tag: Optional[str]
+    timestamp: str  # Client-provided ISO 8601 (EST–Toronto)
+
+# Main payload structure
+class OracleCommand(BaseModel):
+    command: str = Field(..., example="/report_battle_victory")
+    oracle_name: str = Field(..., example="Nyssarion")
+    action: str = Field(..., example="Declared victorious in Warband combat under Week 4 alignment.")
+    metadata: Metadata
+
+# Secure API key (move to env in production)
+API_KEY = "J&h^fvAc*gH!aS#ba@PL#iuW&D11J"
+
+@app.post("/gpt/update-oracle")
+async def update_oracle_action(request: Request, oracle_command: OracleCommand, authorization: str = Header(...)):
+
+    if authorization != API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Toronto-local timestamp for internal server log
+    tz = pytz.timezone("America/Toronto")
+    now_est = datetime.now(tz).isoformat()
+
+    print("\n[ORACLE ACTION RECEIVED]")
+    print(f"Command:        {oracle_command.command}")
+    print(f"Oracle:         {oracle_command.oracle_name}")
+    print(f"Action:         {oracle_command.action}")
+    print(f"Patch:          {oracle_command.metadata.patch}")
+    print(f"Context:        {oracle_command.metadata.context}")
+    print(f"Core Faction:   {oracle_command.metadata.core_faction}")
+    print(f"Planetary:      {oracle_command.metadata.planetary_faction}")
+    print(f"Guild:          {oracle_command.metadata.guild}")
+    print(f"Warband:        {oracle_command.metadata.warband}")
+    print(f"Tier:           {oracle_command.metadata.oracle_tier}")
+    print(f"Level:          {oracle_command.metadata.oracle_level}")
+    print(f"Ascended Rank:  {oracle_command.metadata.ascended_rank}")
+    print(f"Form:           {oracle_command.metadata.oracle_form}")
+    print(f"Codex Tag:      {oracle_command.metadata.codex_tag}")
+    print(f"EST Timestamp:  {now_est}")
+
+    # Placeholder: Route to subsystem (e.g., battle logs, prophecy tracker, codex)
+    # e.g., if oracle_command.command == "/toggle_fusion": update_fusion_state(...)
+
+    return {
+        "status": "success",
+        "message": "Oracle action processed and logged",
+        "oracle": oracle_command.oracle_name,
+        "timestamp": now_est
+    }

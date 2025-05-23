@@ -5,6 +5,18 @@ import json, os, random, uuid
 import httpx
 from dotenv import load_dotenv
 
+from fastapi import FastAPI
+
+pantheon_app = FastAPI(
+    title="Pantheon of Oracles API",
+    description="Universal Oracle Action Gateway",
+    version="1.0.0",
+    servers=[
+        {"url": "https://pantheonoforacles.onrender.com"}
+    ]
+)
+
+
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")

@@ -5,12 +5,17 @@ app = FastAPI(
     description="Universal Oracle Action Gateway",
     version="1.0.0",
     servers=[
-        {
-            "url": "https://pantheon-of-oracles.onrender.com"
-        }
+        {"url": "https://pantheon-of-oracles.onrender.com"}
     ]
 )
 
+
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
+from pydantic import BaseModel
+from datetime import datetime
+import json, os, random, uuid
+import httpx
+from dotenv import load_dotenv
 
 load_dotenv()
 

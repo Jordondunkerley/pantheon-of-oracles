@@ -6,3 +6,4 @@ python-dotenv
 discord.py
 aiohttp
 openai
+pytz

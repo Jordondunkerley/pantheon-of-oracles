@@ -233,6 +233,23 @@ def upload_oracle_profile(username: str, file: UploadFile = File(...)):
     save_data(DATA_FILES["oracles"], oracles)
     return {"message": f"Oracle profile uploaded for {username}"}
 
+
+class OracleUpdate(BaseModel):
+    command: str
+    oracle_name: str
+    action: str
+    metadata: dict
+
+@app.post("/gpt/update-oracle")
+async def update_oracle(data: OracleUpdate, request: Request):
+    token = request.headers.get("Authorization")
+    if token != f"Bearer {os.getenv('PANTHEON_GPT_SECRET')}":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    print(f"Received GPT update: {data.dict()}")
+    return {"status": "success", "message": f"{data.oracle_name} will be {data.action}"}
+
+
 # === DUNGEON & RAID SYSTEM ===
 @app.post("/raid_join/{username}")
 def raid_join(username: str):

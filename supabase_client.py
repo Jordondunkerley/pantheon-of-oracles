@@ -1,12 +1,9 @@
 from supabase import create_client, Client
-import os
-from dotenv import load_dotenv
 from uuid import uuid4
 
-load_dotenv()
+SUPABASE_URL = "https://mammtgndjoydbeeuehiw.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hbW10Z25kam95ZGJlZXVlaGl3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzQ1MzkzNCwiZXhwIjoyMDU5MDI5OTM0fQ.B6dgvr7DSFdjQvGAoTLLNXvLRBdd48aA0heg_aSdK2E"
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 

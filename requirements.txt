@@ -7,3 +7,4 @@ discord.py
 aiohttp
 openai
 pytz
+supabase

@@ -131,3 +131,55 @@ async def whoami(session_token: str):
     return {"username": username}
 
 # Remaining parts are unchanged...
+
+from fastapi import FastAPI, Header, HTTPException, Request
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime
+import pytz
+
+app = FastAPI(
+    title="Pantheon of Oracles API",
+    description="Universal Oracle Action Gateway",
+    version="1.0.0",
+    servers=[{ "url": "https://pantheon-of-oracles.onrender.com" }]
+)
+
+# Define request models
+class Metadata(BaseModel):
+    patch: str
+    core_faction: Optional[str]
+    planetary_faction: Optional[str]
+    guild: Optional[str]
+    warband: Optional[str]
+    context: str
+    oracle_tier: str
+    oracle_level: int
+    ascended_rank: Optional[int]
+    oracle_form: Optional[str]
+    codex_tag: Optional[str]
+    timestamp: str
+
+class OracleCommand(BaseModel):
+    command: str
+    oracle_name: str
+    action: str
+    metadata: Metadata
+
+API_KEY = "J&h^fvAc*gH!aS#ba@PL#iuW&D11J"
+
+@app.post("/gpt/update-oracle")
+async def update_oracle_action(request: Request, oracle_command: OracleCommand, authorization: str = Header(...)):
+
+    if authorization != API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    now_est = datetime.now(pytz.timezone("America/Toronto")).isoformat()
+
+    print(f"\n[ORACLE ACTION RECEIVED] {oracle_command.oracle_name} | {oracle_command.command} | {now_est}")
+
+    return {
+        "status": "success",
+        "oracle": oracle_command.oracle_name,
+        "timestamp": now_est
+    }

@@ -176,6 +176,17 @@ async def update_oracle_action(request: Request, oracle_command: OracleCommand, 
 
     now_est = datetime.now(pytz.timezone("America/Toronto")).isoformat()
 
+    # Insert oracle action into Supabase
+    supabase.table("oracle_actions").insert({
+        "oracle_name": oracle_command.oracle_name,
+        "command": oracle_command.command,
+        "context": oracle_command.metadata.context,
+        "level": oracle_command.metadata.oracle_level,
+        "rank": oracle_command.metadata.ascended_rank,
+        "timestamp": oracle_command.metadata.timestamp
+    }).execute()
+
+
     print(f"\n[ORACLE ACTION RECEIVED] {oracle_command.oracle_name} | {oracle_command.command} | {now_est}")
 
     return {
@@ -183,3 +194,10 @@ async def update_oracle_action(request: Request, oracle_command: OracleCommand, 
         "oracle": oracle_command.oracle_name,
         "timestamp": now_est
     }
+
+from supabase import create_client
+
+SUPABASE_URL = "https://mammtgndjoydbeeuehiw.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hbW10Z25kam95ZGJlZXVlaGl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NTM5MzQsImV4cCI6MjA1OTAyOTkzNH0.VPseSq4UpYA3NJfq6wmjVkqfmOpsIFyPM--4lmN8hx4"
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)

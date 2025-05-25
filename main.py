@@ -208,7 +208,6 @@ async def update_oracle_action(request: Request, oracle_command: OracleCommand, 
     }
 
 from supabase import create_client
-from supabase_client import supabase
 
 SUPABASE_URL = "https://mammtgndjoydbeeuehiw.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hbW10Z25kam95ZGJlZXVlaGl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NTM5MzQsImV4cCI6MjA1OTAyOTkzNH0.VPseSq4UpYA3NJfq6wmjVkqfmOpsIFyPM--4lmN8hx4"

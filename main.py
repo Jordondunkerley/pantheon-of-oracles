@@ -216,7 +216,11 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
     import os
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
+
+if __name__ == "__main__":
+    import os
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
     import os

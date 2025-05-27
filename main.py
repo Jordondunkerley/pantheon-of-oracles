@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, HTTPException, Request, Header
 from pydantic import BaseModel
 from typing import Optional
@@ -15,14 +16,14 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # === FASTAPI APP ===
 app = FastAPI(
     title="Pantheon of Oracles API",
-    description="Universal Oracle Action Gateway",
-    version="1.0.0",
+    description="Universal Oracle Action Gateway with Auth",
+    version="1.1.0",
     servers=[{
         "url": "https://pantheon-of-oracles.onrender.com"
     }]
 )
 
-# === SCHEMAS ===
+# === ORACLE SCHEMAS ===
 class Metadata(BaseModel):
     patch: str
     core_faction: Optional[str]
@@ -43,11 +44,9 @@ class OracleCommand(BaseModel):
     action: str
     metadata: Metadata
 
-# === ROUTES ===
+# === ORACLE ROUTE ===
 @app.post("/gpt/update-oracle")
 async def update_oracle_action(request: Request, oracle_command: OracleCommand, authorization: str = Header(...)):
-    print("🌀 ORACLE ENDPOINT TRIGGERED")
-
     if authorization != API_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -80,6 +79,35 @@ async def update_oracle_action(request: Request, oracle_command: OracleCommand, 
         "oracle": oracle_command.oracle_name,
         "timestamp": now_est
     }
+
+# === AUTH ROUTES ===
+@app.post("/auth/signup")
+async def signup(request: Request):
+    data = await request.json()
+    email = data.get("email")
+    password = data.get("password")
+
+    try:
+        result = supabase.auth.sign_up({"email": email, "password": password})
+        print(f"🧙 Signup triggered for: {email}")
+        return {"status": "success", "email": email, "result": result}
+    except Exception as e:
+        print(f"⚠️ Signup failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/auth/login")
+async def login(request: Request):
+    data = await request.json()
+    email = data.get("email")
+    password = data.get("password")
+
+    try:
+        result = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        print(f"🔐 Login success for: {email}")
+        return {"status": "success", "session": result}
+    except Exception as e:
+        print(f"❌ Login failed: {str(e)}")
+        raise HTTPException(status_code=401, detail=str(e))
 
 # === ENTRYPOINT FOR RENDER ===
 if __name__ == "__main__":

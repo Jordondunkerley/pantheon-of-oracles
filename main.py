@@ -169,7 +169,9 @@ class OracleCommand(BaseModel):
 API_KEY = "J&h^fvAc*gH!aS#ba@PL#iuW&D11J"
 
 @app.post("/gpt/update-oracle")
-async def update_oracle_action(request: Request, oracle_command: OracleCommand, authorization: str = Header(...)):
+async def update_oracle_action(
+    request: Request, oracle_command: OracleCommand, authorization: str = Header(...)):
+    print("✅ Oracle endpoint hit")(request: Request, oracle_command: OracleCommand, authorization: str = Header(...)):
 
     if authorization != API_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")

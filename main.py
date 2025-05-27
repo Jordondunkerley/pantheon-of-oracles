@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, HTTPException, Request, Header
 from pydantic import BaseModel
 from typing import Optional
@@ -47,6 +46,8 @@ class OracleCommand(BaseModel):
 # === ROUTES ===
 @app.post("/gpt/update-oracle")
 async def update_oracle_action(request: Request, oracle_command: OracleCommand, authorization: str = Header(...)):
+    print("🌀 ORACLE ENDPOINT TRIGGERED")
+
     if authorization != API_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
 

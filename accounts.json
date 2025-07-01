@@ -1,12 +1,10 @@
 {
-    "jordon": {
-        "email": "jordon@example.com",
-        "first_name": "Jordan",
-        "last_name": "Dunkerley",
-        "created": "2025-03-27 16:06:31.157814",
-        "oracles": [
-            "jordon_1993-04-21"
-        ],
+    "player1": {
+        "email": "player1@example.com",
+        "first_name": "Player",
+        "last_name": "One",
+        "created": "2025-03-27 00:00:00",
+        "oracles": ["player1_oracle"],
         "guild": null
     }
 }

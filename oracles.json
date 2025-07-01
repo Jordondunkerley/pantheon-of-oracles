@@ -1,78 +1,17 @@
 {
-    "jordon_1993-04-21": {
-        "username": "jordon",
-        "oracle_name": "Oracle of the First Flame",
-        "planetary_ruler": "Venus",
-        "date_of_birth": "1993-04-21",
-        "time_of_birth": "03:41",
-        "location": "Halifax, NS",
-        "rulership_system": "traditional",
+    "player1_oracle": {
+        "username": "player1",
+        "oracle_name": "Oracle Alpha",
+        "planetary_ruler": "Mars",
+        "date_of_birth": "1990-01-01",
+        "time_of_birth": "00:00",
+        "location": "Anon City",
+        "rulership_system": "example",
         "chart": {
-            "sun": {
-                "sign": "Taurus",
-                "degree": 0.5,
-                "house": 1,
-                "motion": "Direct",
-                "decan": {
-                    "order": "First",
-                    "ruler": "Venus"
-                }
-            },
-            "moon": {
-                "sign": "Leo",
-                "degree": 13.4,
-                "house": 4,
-                "motion": "Direct",
-                "decan": {
-                    "order": "Second",
-                    "ruler": "Jupiter"
-                }
-            },
-            "mercury": {
-                "sign": "Aries",
-                "degree": 22.1,
-                "house": 12,
-                "motion": "Retrograde",
-                "decan": {
-                    "order": "Third",
-                    "ruler": "Mars"
-                }
-            },
-            "venus": {
-                "sign": "Pisces",
-                "degree": 27.9,
-                "house": 11,
-                "motion": "Direct",
-                "decan": {
-                    "order": "Third",
-                    "ruler": "Mars"
-                }
-            },
-            "mars": {
-                "sign": "Gemini",
-                "degree": 5.2,
-                "house": 2,
-                "motion": "Direct",
-                "decan": {
-                    "order": "First",
-                    "ruler": "Mercury"
-                }
-            },
-            "ascendant": {
-                "sign": "Aries",
-                "degree": 15.0,
-                "house": 1,
-                "motion": "Direct",
-                "decan": {
-                    "order": "Second",
-                    "ruler": "Sun"
-                }
-            }
+            "sun": {"sign": "Aries", "degree": 15.0, "house": 1, "motion": "Direct"},
+            "moon": {"sign": "Leo", "degree": 20.0, "house": 5, "motion": "Direct"}
         },
         "status": "created",
-        "prophecy_arc": {
-            "status": "uninitiated",
-            "seasonal_seed": null
-        }
+        "prophecy_arc": {"status": "uninitiated", "seasonal_seed": null}
     }
 }

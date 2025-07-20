@@ -5,6 +5,7 @@ from typing import Optional
 from datetime import datetime
 import pytz, os
 from supabase import create_client
+from routes.login_or_create_user import login_router
 
 # === CONFIG ===
 API_KEY = "J&h^fvAc*gH!aS#ba@PL#iuW&D11J"
@@ -22,6 +23,9 @@ app = FastAPI(
         "url": "https://pantheon-of-oracles.onrender.com"
     }]
 )
+
+# Register additional routers
+app.include_router(login_router, prefix="/login-or-create-user")
 
 # === ORACLE SCHEMAS ===
 class Metadata(BaseModel):

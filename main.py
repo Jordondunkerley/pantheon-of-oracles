@@ -23,6 +23,11 @@ app = FastAPI(
     }]
 )
 
+# --- Healthcheck ---
+@app.get("/")
+async def healthcheck():
+    return {"status": "ok"}
+
 # === ORACLE SCHEMAS ===
 class Metadata(BaseModel):
     patch: str

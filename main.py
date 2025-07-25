@@ -1,7 +1,8 @@
 
 from fastapi import FastAPI, HTTPException, Request, Header
-from pydantic import BaseModel
+rom pydantic import BaseModel
 from typing import Optional
+
 from datetime import datetime
 import pytz, os
 from supabase import create_client
@@ -60,10 +61,10 @@ async def update_oracle_action(request: Request, oracle_command: OracleCommand, 
         "core_faction": oracle_command.metadata.core_faction,
         "planetary_faction": oracle_command.metadata.planetary_faction,
         "guild": oracle_command.metadata.guild,
-        "warband": oracle_command.metadata.warband,
+       "warband": oracle_command.metadata.warband,
+
         "context": oracle_command.metadata.context,
-        "tier": oracle_command.metadata.oracle_tier,
-        "level": oracle_command.metadata.oracle_level,
+       "level": oracle_command.metadata.oracle_level,
         "rank": oracle_command.metadata.ascended_rank,
         "oracle_form": oracle_command.metadata.oracle_form,
         "codex_tag": oracle_command.metadata.codex_tag,
@@ -114,3 +115,53 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
+
+
+import json
+
+# Load account and oracle data for token endpoints
+BASE_DIR = os.path.dirname(__file__)
+_accounts_path = os.path.join(BASE_DIR, "accounts.json")
+_oracles_path = os.path.join(BASE_DIR, "oracles.json")
+try:
+    with open(_accounts_path, "r") as f:
+        _accounts_data = json.load(f)
+except Exception:
+    _accounts_data = {}
+try:
+    with open(_oracles_path, "r") as f:
+        _oracles_data = json.load(f)
+except Exception:
+    _oracles_data = {}
+
+# Simple token store
+_issued_tokens: set[str] = set()
+
+def _generate_token() -> str:
+    import uuid
+    token = uuid.uuid4().hex
+    _issued_tokens.add(token)
+    return token
+
+class AuthCredentials(BaseModel):
+    username: str
+    password: str
+
+@app.post("/token")
+async def issue_token(credentials: AuthCredentials):
+    if credentials.username not in _accounts_data:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    expected_pw = os.getenv("API_PASSWORD")
+    if not expected_pw or credentials.password != expected_pw:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    token = _generate_token()
+    return {"access_token": token, "token_type": "bearer"}
+
+@app.get("/oracles")
+async def list_oracles(authorization: str | None = Header(default=None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+    token = authorization.split(" ", 1)[1]
+    if token not in _issued_tokens:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return _oracles_data

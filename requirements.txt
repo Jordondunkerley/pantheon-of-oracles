@@ -8,3 +8,4 @@ aiohttp
 openai
 pytz
 supabase
+PyJWT

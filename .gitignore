@@ -1,3 +1,4 @@
 APItoGPT.env
 config.env
 .env
+__pycache__/

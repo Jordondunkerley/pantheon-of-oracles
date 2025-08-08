@@ -1,0 +1,296 @@
+{
+  "astrology_profile": {
+    "planets": {
+      "Sun": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "decan": ""
+      },
+      "Moon": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "decan": ""
+      },
+      "Mercury": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Venus": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Mars": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Jupiter": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Saturn": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Uranus": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Neptune": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Pluto": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "BlackMoonLilith": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "NorthNode": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "decan": ""
+      },
+      "SouthNode": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "decan": ""
+      },
+      "Ceres": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Eris": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Haumea": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "MakeMake": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Orcus": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Sedna": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Ixion": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Varuna": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Quaoar": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Gonggong": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Salaria": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Chiron": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Pholus": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Nessus": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Chariklo": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Hylonome": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Juno": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "PallasAthena": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      },
+      "Vesta": {
+        "sign": "",
+        "degree": "",
+        "house": "",
+        "motion": "",
+        "stationary": "",
+        "decan": ""
+      }
+    },
+    "angles": {
+      "Ascendant": {
+        "sign": "",
+        "degree": "",
+        "decan": ""
+      },
+      "Descendant": {
+        "sign": "",
+        "degree": "",
+        "decan": ""
+      },
+      "Midheaven": {
+        "sign": "",
+        "degree": "",
+        "decan": ""
+      },
+      "IC": {
+        "sign": "",
+        "degree": "",
+        "decan": ""
+      }
+    },
+    "house_borders": {
+      "1st": "",
+      "2nd": "",
+      "3rd": "",
+      "4th": "",
+      "5th": "",
+      "6th": "",
+      "7th": "",
+      "8th": "",
+      "9th": "",
+      "10th": "",
+      "11th": "",
+      "12th": ""
+    },
+    "interceptions": {},
+    "duplications": {}
+  }
+}

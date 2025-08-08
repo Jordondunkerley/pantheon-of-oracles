@@ -1,0 +1,148 @@
+{
+  "player_id": "player-7261eaf4-f13d-4209-8ba5-1d902a378a3b",
+  "username": "Example",
+  "email": "player@example.com",
+  "gender": "Male",
+  "gaze": "Masculine",
+  "birthday": "2001-03-21",
+  "birth_time": "14:32",
+  "birth_location": "Toronto, ON, Canada",
+  "created_at": "2025-07-03T14:12:00Z",
+  "platform_links": {
+    "discord_id": "discord_938120374",
+    "openai_id": "openai_184039483",
+    "youtube_id": "youtube_4830294"
+  },
+  "faction_alignment": {
+    "core_faction": "Mystic",
+    "planetary_faction": "Saturn",
+    "guild": "Saturn Rising",
+    "warband": "Lightning"
+  },
+  "access_tier": "Certified",
+  "founder_status": false,
+  "season_pass": {
+    "active": true,
+    "season_name": "Season of Leviathans",
+    "season_number": 8
+  },
+  "oracles_owned": [
+    "oracle-1001-sun",
+    "oracle-1002-moon",
+    "oracle-1003-saturn"
+  ],
+  "token_balances": {
+    "fire": 120,
+    "water": 340,
+    "air": 180,
+    "earth": 95,
+    "saturn": 50
+  },
+  "game_mode_stats": {
+    "pvp_1v1": {
+      "wins": 12,
+      "losses": 7
+    },
+    "pvp_2v2": {
+      "wins": 5,
+      "losses": 3
+    },
+    "pvp_3v3": {
+      "wins": 4,
+      "losses": 2
+    },
+    "pvp_4v4": {
+      "wins": 3,
+      "losses": 1
+    },
+    "pvp_5v5_and_above": {
+      "wins": 2,
+      "losses": 1
+    },
+    "warband_pvp": {
+      "wins": 2,
+      "losses": 1,
+      "mvp_count": 1
+    },
+    "hardcore_pvp": {
+      "wins": 1,
+      "losses": 2
+    },
+    "free_for_all_pvp": {
+      "wins": 0,
+      "losses": 0
+    },
+    "throne_world_war": {
+      "victories": 0,
+      "defeats": 0
+    },
+    "throne_world_raids": {
+      "completions": 0,
+      "failures": 0
+    },
+    "leviathan_arena": {
+      "wins": 0,
+      "losses": 0
+    },
+    "raids": {
+      "completions": 6,
+      "failures": 2
+    },
+    "dungeons": {
+      "completions": 8,
+      "failures": 3
+    },
+    "rituals": {
+      "completed": 22,
+      "points_earned": 84
+    },
+    "directives": {
+      "completed": 15,
+      "failed": 4
+    },
+    "planetary_war": {
+      "victories": 0,
+      "defeats": 0
+    },
+    "core_faction_war": {
+      "victories": 0,
+      "defeats": 0
+    },
+    "guild_war": {
+      "victories": 0,
+      "defeats": 0
+    },
+    "seasonal_apex_raids": {
+      "completions": 0,
+      "failures": 0
+    },
+    "ritual_challenges": {
+      "completions": 0,
+      "failures": 0
+    },
+    "ascended_fusion_trials": {
+      "completions": 0,
+      "failures": 0
+    }
+  },
+  "oracle_sync_status": {
+    "council_initiated": true,
+    "throne_world_access": true,
+    "leviathan_unlocked": false,
+    "ascended_fusion_enabled": false
+  },
+  "notifications": {
+    "system_messages_enabled": true,
+    "promotional_messages_opt_in": false,
+    "daily_reset_time": "03:41:00Z"
+  },
+  "security": {
+    "password_hash": "sha256$encrypted_value_here",
+    "two_factor_enabled": true
+  },
+  "preferences": {
+    "oracle_voice_flavor": "Mythic",
+    "visual_overlays_enabled": false,
+    "system_prompt_tone": "Soft Cosmic"
+  }
+}

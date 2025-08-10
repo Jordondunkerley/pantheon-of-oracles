@@ -1,3 +1,4 @@
-APItoGPT.env
-config.env
+__pycache__/
+*.py[cod]
 .env
+config.env

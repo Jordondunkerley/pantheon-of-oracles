@@ -15,6 +15,8 @@ from passlib.context import CryptContext
 from supabase import create_client, Client
 import os
 
+from .player_oracle_endpoints import router as player_oracle_router
+
 # -------- env --------
 APP_NAME = os.getenv("APP_NAME", "Pantheon of Oracles API")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -35,6 +37,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
+
+app.include_router(player_oracle_router)
 
 # -------- models --------
 class RegisterRequest(BaseModel):
@@ -99,8 +103,3 @@ def update_oracle(payload: UpdateOracleRequest, authorization: Optional[str] = H
 def healthz():
     return {"status": "ok", "service": APP_NAME}
 
-# near the top, after other imports
-from .player_oracle_endpoints import router as player_oracle_router
-
-# after app instantiation and middleware configuration
-app.include_router(player_oracle_router)

@@ -1,0 +1,39 @@
+*** Begin Patch
+*** Update File: api/player_oracle_endpoints.py
+@@
+     @router.get("/gpt/my-oracles")
+     def get_my_oracles(authorization: Optional[str] = Header(None)):
+@@
+         res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
+-        return {"ok": True, "oracles": res.data}
++        return {"ok": True, "oracles": res.data}
++
++# -----------------------------------------------------------------------------
++# New endpoint: sync player account and oracles
++# -----------------------------------------------------------------------------
++
++@router.get("/gpt/sync")
++def sync_player_data(authorization: Optional[str] = Header(None)):
++    """
++    Return the authenticated user's player account and all oracle profiles.
++
++    This endpoint combines the logic of ``/gpt/player-account`` and ``/gpt/my-oracles``
++    into a single call. It verifies the JWT, resolves the user's ID, and then
++    retrieves both the player's account and list of oracles from Supabase. This
++    allows the Pantheon GPT router to fetch all relevant data in one request,
++    enabling continuous syncing across sessions without manual imports.
++    """
++    user_email = require_auth(authorization)
++    user_id = get_user_id_by_email(user_email)
++    if not user_id:
++        raise HTTPException(status_code=404, detail="User not found")
++    # Fetch player account (if any)
++    acc_res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
++    # Fetch all oracles owned by the user
++    orc_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
++    return {
++        "ok": True,
++        "account": acc_res.data,
++        "oracles": orc_res.data,
++    }
+*** End Patch

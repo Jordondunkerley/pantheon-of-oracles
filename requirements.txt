@@ -3,8 +3,6 @@ uvicorn
 python-multipart
 requests
 python-dotenv
-discord.py
-aiohttp
-openai
-pytz
 supabase
+python-jose[cryptography]
+passlib[bcrypt]

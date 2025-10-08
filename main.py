@@ -114,3 +114,9 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
+
+# near the top, after other imports
+from .player_oracle_endpoints import router as player_oracle_router
+
+# after app instantiation and middleware configuration
+app.include_router(player_oracle_router)

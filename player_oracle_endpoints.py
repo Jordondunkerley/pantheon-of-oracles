@@ -88,3 +88,30 @@ def get_my_oracles(authorization: Optional[str] = Header(None)):
         raise HTTPException(status_code=404, detail="User not found")
     res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
     return {"ok": True, "oracles": res.data}
+
+from fastapi import Header
+
+@router.post("/player-account")
+def plugin_create_player_account(
+    payload: Dict[str, Any],
+    x_service_token: Optional[str] = Header(None)
+):
+    """
+    Securely create a player account for the GPT plugin.
+
+    This endpoint does not require a user JWT; instead, callers must include
+    the service token in the X-Service-Token header.  The payload should
+    contain whatever fields you want stored in the player_accounts table.
+    The function assigns its own player_id by relying on Supabase’s default
+    UUID generation (the `id` column) and never exposes it to the caller.
+    """
+    # Validate the service token
+    expected = os.getenv("SERVICE_TOKEN")
+    if not x_service_token or x_service_token != expected:
+        raise HTTPException(status_code=401, detail="Invalid or missing service token")
+
+    # Insert the player account. Supabase will auto-generate the primary key (id).
+    res = supabase.table("player_accounts").insert(payload).execute()
+
+    # Return a minimal response; we do not send back the generated player_id.
+    return {"ok": True}

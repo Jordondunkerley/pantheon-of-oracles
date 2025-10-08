@@ -98,3 +98,9 @@ def update_oracle(payload: UpdateOracleRequest, authorization: Optional[str] = H
 @app.get("/healthz")
 def healthz():
     return {"status": "ok", "service": APP_NAME}
+
+# near the top, after other imports
+from .player_oracle_endpoints import router as player_oracle_router
+
+# after app instantiation and middleware configuration
+app.include_router(player_oracle_router)

@@ -50,10 +50,20 @@ class LoginRequest(BaseModel):
     password: str
 
 class UpdateOracleRequest(BaseModel):
-    oracle_id: str          # UUID from `oracles` table
-    player_id: str          # e.g., "jordondunkerley"
-    action: str             # e.g., "RITUAL_START"
+    """Request model for updating oracle actions.
+
+    The plugin may omit ``oracle_id`` and ``player_id`` at the top level. When
+    absent, these values can be provided inside the ``metadata`` dictionary.
+    Both fields are optional here and will be resolved in the endpoint
+    logic.  ``oracle_name`` can also be provided to look up an oracle
+    identifier automatically.
+    """
+    oracle_id: Optional[str] = None  # UUID from ``oracles`` table
+    player_id: Optional[str] = None  # Player account UUID
+    action: str  # e.g., "RITUAL_START"
+    oracle_name: Optional[str] = None  # Human‑readable oracle name
     metadata: Optional[Dict[str, Any]] = None
+
 
 # -------- utils --------
 def create_access_token(sub: str) -> str:
@@ -90,14 +100,54 @@ def login(req: LoginRequest):
 # -------- GPT actions --------
 @app.post("/gpt/update-oracle")
 def update_oracle(payload: UpdateOracleRequest, authorization: Optional[str] = Header(None)):
-    _ = require_auth(authorization)
+    """Insert an oracle action into the log.
+
+    This endpoint accepts both our internal and plugin-style payloads. It resolves
+    the ``player_id`` and ``oracle_id`` automatically when they are omitted:
+
+    * ``player_id`` is looked up from the authenticated user's player account.
+    * ``oracle_id`` can come from the top‑level field, the ``metadata``
+      dictionary, or be resolved via ``oracle_name`` in conjunction with the user.
+
+    A 400 error is raised if an oracle identifier cannot be determined.
+    """
+    # Validate the token and get user email
+    user_email = require_auth(authorization)
+    # Get the user's internal id
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Resolve player_id: prefer payload.player_id then metadata.player_id then lookup
+    player_id = payload.player_id
+    if not player_id and payload.metadata and isinstance(payload.metadata, dict):
+        player_id = payload.metadata.get("player_id")
+    if not player_id:
+        # fetch player account id from table
+        player_res = supabase.table("player_accounts").select("id").eq("user_id", user_id).single().execute()
+        if player_res.data:
+            player_id = player_res.data.get("id")
+    # Resolve oracle_id: prefer payload.oracle_id then metadata.oracle_id then lookup by oracle_name
+    oracle_id = payload.oracle_id
+    if not oracle_id and payload.metadata and isinstance(payload.metadata, dict):
+        oracle_id = payload.metadata.get("oracle_id")
+    if not oracle_id and payload.oracle_name:
+        # look up by oracle_name for this user
+        or_res = supabase.table("oracle_profiles").select("id").eq("user_id", user_id).eq("oracle_name", payload.oracle_name).single().execute()
+        if or_res.data:
+            oracle_id = or_res.data.get("id")
+    if not oracle_id:
+        raise HTTPException(status_code=400, detail="Missing oracle identifier (oracle_id or oracle_name)")
+    if not player_id:
+        raise HTTPException(status_code=400, detail="Missing player identifier")
+    # Insert the action
     ins = supabase.table("oracle_actions").insert({
-        "oracle_id": payload.oracle_id,
-        "player_id": payload.player_id,
+        "oracle_id": oracle_id,
+        "player_id": player_id,
         "action": payload.action,
         "metadata": payload.metadata
     }).execute()
     return {"ok": True, "inserted": ins.data}
+
 
 @app.get("/healthz")
 def healthz():

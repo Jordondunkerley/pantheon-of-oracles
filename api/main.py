@@ -15,8 +15,6 @@ from passlib.context import CryptContext
 from supabase import create_client, Client
 import os
 
-from .player_oracle_endpoints import router as player_oracle_router
-
 # -------- env --------
 APP_NAME = os.getenv("APP_NAME", "Pantheon of Oracles API")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -38,7 +36,14 @@ app.add_middleware(
     allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
 
-app.include_router(player_oracle_router)
+# Register the GPT player/oracle routes if available
+try:
+    from .player_oracle_endpoints import router as player_oracle_router  # type: ignore
+    app.include_router(player_oracle_router)
+except Exception as exc:
+    import logging
+
+    logging.warning(f"player_oracle_endpoints could not be loaded: {exc}")
 
 # -------- models --------
 class RegisterRequest(BaseModel):

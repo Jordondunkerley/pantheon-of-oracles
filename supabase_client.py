@@ -1,42 +1,89 @@
+"""
+Supabase helper utilities aligned with the new Pantheon schema.
+
+This module keeps secrets in the environment (matching ``api/main.py``) and
+provides convenience helpers for scripts/notebooks to create users and upsert
+player/oracle profiles without re-implementing the FastAPI validation logic.
+"""
 from supabase import create_client, Client
+from passlib.context import CryptContext
 from uuid import uuid4
+import os
+from typing import Dict, Any, Optional
 
-SUPABASE_URL = "https://mammtgndjoydbeeuehiw.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hbW10Z25kam95ZGJlZXVlaGl3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzQ1MzkzNCwiZXhwIjoyMDU5MDI5OTM0fQ.B6dgvr7DSFdjQvGAoTLLNXvLRBdd48aA0heg_aSdK2E"
+from dotenv import load_dotenv
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+load_dotenv()
 
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-def create_user(username, first_name, last_name, password):
-    user_id = str(uuid4())
-    data = {
-        "id": user_id,
-        "username": username,
-        "first_name": first_name,
-        "last_name": last_name,
-        "password": password
-    }
-    return supabase.table("users").insert(data).execute()
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    raise RuntimeError("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def save_astrology_profile(user_id, profile_json):
-    data = {
-        "id": str(uuid4()),
+def _get_user_id_by_email(email: str) -> Optional[str]:
+    res = supabase.table("users").select("id").eq("email", email).single().execute()
+    data = res.data or {}
+    return data.get("id") if data else None
+
+
+def create_user(email: str, password: str) -> Dict[str, Any]:
+    """Create a user in the "users" table using the hashed password schema."""
+    hashed = pwd_context.hash(password)
+    res = supabase.table("users").insert({"email": email, "password_hash": hashed}).execute()
+    if not res.data:
+        raise ValueError("User creation failed; check Supabase logs for details")
+    return res.data[0]
+
+
+def upsert_player_account(user_email: str, profile: Dict[str, Any]) -> Dict[str, Any]:
+    """Upsert a full player profile payload for the given user email."""
+    user_id = _get_user_id_by_email(user_email)
+    if not user_id:
+        raise ValueError("User not found for provided email")
+
+    player_id = profile.get("player_id") or f"player-{uuid4()}"
+    insert_data = {
         "user_id": user_id,
-        "profile_json": profile_json
+        "player_id": player_id,
+        "username": profile.get("username"),
+        "email": profile.get("email"),
+        "profile": profile,
     }
-    return supabase.table("astrology_profiles").insert(data).execute()
+    res = supabase.table("player_accounts").upsert(insert_data, on_conflict="player_id").execute()
+    return res.data[0] if res.data else insert_data
 
 
-def save_oracle(user_id, oracle_type, oracle_data):
-    data = {
-        "id": str(uuid4()),
+def upsert_oracle_profile(user_email: str, profile: Dict[str, Any]) -> Dict[str, Any]:
+    """Upsert an oracle profile payload for the given user email."""
+    user_id = _get_user_id_by_email(user_email)
+    if not user_id:
+        raise ValueError("User not found for provided email")
+
+    oracle_id = profile.get("oracle_id") or f"oracle-{uuid4()}"
+    insert_data = {
         "user_id": user_id,
-        "oracle_type": oracle_type,
-        "oracle_data": oracle_data
+        "oracle_id": oracle_id,
+        "oracle_name": profile.get("oracle_name") or profile.get("name"),
+        "archetype": profile.get("archetype"),
+        "profile": profile,
     }
-    return supabase.table("oracles").insert(data).execute()
+    res = supabase.table("oracle_profiles").upsert(insert_data, on_conflict="oracle_id").execute()
+    return res.data[0] if res.data else insert_data
 
 
-def get_user_oracles(user_id):
-    return supabase.table("oracles").select("*").eq("user_id", user_id).execute()
+def record_oracle_action(oracle_id: str, player_id: str, action: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Insert an action row tied to an oracle_id/player_id pair."""
+    res = supabase.table("oracle_actions").insert({
+        "oracle_id": oracle_id,
+        "player_id": player_id,
+        "action": action,
+        "metadata": metadata or {},
+    }).execute()
+    if not res.data:
+        raise ValueError("Failed to record oracle action")
+    return res.data[0]

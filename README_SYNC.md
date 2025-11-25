@@ -72,6 +72,11 @@ curl -s -X POST $BASE/gpt/oracle-action -H "Authorization: $TOKEN" \
 curl -s "$BASE/gpt/oracle-actions?limit=10" -H "Authorization: $TOKEN"
 # Filter to a specific action type (e.g., only ritual starts)
 curl -s "$BASE/gpt/oracle-actions?action=RITUAL_START&limit=5" -H "Authorization: $TOKEN"
+# Only pull actions created after a timestamp
+curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&limit=25" -H "Authorization: $TOKEN"
+
+# Aggregate counts per action type for your owned IDs
+curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z" -H "Authorization: $TOKEN"
 
 # Fetch seeded oracle catalog entries (requires at least one account for auth)
 curl -s "$BASE/gpt/oracle-catalog?limit=5" -H "Authorization: $TOKEN"
@@ -80,6 +85,8 @@ curl -s "$BASE/gpt/oracle-catalog?limit=5" -H "Authorization: $TOKEN"
 curl -s "$BASE/gpt/sync?include_actions=true&actions_limit=25" -H "Authorization: $TOKEN"
 # Sync only a specific action type when fetching history
 curl -s "$BASE/gpt/sync?include_actions=true&actions_filter=RITUAL_START&actions_limit=10" -H "Authorization: $TOKEN"
+# Sync only actions created after a timestamp
+curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
 ```
 
 Or run locally against Supabase using the helper script after seeding:
@@ -95,6 +102,9 @@ python scripts/purge_user_data.py --email you@example.com --delete-user
 
 # Inspect a user's oracle_actions with optional filters (service-role)
 python scripts/list_actions.py --email you@example.com --action RITUAL_START --limit 10
+
+# Summarize a user's action counts (service-role)
+python scripts/action_stats.py --email you@example.com --since 2024-10-01
 ```
 
 ## 7) Legacy code

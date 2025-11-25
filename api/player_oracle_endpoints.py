@@ -198,6 +198,7 @@ def _list_actions_for_owned(
     player_ids: set,
     limit: int,
     action: Optional[str] = None,
+    since: Optional[str] = None,
 ):
     """
     Fetch recent oracle_actions scoped to owned oracle/player IDs.
@@ -223,6 +224,9 @@ def _list_actions_for_owned(
     if action:
         query = query.eq("action", action)
 
+    if since:
+        query = query.gte("created_at", since)
+
     query = query.limit(capped_limit)
 
     res = query.execute()
@@ -234,6 +238,7 @@ def sync_player_data(
     include_actions: bool = False,
     actions_limit: int = 50,
     actions_filter: Optional[str] = None,
+    actions_since: Optional[str] = None,
     authorization: Optional[str] = Header(None),
 ):
     """
@@ -243,9 +248,10 @@ def sync_player_data(
     into a single call. It verifies the JWT, resolves the user's ID, and then
     retrieves both the player's account and list of oracles from Supabase. When
     ``include_actions`` is true, recent oracle_actions are also returned, capped
-    to 500 rows and optionally filtered by ``actions_filter`` (action name). This
-    allows the Pantheon GPT router to fetch all relevant data in one request,
-    enabling continuous syncing across sessions without manual imports.
+    to 500 rows and optionally filtered by ``actions_filter`` (action name) or
+    ``actions_since`` (ISO timestamp). This allows the Pantheon GPT router to
+    fetch all relevant data in one request, enabling continuous syncing across
+    sessions without manual imports.
     """
     user_email = require_auth(authorization)
     user_id = get_user_id_by_email(user_email)
@@ -264,6 +270,7 @@ def sync_player_data(
             owned_ids["player_ids"],
             actions_limit,
             actions_filter,
+            actions_since,
         )
     return {
         "ok": True,
@@ -319,6 +326,7 @@ def list_oracle_actions(
     oracle_id: Optional[str] = None,
     player_id: Optional[str] = None,
     action: Optional[str] = None,
+    since: Optional[str] = None,
     limit: int = 50,
     authorization: Optional[str] = Header(None),
 ):
@@ -328,7 +336,8 @@ def list_oracle_actions(
     Ownership is enforced by intersecting the requested ``oracle_id``/``player_id``
     with the caller's stored profiles. When no filters are provided, only actions
     tied to the user's own oracle IDs are returned. ``limit`` defaults to 50 and
-    is capped at 500. ``action`` can be supplied to filter by action name.
+    is capped at 500. ``action`` can be supplied to filter by action name, and
+    ``since`` can restrict results to recent entries via ``created_at``.
     """
 
     user_email = require_auth(authorization)
@@ -363,10 +372,70 @@ def list_oracle_actions(
     if action:
         query = query.eq("action", action)
 
+    if since:
+        query = query.gte("created_at", since)
+
     query = query.limit(capped_limit)
 
     res = query.execute()
     return {"ok": True, "actions": res.data or []}
+
+
+@router.get("/gpt/oracle-action-stats")
+def oracle_action_stats(
+    oracle_id: Optional[str] = None,
+    player_id: Optional[str] = None,
+    action: Optional[str] = None,
+    since: Optional[str] = None,
+    limit: int = 200,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Aggregate action counts for the authenticated user's oracle/player IDs.
+
+    Returns a simple count per action type drawn from ``oracle_actions`` after
+    enforcing ownership of the supplied IDs. ``since`` can restrict results to
+    recent activity (based on ``created_at`` timestamps), and ``limit`` caps the
+    number of rows fetched before aggregation (default 200, max 1000).
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    owned_ids = _get_owned_ids(user_id)
+
+    if oracle_id and oracle_id not in owned_ids["oracle_ids"]:
+        raise HTTPException(status_code=404, detail="Oracle not found for this user")
+    if player_id and player_id not in owned_ids["player_ids"]:
+        raise HTTPException(status_code=404, detail="Player account not found for this user")
+
+    capped_limit = min(limit if limit and limit > 0 else 200, 1000)
+
+    actions = _list_actions_for_owned(
+        owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
+        owned_ids["player_ids"] if not player_id else {player_id},
+        capped_limit,
+        action,
+        since,
+    )
+
+    counts: Dict[str, int] = {}
+    for row in actions:
+        key = row.get("action") or "UNKNOWN"
+        counts[key] = counts.get(key, 0) + 1
+
+    return {
+        "ok": True,
+        "total": len(actions),
+        "limit": capped_limit,
+        "since": since,
+        "action_counts": sorted(
+            [{"action": k, "count": v} for k, v in counts.items()],
+            key=lambda x: x["action"],
+        ),
+    }
 
 
 @router.get("/gpt/oracle-catalog")

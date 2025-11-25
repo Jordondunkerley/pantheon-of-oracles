@@ -135,6 +135,7 @@ def get_user_bundle(
     include_actions: bool = False,
     actions_limit: int = 50,
     actions_filter: Optional[str] = None,
+    actions_since: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Return player account, owned oracles, and optional recent actions for a user."""
 
@@ -151,6 +152,7 @@ def get_user_bundle(
             email,
             limit=actions_limit,
             action=actions_filter,
+            since=actions_since,
         )
 
     return {
@@ -166,6 +168,7 @@ def list_user_actions(
     oracle_id: Optional[str] = None,
     player_id: Optional[str] = None,
     action: Optional[str] = None,
+    since: Optional[str] = None,
     limit: int = 50,
 ) -> list[Dict[str, Any]]:
     """Return recent oracle_actions constrained to the user's owned IDs.
@@ -209,9 +212,53 @@ def list_user_actions(
     if action:
         query = query.eq("action", action)
 
+    if since:
+        query = query.gte("created_at", since)
+
     query = query.limit(capped_limit)
     res = query.execute()
     return res.data or []
+
+
+def summarize_user_actions(
+    email: str,
+    *,
+    oracle_id: Optional[str] = None,
+    player_id: Optional[str] = None,
+    action: Optional[str] = None,
+    since: Optional[str] = None,
+    limit: int = 200,
+) -> Dict[str, Any]:
+    """Aggregate action counts for a user's owned oracle/player IDs.
+
+    The helper reuses ``list_user_actions`` for ownership checks and filtering, then
+    computes a simple count per action type. ``limit`` caps the number of rows to
+    fetch before aggregation to avoid heavy queries.
+    """
+
+    rows = list_user_actions(
+        email,
+        oracle_id=oracle_id,
+        player_id=player_id,
+        action=action,
+        since=since,
+        limit=limit,
+    )
+
+    counts: Dict[str, int] = {}
+    for row in rows:
+        key = row.get("action") or "UNKNOWN"
+        counts[key] = counts.get(key, 0) + 1
+
+    return {
+        "total": len(rows),
+        "limit": limit,
+        "since": since,
+        "action_counts": sorted(
+            [{"action": k, "count": v} for k, v in counts.items()],
+            key=lambda x: x["action"],
+        ),
+    }
 
 
 def delete_user_bundle(

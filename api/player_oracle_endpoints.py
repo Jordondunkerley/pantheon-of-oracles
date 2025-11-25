@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Header, HTTPException
 from typing import Optional, Dict, Any
+from uuid import uuid4
 from jose import jwt, JWTError
 from supabase import create_client
 import os
@@ -13,6 +14,9 @@ JWT_SECRET = os.getenv("JWT_SECRET", "please-change-me")
 JWT_ALG = "HS256"
 
 # Initialize Supabase client
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set")
+
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 def require_auth(authorization: Optional[str]) -> str:
@@ -43,14 +47,29 @@ def get_user_id_by_email(email: str) -> Optional[str]:
 def create_player_account(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
     """
     Create or update a player account associated with the authenticated user.
+
+    The incoming payload is stored as a JSON profile so the Pantheon templates
+    (factions, stats, tokens, preferences) remain intact. A stable `player_id`
+    is generated when missing, enabling repeat upserts from the GPT router.
     """
     user_email = require_auth(authorization)
     user_id = get_user_id_by_email(user_email)
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
-    insert_data = {"user_id": user_id, **payload}
-    res = supabase.table("player_accounts").upsert(insert_data, on_conflict="user_id").execute()
-    return {"ok": True, "account": res.data}
+
+    player_id = payload.get("player_id") or f"player-{uuid4()}"
+    username = payload.get("username")
+    email = payload.get("email")
+
+    insert_data = {
+        "user_id": user_id,
+        "player_id": player_id,
+        "username": username,
+        "email": email,
+        "profile": payload,
+    }
+    res = supabase.table("player_accounts").upsert(insert_data, on_conflict="player_id").execute()
+    return {"ok": True, "account": res.data, "player_id": player_id}
 
 @router.get("/gpt/player-account")
 def get_player_account(authorization: Optional[str] = Header(None)):
@@ -68,14 +87,29 @@ def get_player_account(authorization: Optional[str] = Header(None)):
 def create_oracle(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
     """
     Create or update an oracle profile associated with the authenticated user.
+
+    All oracle metadata is preserved in the ``profile`` column so rising signs,
+    council state, fused creatures, and other nested attributes from the patch
+    templates are kept intact.
     """
     user_email = require_auth(authorization)
     user_id = get_user_id_by_email(user_email)
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
-    insert_data = {"user_id": user_id, **payload}
-    res = supabase.table("oracle_profiles").upsert(insert_data, on_conflict="id").execute()
-    return {"ok": True, "oracle": res.data}
+
+    oracle_id = payload.get("oracle_id") or f"oracle-{uuid4()}"
+    oracle_name = payload.get("oracle_name") or payload.get("name")
+    archetype = payload.get("archetype")
+
+    insert_data = {
+        "user_id": user_id,
+        "oracle_id": oracle_id,
+        "oracle_name": oracle_name,
+        "archetype": archetype,
+        "profile": payload,
+    }
+    res = supabase.table("oracle_profiles").upsert(insert_data, on_conflict="oracle_id").execute()
+    return {"ok": True, "oracle": res.data, "oracle_id": oracle_id}
 
 @router.get("/gpt/my-oracles")
 def get_my_oracles(authorization: Optional[str] = Header(None)):

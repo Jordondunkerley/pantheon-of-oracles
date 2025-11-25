@@ -1,4 +1,11 @@
 
+"""
+Legacy FastAPI entrypoint kept for compatibility with older deployments.
+
+New development should target ``api/main.py``. This file now relies solely on
+environment variables to avoid leaking secrets in source control.
+"""
+
 from fastapi import FastAPI, HTTPException, Request, Header
 from pydantic import BaseModel
 from typing import Optional
@@ -7,9 +14,12 @@ import pytz, os
 from supabase import create_client
 
 # === CONFIG ===
-API_KEY = "J&h^fvAc*gH!aS#ba@PL#iuW&D11J"
-SUPABASE_URL = os.getenv("SUPABASE_URL") or "https://mammtgndjoydbeeuehiw.supabase.co"
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hbW10Z25kam95ZGJlZXVlaGl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NTM5MzQsImV4cCI6MjA1OTAyOTkzNH0.VPseSq4UpYA3NJfq6wmjVkqfmOpsIFyPM--4lmN8hx4"
+API_KEY = os.getenv("PANTHEON_GPT_SECRET")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+if not API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("Set PANTHEON_GPT_SECRET, SUPABASE_URL, and SUPABASE_SERVICE_KEY/ROLE_KEY")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 

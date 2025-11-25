@@ -7,6 +7,10 @@
 
 ## 2) DB schema
 Apply `supabase/migrations/20250903_init.sql` in the Supabase SQL editor (or CLI).
+This creates the core auth/oracle tables plus `player_accounts` and
+`oracle_profiles`, which preserve the full JSON payloads from the Pantheon
+templates so GPT syncing can store every nested field (factions, stats, visual
+overlays, etc.).
 
 ## 3) Seed from GPT patches
 Run twice (once per file) locally or in a job:

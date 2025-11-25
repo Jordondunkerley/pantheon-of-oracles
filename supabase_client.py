@@ -25,9 +25,14 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def _get_user_record(email: str) -> Optional[Dict[str, Any]]:
+    """Return the full user row for the given email, if it exists."""
+    res = supabase.table("users").select("id,email,password_hash").eq("email", email).single().execute()
+    return res.data if res.data else None
+
+
 def _get_user_id_by_email(email: str) -> Optional[str]:
-    res = supabase.table("users").select("id").eq("email", email).single().execute()
-    data = res.data or {}
+    data = _get_user_record(email) or {}
     return data.get("id") if data else None
 
 
@@ -38,6 +43,14 @@ def create_user(email: str, password: str) -> Dict[str, Any]:
     if not res.data:
         raise ValueError("User creation failed; check Supabase logs for details")
     return res.data[0]
+
+
+def get_or_create_user(email: str, password: str) -> Dict[str, Any]:
+    """Return an existing user record or create a new one with the provided password."""
+    existing = _get_user_record(email)
+    if existing:
+        return existing
+    return create_user(email, password)
 
 
 def upsert_player_account(user_email: str, profile: Dict[str, Any]) -> Dict[str, Any]:

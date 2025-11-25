@@ -24,6 +24,20 @@ export PATCHES_PATH="./Patches 26-41 – Pantheon of Oracles GPT.JSON"
 python scripts/seed_oracles.py
 ```
 
+### Seed a demo player + oracle
+Use the shared templates to create a user with full JSON payloads stored in
+`player_accounts` and `oracle_profiles`:
+```
+python create_account.py --email you@example.com --password pass123 --allow-existing
+python scripts/bootstrap_templates.py \
+  --email you@example.com \
+  --password pass123 \
+  --player "Player Account Template.json" \
+  --oracle "Oracle Profile Template.JSON"
+```
+Both scripts respect `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` so they align
+with the FastAPI defaults.
+
 ## 4) Run locally
 ```
 uvicorn api.main:app --reload

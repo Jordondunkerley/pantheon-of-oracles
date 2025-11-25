@@ -756,3 +756,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Build battle pass progression with server-side XP/mission grants; allow mission rerolls and anti-frustration mechanics for blocked objectives.
   - Provide transparent UI for free vs. premium tracks, refund policies, and region-specific legal text; ensure restores handle delayed purchases and platform downtimes.
   - Pre-stage cosmetic rewards in non-public branches and run lighting/performance checks on low-end devices; attach rollback plans and compensation macros for mis-awarded tiers.
+
+### Modding, tools, and creator pipelines
+- **Sandboxing and security**
+  - Require signed mods/add-ons with checksum validation, sandboxed execution, and strict API surface limits; block file system/network access by default and log sensitive syscalls.
+  - Provide safe data schemas for mod persistence with forward-compatible migrations; enforce quota and rate limits to prevent server load spikes.
+  - Ship crash/compatibility scanners that flag unstable mods before matchmaking; add safe mode boot to disable offending mods and preserve player saves.
+- **Versioning and distribution**
+  - Standardize semantic versioning for game and mod APIs; expose compatibility matrices in UI and block mismatched clients from joining authoritative sessions.
+  - Run CI signing/publishing for mods and internal tools with review gates, malware scanning, and provenance stamps; mirror artifacts per region for latency and compliance.
+  - Offer rollback channels and deprecation warnings when APIs change; keep telemetry on mod uptake, crashes, and abusive patterns to inform removals.
+- **Creator tools and content QA**
+  - Provide WYSIWYG editors with performance budgets, navmesh previews, and accessibility checks (color contrast, caption completeness) baked into export validation.
+  - Add automated linting for scripts, dialogue tokens, localization keys, and animation events; surface human-in-the-loop approvals for risky content (violence, IP, UGC).
+  - Include submission checklists for lighting bake quality, spawn safety, and encounter balance; support branch-based collaboration with merge conflict resolution for scene graphs.
+
+### Competitive seasons, PvP rulesets, and fairness operations
+- **Ranked ladders and MMR**
+  - Define transparent rank tiers, decay rules, and placement calibration with protections against smurfing and boosting; rate-limit duo/party MMR deltas to reduce exploitation.
+  - Capture per-match proofs (inputs, pings, loadouts, modifiers) for dispute resolution; store match hashes for integrity audits and tournament reviews.
+  - Provide cross-platform latency normalization and server selection policies; surface pre-match warnings for high ping/packet loss with graceful rematch options.
+- **Playlist governance and rotations**
+  - Curate rotating playlists with clear rule summaries, map pools, and banned/featured items; validate each rotation for load distribution and crash regressions.
+  - Implement feature flags for experimental PvP modifiers with shard-aware rollout and instant rollback; test spectator modes, replays, and broadcast overlays for stability.
+  - Enforce anti-grief controls (friendly-fire toggles, spawn protection, AFK/kick logic) tuned per mode; track abuse reports with fast CS/GM escalation paths.
+- **Anti-cheat and enforcement**
+  - Combine client attestation, server-side validation, heuristic detection, and periodic challenges; keep fallback “trusted” builds for platform review while protecting live integrity.
+  - Maintain ban/penalty ladders with region-aware policies, appeal workflows, and communication templates; snapshot inventories and ratings pre-action for accurate rollbacks.
+  - Run chaos/soak tests against anti-cheat updates in canary regions before global deploy; monitor false positive rates and auto-pause rollouts if error budgets are exceeded.
+
+### Live narrative arcs, expansions, and content drops
+- **Episodic delivery and gating**
+  - Plan narrative beats with pre-patch data staging and unlock tokens; support offline-safe gating to avoid corruption during downloads or outages.
+  - Add catch-up recaps, codex entries, and quest state reconciliation for returning players; localize branching dialogue with lip-sync and font fallback validation per platform.
+  - Track completion funnels and abandonment reasons to tune difficulty spikes; wire telemetry to content flags so failed steps can be hotfixed without full client updates.
+- **Expansion rollout and migration**
+  - Use phased unlocks (prologue, region access, endgame features) with shard-aware load shedding; rehearse migration scripts in staging with representative save corpora.
+  - Validate cross-expansion entitlements (mounts, cosmetics, boosts) with regrant tools; keep downgrade and rollback plans for corrupted progression or missing assets.
+  - Preflight cinematic/audio packages for device storage and streaming constraints; include fallback media for low bandwidth and accessibility (captions, descriptive audio).
+- **Content lifecycle and sunsetting**
+  - Define sunsetting policies for outdated quests, loot, or seasonal mechanics with compensation plans; archive states for dispute resolution and legacy achievements.
+  - Add deprecation warnings and time-limited conversions for currencies or items; keep migration scripts idempotent and auditable.
+  - Maintain lore/canon integrity checks when rotating content out; ensure UI, maps, and NPCs handle removed nodes gracefully without soft-locks.

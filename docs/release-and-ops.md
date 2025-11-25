@@ -115,12 +115,41 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Publish support contact paths in-game and on store listings; include billing dispute guidance. Triage macros for frequent issues (purchase fails, account lockout, crash on launch) linked to runbooks.
   - Maintain fraud/abuse detection signals (chargeback spikes, suspicious inventory changes) and pair with rate-limit/flag actions. Share weekly summaries with release owners.
   - Track sentiment and crash/regression feedback from reviews/beta channels; feed into release quality gates and incident retros.
+- **Save integrity & migration safety**
+  - Catalog save schemas per platform and version; require migration scripts with idempotency and rollback paths for corrupted rows.
+  - Validate cross-progression scenarios (mobile ↔ Steam) in CI with fixtures covering divergent schema versions and partial sync failures.
+  - Run checksum/manifest validation on cloud saves; block promotion if corruption or deserialization spikes appear in dashboards after a rollout.
 
 ### Post-release evaluations and hygiene
 - Run 24h/72h/7d post-release reviews capturing crash-free rate trends, purchase funnel health, matchmaking KPIs, and support ticket deltas by platform/branch.
 - Maintain a “rollback/forward” decision record per incident with the build ID, flags toggled, and customer impact; close the loop with tests and alerts updated.
 - Audit feature flag usage monthly; delete stale flags, document dependencies, and ensure defaults are safe before removing guardrails.
 - Refresh dashboards/alerts ownership as teams change; validate synthetic probes for purchase/login still align with current flows.
+
+### Multiplayer, social, and anti-cheat readiness
+- **Matchmaking and session stability**
+  - Define target match times, fairness constraints, and backfill rules per playlist; test degradations (reduced MMR strictness) for low-population regions.
+  - Verify reconnect flows preserve party and voice state across mobile/Steam and handle host migration where applicable.
+  - Capture packet loss/latency distributions by region and platform; gate rollouts if spikes correlate to new builds or backend deployments.
+- **Social and communications safety**
+  - Ensure reporting/blocking works from chat, voice, and friend lists; log moderation events with user IDs, evidence hashes, and responder actions.
+  - Provide parental controls for chat/voice; confirm push-to-talk defaults and profanity filters respect age/region policies.
+  - Document escalation criteria for harassment/cheating reports and how to preserve evidence while respecting privacy retention rules.
+- **Cheat/tamper resilience**
+  - Validate anti-cheat integrations (e.g., VAC/EAC/BE) per platform build; confirm debuggers/cheat tools are blocked where policy allows and note any platform review caveats.
+  - Monitor suspicious patterns (aim variance outliers, speed hacks, inventory duplication) with alerts tied to ban workflows and customer support scripts.
+  - Keep a rollback-and-ban playbook that outlines communication templates, appeal handling, and flag-only vs. actioned enforcement levels.
+
+### Experimentation, release toggles, and rollout control
+- Maintain a registry of feature flags and experiments with owners, guardrails, and kill-switch behaviors; require defaults that fail safe when configs are missing.
+- Enforce experiment ethics and privacy: anonymize cohorts, cap exposure, and publish stop conditions. Document how user consent is handled for analytics-heavy trials.
+- For staged rollouts, record exposure percentages by platform/branch and automate auto-pause on regression thresholds (crash rate, purchase drop, matchmaking failures).
+- Add runbooks for rapidly disabling experiments on specific platforms (e.g., Steam only) without redeploying, and verify the behavior during playtests.
+
+### Store review resilience and rejection handling
+- Maintain a “store response kit” with pre-written explanations for permissions (microphone, location, Bluetooth), account deletion, and payment flows.
+- Track review submission timestamps, reviewer notes, and quick triage owners; commit to 24h fixes for metadata-only rejections and pre-approved code patches for common blockers.
+- Validate entitlement/config toggles that can be adjusted without resubmission (e.g., TestFlight review notes, Steam branch descriptions) and document when a new build is mandatory.
 
 ### Audit trails, compliance evidence, and approvals
 - **Evidence gathering**

@@ -487,6 +487,48 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Add safety nets for platform overlays and mobile backgrounding (pause timers, AI take-over, safe logout zones) with clear UI indicators.
   - Keep reconnection budgets and cooldowns configurable; alert on abnormal reconnect loops that indicate server or client regressions.
 
+### AI behavior, factions, and spawn ecology
+- **Enemy archetypes and behaviors**
+  - Define archetype playbooks (bruiser, ranged, support, controller, summoner) with readable tells and counterplay per input type; ensure no single archetype hard-counters touch users due to aim demands.
+  - Maintain AI decision budgets for low-tier mobile and Steam Deck; cap perception checks, pathfinding frequency, and ability evaluations. Add deterministic seeds for replay/debug builds.
+  - Document boss/miniboss AI override rules (enrage, soft enrage, retreat) and safe-fail states when scripts desync; include telemetry for stuck/idle AI.
+- **Factions and territory control**
+  - Map faction hostility, alliances, and territory ownership with escalation thresholds; ensure patrols respect stealth states, disguises, and reputation tiers.
+  - Track world-state changes (captured forts, cleared camps) with persistence/expiry and cross-progression reconciliation; add rollback scripts for contested states.
+  - Validate civilian/ally AI behavior during events (evacuation routes, reaction to combat) with accessibility-friendly telegraphs for crowd panic or stampede hazards.
+- **Spawn, leashing, and population control**
+  - Set spawn tables per biome/time/weather with anti-overlap rules to avoid overwhelming mobile clients; include LOD and despawn thresholds for performance.
+  - Define leash distances, reset timers, and anti-kite protections; ensure boss leashes respect instancing boundaries and teleports that do not strand players.
+  - Monitor density and respawn telemetry to prevent farm loops and empty zones; add dynamic scaling that throttles or boosts spawns based on concurrency and device tier.
+
+### Exploration, puzzles, and world events
+- **Puzzle integrity and accessibility**
+  - Catalog puzzle types (logic, timing, spatial) with hint cadence, cooldowns, and cooperative rules; ensure controller/touch equivalents exist for precision inputs.
+  - Add anti-cheat/anti-skip checks for puzzle triggers (server-validated inputs, timer windows) and record partial progress for reconnect safety.
+  - Provide accessibility variants (colorblind-safe glyphs, audio captions for sound cues, slower timing modes) without breaking reward parity.
+- **Exploration loops and collectibles**
+  - Track exploration milestones (landmarks discovered, vista triggers, codex scans) with per-platform telemetry; prevent duplicate rewards via checksum manifests.
+  - Gate traversal aids (grapple points, glides, portals) behind progression while keeping first-time user paths clear; include fallbacks for offline/low-perf modes.
+  - Add dynamic hints for missed objectives that respect player preference toggles and do not spoil puzzle solutions; localize clue language carefully.
+- **Dynamic events and roaming encounters**
+  - Define event templates (caravans, world bosses, invasion waves) with spawn windows, broadcast radius, and safe shutdown when branch toggles change.
+  - Ensure rewards scale with participation and contribution metrics; guard against cross-platform exploitation (tag-and-run, AFK participation) with minimum engagement checks.
+  - Provide event UIs with countdowns, phases, and failure states; test cancellation/rollback behaviors when branches revert or hotfixes apply mid-event.
+
+### Achievements, collections, and codex fidelity
+- **Achievement design and validation**
+  - Maintain platform achievement/entitlement parity (Game Center, Play Games, Steam Achievements) with server validation to prevent spoofing; include offline queues with replay limits.
+  - Define retroactive unlock rules after bugs or rollbacks; provide CS scripts for manual grants with audit trails and platform receipt checks.
+  - Track achievement rarity and failure points; set alerts for sudden unlock spikes or drops that signal regressions or exploit attempts.
+- **Collections, lore, and codex**
+  - Structure codex entries with sources, spoiler flags, and localization rules; ensure text/audio/imagery comply with age ratings and seizure guidelines.
+  - Validate collection progress (pets, mounts, titles, cards) against server authority; include duplicate protection, reclaim flows, and cross-progression merges.
+  - Provide UI search/filter/bookmark tools with accessibility shortcuts; capture telemetry for discoverability pain points and update FTUE tips accordingly.
+- **Leaderboards and competitive integrity**
+  - Offer cross-platform leaderboards with anti-cheat validation, rate limits, and shadow bans for suspicious entries; include “last verified build” metadata.
+  - Define seasonal/weekly reset rules and prize delivery with rollback-ready grant logs; support region/playlist segmentation to protect low-population queues.
+  - Add privacy options (opt-out, anonymized names) and parental controls; ensure appeals and dispute processes are documented for rank adjustments.
+
 ## SRE / Ops Playbooks
 - **Monitoring & observability**
   - Emit RED/USE metrics per service: request rate, errors, latency; CPU/memory saturation; queue lengths; DB/redis health. Capture client-side crash rates segmented by platform/branch.

@@ -43,6 +43,49 @@ def get_user_id_by_email(email: str) -> Optional[str]:
     data = res.data or {}
     return data.get("id") if data else None
 
+
+def _get_player_by_player_id(player_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    res = (
+        supabase.table("player_accounts")
+        .select("*")
+        .eq("player_id", player_id)
+        .eq("user_id", user_id)
+        .single()
+        .execute()
+    )
+    return res.data
+
+
+def _get_oracle_profile(oracle_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    res = (
+        supabase.table("oracle_profiles")
+        .select("*")
+        .eq("oracle_id", oracle_id)
+        .eq("user_id", user_id)
+        .single()
+        .execute()
+    )
+    return res.data
+
+
+def _ensure_oracle_row(oracle_id: str, oracle_name: Optional[str], archetype: Optional[str]) -> None:
+    """
+    Guarantee there is an ``oracles`` row that matches the externally visible oracle_id.
+
+    ``oracle_actions.oracle_id`` has a foreign key reference to ``oracles.id``. To keep
+    inserts consistent, we upsert into ``oracles`` with the user-facing oracle_id so
+    action logging always succeeds.
+    """
+    supabase.table("oracles").upsert(
+        {
+            "id": oracle_id,
+            "code": oracle_name or oracle_id,
+            "name": oracle_name or oracle_id,
+            "role": archetype,
+        },
+        on_conflict="code",
+    ).execute()
+
 @router.post("/gpt/create-player-account")
 def create_player_account(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
     """
@@ -57,9 +100,9 @@ def create_player_account(payload: Dict[str, Any], authorization: Optional[str] 
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
 
-    player_id = payload.get("player_id") or f"player-{uuid4()}"
+    player_id = payload.get("player_id") or str(uuid4())
     username = payload.get("username")
-    email = payload.get("email")
+    email = payload.get("email") or user_email
 
     insert_data = {
         "user_id": user_id,
@@ -97,7 +140,7 @@ def create_oracle(payload: Dict[str, Any], authorization: Optional[str] = Header
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
 
-    oracle_id = payload.get("oracle_id") or f"oracle-{uuid4()}"
+    oracle_id = payload.get("oracle_id") or str(uuid4())
     oracle_name = payload.get("oracle_name") or payload.get("name")
     archetype = payload.get("archetype")
 
@@ -109,6 +152,10 @@ def create_oracle(payload: Dict[str, Any], authorization: Optional[str] = Header
         "profile": payload,
     }
     res = supabase.table("oracle_profiles").upsert(insert_data, on_conflict="oracle_id").execute()
+
+    # Ensure the oracle is also registered in the base "oracles" table so action logging works
+    _ensure_oracle_row(oracle_id, oracle_name, archetype)
+
     return {"ok": True, "oracle": res.data, "oracle_id": oracle_id}
 
 @router.get("/gpt/my-oracles")
@@ -148,4 +195,45 @@ def sync_player_data(authorization: Optional[str] = Header(None)):
         "account": acc_res.data,
         "oracles": orc_res.data,
     }
+
+
+@router.post("/gpt/oracle-action")
+def log_oracle_action(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
+    """
+    Record an oracle action after verifying ownership of the supplied player/oracle IDs.
+
+    The incoming payload should include ``oracle_id``, ``player_id``, ``action``, and
+    optional ``metadata``. We confirm that both IDs belong to the authenticated user
+    before inserting into ``oracle_actions``.
+    """
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    oracle_id = payload.get("oracle_id")
+    player_id = payload.get("player_id")
+    action = payload.get("action")
+    metadata = payload.get("metadata") or {}
+
+    if not oracle_id or not player_id or not action:
+        raise HTTPException(status_code=400, detail="oracle_id, player_id, and action are required")
+
+    if not _get_oracle_profile(oracle_id, user_id):
+        raise HTTPException(status_code=404, detail="Oracle not found for this user")
+    if not _get_player_by_player_id(player_id, user_id):
+        raise HTTPException(status_code=404, detail="Player account not found for this user")
+
+    # Ensure oracle exists in `oracles` for FK constraint safety
+    _ensure_oracle_row(oracle_id, None, None)
+
+    res = (
+        supabase.table("oracle_actions")
+        .insert({"oracle_id": oracle_id, "player_id": player_id, "action": action, "metadata": metadata})
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=400, detail="Failed to record action")
+
+    return {"ok": True, "action": res.data[0]}
 

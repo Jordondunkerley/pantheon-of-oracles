@@ -59,7 +59,7 @@ def upsert_player_account(user_email: str, profile: Dict[str, Any]) -> Dict[str,
     if not user_id:
         raise ValueError("User not found for provided email")
 
-    player_id = profile.get("player_id") or f"player-{uuid4()}"
+    player_id = profile.get("player_id") or str(uuid4())
     insert_data = {
         "user_id": user_id,
         "player_id": player_id,
@@ -77,7 +77,7 @@ def upsert_oracle_profile(user_email: str, profile: Dict[str, Any]) -> Dict[str,
     if not user_id:
         raise ValueError("User not found for provided email")
 
-    oracle_id = profile.get("oracle_id") or f"oracle-{uuid4()}"
+    oracle_id = profile.get("oracle_id") or str(uuid4())
     insert_data = {
         "user_id": user_id,
         "oracle_id": oracle_id,
@@ -86,6 +86,17 @@ def upsert_oracle_profile(user_email: str, profile: Dict[str, Any]) -> Dict[str,
         "profile": profile,
     }
     res = supabase.table("oracle_profiles").upsert(insert_data, on_conflict="oracle_id").execute()
+
+    # Keep the base oracles catalog in sync so oracle_actions inserts do not violate FKs
+    supabase.table("oracles").upsert(
+        {
+            "id": oracle_id,
+            "code": insert_data.get("oracle_name") or oracle_id,
+            "name": insert_data.get("oracle_name") or oracle_id,
+            "role": insert_data.get("archetype"),
+        },
+        on_conflict="code",
+    ).execute()
     return res.data[0] if res.data else insert_data
 
 

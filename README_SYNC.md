@@ -36,7 +36,8 @@ python scripts/bootstrap_templates.py \
   --oracle "Oracle Profile Template.JSON"
 ```
 Both scripts respect `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` so they align
-with the FastAPI defaults.
+with the FastAPI defaults. Oracle IDs are now plain UUID strings to keep action
+logging compatible with the `oracle_actions` foreign key.
 
 ## 4) Run locally
 ```
@@ -61,6 +62,11 @@ TOKEN="Bearer <JWT>"
 curl -s -X POST $BASE/gpt/update-oracle -H "Authorization: $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"oracle_id":"<uuid>","player_id":"jordondunkerley","action":"TEST","metadata":{"ok":true}}'
+
+# Record an action while verifying that the oracle/player belong to the caller
+curl -s -X POST $BASE/gpt/oracle-action -H "Authorization: $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"oracle_id":"<uuid>","player_id":"<player_uuid>","action":"RITUAL_START"}'
 ```
 
 ## 7) Legacy code

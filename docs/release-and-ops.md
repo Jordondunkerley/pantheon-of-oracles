@@ -630,3 +630,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Surface active modifiers in HUD/tooltips/loading screens with localization and accessibility cues; archive prior modifier states for dispute handling.
   - Document how modifiers interact with achievements, leaderboards, and seasonal progression; prevent unintended unlocks during experimental rotations.
   - Include monitoring for modifier-related crash/latency deltas and annotate dashboards/alerts with the current ruleset to reduce MTTR.
+
+### Player expression, UGC, and sharing
+- **Creation tools and safety**
+  - Provide in-game editors (housing layouts, emblems, photo/replay cameras) with performance budgets, undo/redo history, and sandbox validation to prevent invalid placements or memory spikes.
+  - Enforce content filters for text, images, and shapes; integrate pre-submission scans for offensive or IP-violating content and route escalations to moderation with audit logs.
+  - Include publish/retract flows with visibility settings (private/friends/public), age-appropriate defaults, and player reporting that links to offender/asset IDs.
+- **Discovery and curation**
+  - Build browse/search with tag taxonomies, locale filters, and accessibility cues (subtitle availability, colorblind-friendly palettes); add rate limits and bot-detection for likes/downloads.
+  - Feature slots and rotating spotlights should be manually curatable with rollback controls; document how featured assets affect matchmaking or instance performance.
+  - Support cross-platform sharing policies (Steam Workshop/UGC TOS) with clear ownership/licensing prompts and removal SLAs for DMCA/privacy requests.
+- **Collaboration and attribution**
+  - Allow co-authoring with permission hierarchies (edit/view/publish) and change history; protect against grief edits with owner-only revert and publish gates.
+  - Track dependencies (prefabs, custom audio, decals) and warn before deleting shared assets; ensure downloads are deterministic and versioned for replays.
+  - Provide in-game and store-facing attribution (creator names, co-authors, music licensing) and anonymized options for minors where required by policy.
+
+### Live narrative arcs and seasonal structure
+- **Story cadence and state management**
+  - Plan season/episode cadences with clear entry points, catch-up quests, and recap UI; ensure branching states reconcile across platforms and cloud saves without deadlocks.
+  - Provide narrative fail-safes (auto-complete after N failed attempts, accessibility variants) and off-ramps to avoid blocking combat/economy progression.
+  - Version dialogue, cinematics, and VO with locale bundles; validate lip-sync and subtitle timing on low-end devices and streaming conditions.
+- **Seasonal artifacts and migrations**
+  - Define which currencies, cosmetics, achievements, and quest flags persist between seasons versus reset; document migration scripts and player-facing summaries.
+  - Archive prior-season states for support disputes and replay theater; attach rollback playbooks if migrations corrupt quest progression or entitlements.
+  - Validate battle pass or seasonal track integrations with daily/weekly challenges, ensuring anti-FOMO guardrails and parental controls are respected across stores.
+- **Event delivery and pacing**
+  - Schedule limited-time world changes (weather shifts, faction invasions) with testable toggles and staged rollouts; include telemetry to measure server/latency impacts.
+  - Gate narrative beats behind reliability checks (crash thresholds, matchmaking health) and allow pause/skip of live beats during incidents without soft-locking players.
+  - Coordinate marketing/comms with in-game banners, patch notes, and community updates; ensure localization completeness and imagery approvals for each platform.
+
+### Hardcore modes, ladders, and challenge variants
+- **Mode rules and fairness**
+  - Define hardcore/permadeath rulesets with clear loss conditions, safe zones, and grace periods for disconnects; log cause-of-death details for dispute resolution.
+  - Enforce anti-cheat and anti-exploit checks tuned for ladder modes; isolate character inventories/progression to prevent cross-contamination with standard modes.
+  - Provide reconnection/rollback policies for server crashes or verified platform outages; avoid punitive losses due to client updates or store-side maintenance.
+- **Ranking, seasons, and rewards**
+  - Build ladders with transparent scoring formulas, decay rules, and anti-boosting checks (party MMR gaps, repeated opponent detection); expose audit-friendly snapshots.
+  - Rotate ladder seasons with predictable calendars, provisional placements, and demotion protection; ensure rewards are claimable across platforms with entitlement proofs.
+  - Include moderation hooks to remove illegitimate entries and re-issue rewards; publish post-season integrity reports to reinforce player trust.
+- **Spectating and broadcasting**
+  - Offer spectate/replay modes with streamer-safe privacy (chat filters, hide player IDs) and performance caps; validate camera paths and HUD readability on mobile/Steam Deck.
+  - Provide data APIs or overlays with rate limits and attribution; coordinate with anti-cheat to mask sensitive telemetry that could aid exploits.
+  - Support tournament ops with admin tools for pauses, remakes, seed locking, and prize validation; scriptable tools should log authority actions for later review.

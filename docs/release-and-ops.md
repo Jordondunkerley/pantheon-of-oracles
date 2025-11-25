@@ -260,6 +260,33 @@ This document summarizes store requirements, deployment automation, and SRE play
 - **Post-event hygiene**
   - Clean up expired flags/configs, revoke temporary permissions, and archive event telemetry for re-use. Document any post-event migrations or economy adjustments.
 
+### Game systems readiness and balance operations
+- **Core loop validation**
+  - Verify progression loops (quests, boss gates, crafting, PvP unlocks) are completable without blockers on all platforms and accounts types; script smoke tests in CI for mainline quest paths.
+  - Confirm tutorial/FTUE gating is resilient to reconnects, crashes, or device switches; ensure save checkpoints and rewards are idempotent.
+- **Economy and monetization integrity**
+  - Model currency faucets/sinks and inflation controls; set KPIs (daily/weekly earnings, spend velocity, retention-linked bonuses) and alert on anomalies by platform/branch.
+  - Validate price ladders, regional pricing, bundles, and subscription perks against design docs and store policies; include safeguards for accidental over-discounting or stackable perks.
+  - Add exploit detection for dupe loops, time-travel (clock changes), and offline accrual abuse. Gate economy-impacting configs behind server flags with rollback.
+- **Content cadence and pipelines**
+  - Maintain a content release calendar (quests, cosmetics, balance patches) with review/QA checkpoints; track asset dependencies and localization deadlines.
+  - Require authoring/playtest guidelines for new content types (boss mechanics, puzzles, PvP maps) with acceptance criteria and failure states captured in runbooks.
+- **Balance change execution**
+  - Ship balance changes via config flags with staged rollout and experiment support; include automatic reversion if KPI regressions exceed thresholds (win rate deltas, abandon rates, queue times).
+  - Publish balance rationale and patch notes templates for transparency; coordinate with CS/Community for expectation management and appeal handling.
+  - Keep canonical balance baselines (e.g., target TTK, DPS ranges, heal throughput) in version control; require diffs reviewed by design and analytics before release.
+
+### Player lifecycle, retention, and fairness safeguards
+- **Retention systems**
+  - Validate daily/weekly challenges, streaks, and battle passes for edge cases (time zones, skips, partial progress); ensure expired rewards are revoked or converted per design.
+  - Instrument churn/return funnels and cohort tagging by platform/branch to inform release go/no-go when retention-sensitive changes ship.
+- **Match fairness and ranking**
+  - Document ranking/MMR systems (decay rules, placement matches, party modifiers) with simulation evidence; alert on skew by region/platform.
+  - Ensure cross-play fairness controls (input-based matchmaking, aim assist toggles) are configurable per platform and surfaced in settings.
+- **Player-facing trust signals**
+  - Maintain transparent policy pages for bans/suspensions, dispute steps, and data export; keep in-game links updated with store metadata.
+  - Provide on-device privacy controls for telemetry categories and communication preferences; localize consent text and ensure accessibility compliance.
+
 ## SRE / Ops Playbooks
 - **Monitoring & observability**
   - Emit RED/USE metrics per service: request rate, errors, latency; CPU/memory saturation; queue lengths; DB/redis health. Capture client-side crash rates segmented by platform/branch.

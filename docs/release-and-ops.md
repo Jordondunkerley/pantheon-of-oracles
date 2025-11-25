@@ -714,3 +714,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Persist party state across sessions/time zones with clear ownership of leader settings (difficulty, privacy, voice); store last-known objectives for smooth resume.
   - Record party composition and role data in telemetry to debug matchmaking fairness and encounter balance; include platform identifiers to isolate device-specific issues.
   - Provide visibility into feature flag differences per party member (new modifier pilots, economy experiments) and gracefully fall back to the lowest-common ruleset when compatibility fails.
+
+### Faction reputation, crime, and justice systems
+- **Reputation integrity**
+  - Keep a single source of truth for faction reputation across platforms with server-authoritative updates; snapshot reputation deltas for rollback and CS adjustments.
+  - Rate-limit reputation gains/losses per activity to prevent farming or grief spikes; validate multi-character exploits and shared-account scenarios.
+  - Provide clear UI telemetry for reputation changes (why/how much) with accessibility cues; ensure localization supports faction-specific terms and honorifics.
+- **Crime, bounty, and law enforcement**
+  - Define crime categories (theft, assault, trespass) with intent checks and accidental-friendly buffers; separate PvE, PvP, and social hub rulesets.
+  - Implement bounty and guard responses with predictable escalation ladders; ensure guards are performance-budgeted and respect collision/navmesh on low-end devices.
+  - Offer appeal/forgiveness flows (CS pardons, mentor overrides, restitution payments) with audit trails; protect new players from permanent lockouts.
+- **Justice events and edge cases**
+  - Simulate mass-participation justice events (public trials, jailbreaks) with shard-aware scaling and rejoin protections; log offender/victim metadata for dispute resolution.
+  - Add anti-grief controls for duels and arena crimes (consent prompts, cooldowns, safe spectators); gate PvP punishment rules by playlist and platform.
+  - Expose sandbox flags for testing crime/justice modifiers on non-public branches before enabling globally.
+
+### Survival, crafting upkeep, and environmental hazards
+- **Hunger, thirst, and temperature systems**
+  - Tune depletion curves with platform-aware UI prompts and haptics; prevent rapid oscillation that forces micromanagement on controllers or touch.
+  - Provide safe zones and consumable fallbacks for accessibility; allow CS/GM restoration for accidental death cascades caused by latency or desync.
+  - Log survival tick deltas and damage sources for audit and balancing; integrate with analytics to detect bottlenecks or grief loops.
+- **Environmental hazards and sheltering**
+  - Standardize hazard tags (poison, burn, freeze, radiation) with mitigation rules; confirm VFX readability under low-light and colorblind filters.
+  - Require shelter/building placement validation to prevent exploits (safe spots in boss rooms, out-of-bounds immunity); support rollback of invalid structures.
+  - Script weather and disaster events (sandstorms, blizzards) with staged intensity and recovery timers; keep device performance budgets for particle-heavy effects.
+- **Upkeep and maintenance**
+  - Attach durability/maintenance to crafted structures with server-driven decay; provide alerts, grace periods, and batch repair tools to reduce churn.
+  - Validate co-op ownership and permissions for shared bases; include eviction and transfer flows with logs to resolve disputes.
+  - Enforce resource sinks and upkeep costs to stabilize economies; alert when repair/material consumption diverges from targets.
+
+### Meta-progression, challenges, and seasonal battle passes
+- **Account-level progression**
+  - Define meta tracks (season XP, prestige, renown) with deterministic rewards and platform-consistent pacing; prevent double-dipping via cross-save exploits.
+  - Ensure unlocks are entitlement-bound with receipt validation; add regrant scripts for failed claims and audit reports for CS adjustments.
+  - Offer catch-up mechanics and weekly caps to reduce grind spikes; publish schedules and expiry dates clearly in all locales.
+- **Challenges and achievements**
+  - Curate rotating challenge lists with difficulty tiers and accessibility variants; test completion triggers against edge cases (disconnects, crashes, offline mode).
+  - Record proof points (activity IDs, loadout, modifiers) for achievements to investigate abuse; throttle progress when anomalies spike.
+  - Support feature flags for experimental challenge rules; validate that leaderboards and achievements handle new modifiers without corrupting historic scores.
+- **Battle passes and reward delivery**
+  - Build battle pass progression with server-side XP/mission grants; allow mission rerolls and anti-frustration mechanics for blocked objectives.
+  - Provide transparent UI for free vs. premium tracks, refund policies, and region-specific legal text; ensure restores handle delayed purchases and platform downtimes.
+  - Pre-stage cosmetic rewards in non-public branches and run lighting/performance checks on low-end devices; attach rollback plans and compensation macros for mis-awarded tiers.

@@ -86,6 +86,20 @@ This document summarizes store requirements, deployment automation, and SRE play
 - Go/no-go meeting template: status of blockers, crash/ANR rates from latest build, SLO trendlines, support ticket volume, and rollout plan with staged percentages.
 - Release calendar: avoid peak traffic windows; freeze windows documented with approvers. Include back-out window and engineer on-duty for hotfixes.
 
+### Performance, compatibility, and resilience validation
+- **Device/OS coverage**
+  - Maintain an explicit test matrix per platform: iOS (latest -2 major, low-memory devices), Android (API level latest -3, Play integrity, OEM overlays), Steam (Windows/Linux/macOS GPU/driver spread, Steam Deck if supported).
+  - Run real-device smoke tests for cold-start time, login, matchmaking, purchases, and first-session tutorial; record median/p95 metrics by device tier and app version.
+  - Track platform-specific ANR/crash regressions; gate releases on crash-free rates and session start success for each store build number/Steam branch.
+- **Network and edge-case resilience**
+  - Exercise offline/poor-network behaviors (packet loss, latency injection) for login, purchases, and save sync; ensure retries and user-facing messaging are consistent across platforms.
+  - Validate timeouts, backoffs, and idempotent purchase receipts; confirm graceful handling of expired tokens and revoked entitlements.
+  - Soak-test backend services with long-lived sessions and reconnect storms; capture memory/FD leaks and GC pressure under load.
+- **Graphics/performance**
+  - Collect FPS/frametime histograms per graphics preset and thermal throttling conditions; ensure defaults auto-tune based on device tiers and Steam Deck profiles.
+  - Verify shader pre-warm and asset streaming to avoid frame spikes on first load; test background/foreground transitions for mobile platform policies.
+  - Capture GPU/CPU budgets for new features; require variance analysis before enabling on lower-tier devices. Record mitigations (reduced effects, capped crowd sizes).
+
 ### Release communications and support operations
 - Publish release comms templates (patch notes, downtime announcements) with localized variants; include impacted platforms/branches and expected rollout schedule.
 - Align customer support shifts with rollout windows; confirm macros and diagnostics are updated for the new build (log collection steps, device info prompts, refund guidance).
@@ -107,6 +121,16 @@ This document summarizes store requirements, deployment automation, and SRE play
 - Maintain a “rollback/forward” decision record per incident with the build ID, flags toggled, and customer impact; close the loop with tests and alerts updated.
 - Audit feature flag usage monthly; delete stale flags, document dependencies, and ensure defaults are safe before removing guardrails.
 - Refresh dashboards/alerts ownership as teams change; validate synthetic probes for purchase/login still align with current flows.
+
+### Audit trails, compliance evidence, and approvals
+- **Evidence gathering**
+  - Store immutable artifacts for each release: CI logs, build provenance, SBOMs, vulnerability scans, notarization outputs, store listing diffs, and reviewer notes.
+  - Keep approvals with timestamps and owners for security, legal, and product sign-offs; include rationale for risk acceptances and temporary exceptions.
+  - Archive incident timelines, rollback decisions, and postmortems with links to the exact build IDs and feature flag states at time of impact.
+- **Change management**
+  - Map releases to tickets/change requests with audit-friendly summaries; ensure on-call is aware of the change window and blast radius.
+  - Track data residency controls (regional shards, CDN/geofencing) and encryption export declarations; keep a register of restricted regions and mitigation steps.
+  - Run quarterly reviews of access to signing keys, store accounts, and CI secrets; verify least-privilege and session logging are enforced.
 
 ## SRE / Ops Playbooks
 - **Monitoring & observability**

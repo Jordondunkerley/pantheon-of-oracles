@@ -73,12 +73,18 @@ curl -s "$BASE/gpt/oracle-actions?limit=10" -H "Authorization: $TOKEN"
 
 # Fetch seeded oracle catalog entries (requires at least one account for auth)
 curl -s "$BASE/gpt/oracle-catalog?limit=5" -H "Authorization: $TOKEN"
+
+# Pull a combined bundle (account, oracles, recent actions)
+curl -s "$BASE/gpt/sync?include_actions=true&actions_limit=25" -H "Authorization: $TOKEN"
 ```
 
 Or run locally against Supabase using the helper script after seeding:
 
 ```
 python scripts/list_oracles.py --limit 5
+
+# Export a user's bundle using service-role credentials
+python scripts/export_user_data.py --email you@example.com --include-actions --actions-limit 25
 ```
 
 ## 7) Legacy code

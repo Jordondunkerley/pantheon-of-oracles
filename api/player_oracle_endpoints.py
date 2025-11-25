@@ -193,8 +193,43 @@ def get_my_oracles(authorization: Optional[str] = Header(None)):
     return {"ok": True, "oracles": res.data}
 
 
+def _list_actions_for_owned(
+    oracle_ids: set,
+    player_ids: set,
+    limit: int,
+):
+    """
+    Fetch recent oracle_actions scoped to owned oracle/player IDs.
+
+    This helper mirrors the ownership protections in ``/gpt/oracle-actions``
+    by constraining the Supabase query to the caller's oracle_ids. Player
+    filtering is optional but constrained to known player_ids when present.
+    """
+
+    capped_limit = limit if limit and limit > 0 else 50
+    capped_limit = min(capped_limit, 500)
+
+    if not oracle_ids:
+        return []
+
+    query = supabase.table("oracle_actions").select("*").order("created_at", desc=True)
+    query = query.in_("oracle_id", list(oracle_ids))
+
+    if player_ids:
+        query = query.in_("player_id", list(player_ids))
+
+    query = query.limit(capped_limit)
+
+    res = query.execute()
+    return res.data or []
+
+
 @router.get("/gpt/sync")
-def sync_player_data(authorization: Optional[str] = Header(None)):
+def sync_player_data(
+    include_actions: bool = False,
+    actions_limit: int = 50,
+    authorization: Optional[str] = Header(None),
+):
     """
     Return the authenticated user's player account and all oracle profiles.
 
@@ -212,10 +247,16 @@ def sync_player_data(authorization: Optional[str] = Header(None)):
     acc_res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
     # Fetch all oracles owned by the user
     orc_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
+
+    actions = []
+    if include_actions:
+        owned_ids = _get_owned_ids(user_id)
+        actions = _list_actions_for_owned(owned_ids["oracle_ids"], owned_ids["player_ids"], actions_limit)
     return {
         "ok": True,
         "account": acc_res.data,
         "oracles": orc_res.data,
+        "actions": actions,
     }
 
 

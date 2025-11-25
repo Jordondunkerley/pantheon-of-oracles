@@ -128,3 +128,51 @@ def list_oracles(code: Optional[str] = None, role: Optional[str] = None, limit: 
     query = query.limit(capped_limit)
     res = query.execute()
     return res.data or []
+
+
+def get_user_bundle(
+    email: str,
+    include_actions: bool = False,
+    actions_limit: int = 50,
+) -> Dict[str, Any]:
+    """Return player account, owned oracles, and optional recent actions for a user."""
+
+    user_id = _get_user_id_by_email(email)
+    if not user_id:
+        raise ValueError("User not found for provided email")
+
+    player_res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
+    oracles_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
+
+    actions = []
+    if include_actions:
+        capped_limit = actions_limit if actions_limit and actions_limit > 0 else 50
+        capped_limit = min(capped_limit, 500)
+
+        oracle_ids = [row["oracle_id"] for row in (oracles_res.data or []) if row.get("oracle_id")]
+        player_ids = []
+        if player_res.data:
+            pid = player_res.data.get("player_id")
+            if pid:
+                player_ids.append(pid)
+
+        if oracle_ids:
+            query = (
+                supabase.table("oracle_actions")
+                .select("*")
+                .in_("oracle_id", oracle_ids)
+                .order("created_at", desc=True)
+                .limit(capped_limit)
+            )
+
+            if player_ids:
+                query = query.in_("player_id", player_ids)
+
+            actions_res = query.execute()
+            actions = actions_res.data or []
+
+    return {
+        "account": player_res.data,
+        "oracles": oracles_res.data or [],
+        "actions": actions,
+    }

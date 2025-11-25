@@ -924,3 +924,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Implement divine favor/reputation tracks with transparent decay and boon/ban lists; include CS override flows and audit logs for every sanction or pardon.
   - Tie governance changes to world-state updates, map modifiers, and NPC behavior with preview modes and rollback-ready flag layers per platform branch.
   - Ensure messaging templates are localized and accessible for sanctions/rewards; require opt-in/opt-out toggles for broadcasting major celestial decisions to social feeds.
+
+### Dreamwalking, astral projection, and subconscious trials
+- **Dream realm access and instancing**
+  - Gate dreamwalk entries with consumables or rest states to avoid abuse; bind dream instances to deterministic seeds with shard/build IDs for reproducibility and rollback.
+  - Provide safe wake/exit flows for disconnects or alarms; ensure mobile/Steam clients resync state without duplicating rewards or skipping fail conditions.
+  - Capture sensory accessibility settings (brightness, motion) specifically for dream sequences and enforce performance budgets on VFX-heavy surreal spaces.
+- **Mind-link rituals and co-op safety**
+  - Require consent prompts and privacy controls for shared dream/mind-link sessions; log participants, roles, and permissions for dispute resolution.
+  - Add safeguards against grief (forced wake, camera hijack, input inversion) with cooldowns and CS override scripts; validate that modifiers cannot bypass anti-cheat.
+  - Support asynchronous guidance (player ghosts, oracle hints) with rate limits and clear attribution; invalidate outdated guidance after patches to prevent exploits.
+- **Subconscious rewards and narrative impacts**
+  - Tie dream rewards to introspection challenges, not raw combat; use capped insight currencies and configurable pity timers to prevent farming exploits.
+  - Record narrative state deltas and personality traits influenced by dreams; provide rollback/compensation paths for mis-applied traits or dialogue branches.
+  - Localize dream symbolism and audio with cultural sensitivity reviews; offer spoiler-safe summaries for players who skip dream content or have accessibility needs.
+
+### Celestial tournaments, prophecy circuits, and spectacle operations
+- **Tournament structure and fairness**
+  - Define bracket/swiss/gauntlet formats with regional shards and latency-aware matchmaking; enforce version locks and deterministic seeds for mirrored matches.
+  - Publish rulebooks covering eligible builds, banned artifacts, and disconnect policies; rehearse adjudication steps with build ID capture and replay verification.
+  - Provide accessibility variants for timing-heavy events (input buffering, extended telegraphs) and ensure spectatorship overlays meet performance and privacy budgets.
+- **Prophecy circuit rotations and scoring**
+  - Rotate prophecy challenges with transparent schedules, catch-up mechanics, and shard-aware load balancing; auto-pause circuits on anomaly detection.
+  - Standardize scoring (time, efficiency, omen clarity) with anti-cheese checks; expose live dashboards and CS macros for contest disputes and compensation.
+  - Store completion proofs (replays, omen draws, participant metadata) with retention policies and export controls for esports integrity and privacy compliance.
+- **Broadcasting, rewards, and safety nets**
+  - Implement broadcast pipelines with delay options, content filtering, and opt-in privacy toggles; validate on mobile/Steam overlays for readability.
+  - Govern prize pools with entitlement audits, tax/regional compliance notes, and backup payout paths if store APIs fail; log distribution with rollback steps.
+  - Provide post-event stability checks (economy impact, matchmaking health, crash/latency trends) before re-enabling standard playlists or new circuits.
+
+### Oracle academies, training grounds, and mastery ladders
+- **Onboarding, drills, and mentorship**
+  - Build interactive lessons for classes/archetypes with accessibility variants and device-aware input tips; require completion proofs before ranked/raid access.
+  - Pair new players with mentors via opt-in queues; log mentorship interactions, rewards, and abuse flags with CS override and appeal paths.
+  - Add practice dummies, sandbox arenas, and simulated raids with costless resets; ensure loadouts/consumables revert after training to avoid economy leakage.
+- **Skill mastery and certification**
+  - Define certification tiers with timed assessments and platform-specific latency allowances; store attempt history with build IDs and anti-cheat validation.
+  - Offer mastery reruns with decaying rewards to prevent farming; provide respec vouchers linked to audit trails when changing class specializations.
+  - Instrument drills for accuracy, reaction, and decision quality; feed telemetry into matchmaking confidence and tutorial recommendation systems.
+- **Curriculum operations and content safety**
+  - Version curricula with change logs, regression tests, and localization updates; include safeguards so outdated drills do not conflict with current mechanics.
+  - Validate that training tooltips, damage numbers, and AI behavior match live builds; add automated snapshots that diff tooltips/stats between patches.
+  - Publish academy schedules, live instructor events, and reward rotations with rollback/cancellation playbooks and shard-aware notifications.

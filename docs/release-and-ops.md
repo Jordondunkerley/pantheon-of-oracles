@@ -840,3 +840,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Implement regional price bands and tax/fee modifiers to control inflation; monitor cross-region arbitrage and adjust trade restrictions as needed.
   - Provide platform-aware notification and delivery systems for completed orders/sales; ensure offline/mobile clients receive reliable updates without duping.
   - Publish economic health dashboards (supply/demand, price indices, crafting success rates) with alert thresholds that gate release go/no-go when drifting.
+
+### Mythic trials, boons, and celestial alignment
+- **Trial design and fairness**
+  - Define mythic trial tiers with lockouts, entry costs, and telegraphed mechanics; add assisted modes and practice arenas for accessibility without affecting leaderboards.
+  - Capture per-attempt telemetry (damage sources, failure reasons, modifier loadouts) to identify balance issues; gate leaderboard eligibility on integrity checks and stable latency.
+  - Keep deterministic seed/version metadata for trial arenas to reproduce bugs and rollback unsafe modifiers across Steam/mobile builds.
+- **Boons, blessings, and corruption**
+  - Curate pantheon boons with stacking rules, synergies, and decay/cleanse mechanics; require rollback-friendly deltas for stat changes and durability impacts.
+  - Add corruption/curse systems with clear player-facing warnings, cure quests, and safety nets to avoid save-locking; log forced cures and CS overrides.
+  - Localize lore snippets, incantations, and ritual UI with accessibility-friendly timing windows and input alternatives across platforms.
+- **Progression, rewards, and seasonal cadence**
+  - Maintain seasonal trial rotations with shard-aware load balancing and opt-in catch-up mechanics; test auto-rotation scripts with canary branches before global enable.
+  - Track reward distribution, duplicate protection, and pity timers; include compensation scripts for bad drops or progression blockers.
+  - Publish rules of engagement and exploit amnesty windows when trial mechanics change; store completion proofs for dispute resolution and esports adjudication.
+
+### Strongholds, sieges, and settlement governance
+- **Construction and upkeep**
+  - Define settlement tiers, zoning rules, and resource upkeep; validate placement against navmesh, visibility/readability, and accessibility constraints.
+  - Add collaborative build permissions with audit logs (materials contributed, edits, demolitions); provide rollback snapshots and restoration scripts for grief or bugs.
+  - Simulate power/water/logistics where applicable with performance budgets; rehearse evacuation and safe-mode downgrades for patch rollouts.
+- **Siege operations and defense**
+  - Script siege phases (buildup, assault, breach, recapture) with clear telegraphs, spawn throttling, and anti-exploit checks on damage sources and placement glitches.
+  - Provide counter-siege tools (repair crews, suppression fire, shield walls) with cooldown governance; monitor server tick/latency and auto-pause if integrity thresholds are exceeded.
+  - Keep fair-loss policies for defenders/attackers with insurance-like restitution for lost items or structures; log outcomes with shard/branch metadata for audits.
+- **Governance, taxation, and reputation**
+  - Implement election/appointment systems with anti-fraud measures (account age, MFA, region restrictions) and recall mechanisms; record votes with privacy protections.
+  - Define taxation/fees for markets, housing plots, and utilities with rate caps; expose dashboards for residents and publish change logs for transparency.
+  - Add civic reputation tracks and law enforcement policies with configurable penalties; include CS override paths and rollback procedures for wrongful actions.
+
+### Planar travel, portals, and rift containment
+- **Portal creation and safety**
+  - Gate portal crafting with rare materials, cooldowns, and location checks to avoid soft-locks; provide safe anchor selection and mobile-friendly prompts.
+  - Validate portal stability under latency/packet loss and cross-platform sessions; auto-close or reroute unstable portals with player-safe fallbacks.
+  - Track portal/anchor metadata (seed, shard, owner, expiration) for reproducing issues and cleaning up orphaned links after crashes or rollbacks.
+- **Rift events and containment**
+  - Script rift escalation phases with spawn budgets, damage caps, and co-op scaling; add accessibility variants for visual effects and input density.
+  - Monitor participation telemetry, failure modes, and reward anomalies; auto-pause rotations when out-of-family metrics appear, and issue compensation bundles.
+  - Provide containment tools (seals, barriers, warding rituals) with clear cooldowns and grief protections; log usage for anti-exploit review.
+- **Inter-planar economies and progression**
+  - Define cross-planar currencies, trade restrictions, and conversion sinks to avoid inflation; require clear UI for exchange rates and fees.
+  - Keep progression segregation where needed (no trivial farming via low-risk planes); add daily/weekly caps and mission gates per shard/branch.
+  - Document rollback rules for planar items and travel tokens; ensure cloud saves reconcile planar state safely across Steam/mobile clients.

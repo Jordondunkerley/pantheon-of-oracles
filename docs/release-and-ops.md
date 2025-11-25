@@ -169,10 +169,37 @@ This document summarizes store requirements, deployment automation, and SRE play
 - Audit analytics/crash pipelines quarterly for drop rates, sampling changes, and SDK version drift; publish known caveats alongside dashboards to reduce misreads.
 - Align retention and deletion policies across client telemetry, chat logs, and support tickets; verify automation for redaction and data subject requests.
 
+### Third-party dependency resilience and vendor readiness
+- **Monitoring and contracts**
+  - Track status pages and SLAs for payment providers, auth, chat/voice, CDN, and analytics. Configure alert routing to include vendor escalation contacts.
+  - Maintain a contract register with usage caps, overage pricing, and regional restrictions; pre-approve failover vendors for critical paths.
+- **Failover patterns**
+  - Build read-through caching or circuit breakers for dependency outages; define safe degradation modes (e.g., disable cosmetics store, queue purchases) with clear UX copy.
+  - Validate retry/backoff per dependency to avoid thundering herds; document how mobile clients surface partial failures vs. blocking errors.
+- **Compliance and data residency**
+  - Record where third-party data is stored/processed; ensure SDKs respect regional data boundaries and include them in data maps.
+  - Run annual vendor security reviews and confirm breach notification timelines align with our incident response SLAs.
+
 ### Store review resilience and rejection handling
 - Maintain a “store response kit” with pre-written explanations for permissions (microphone, location, Bluetooth), account deletion, and payment flows.
 - Track review submission timestamps, reviewer notes, and quick triage owners; commit to 24h fixes for metadata-only rejections and pre-approved code patches for common blockers.
 - Validate entitlement/config toggles that can be adjusted without resubmission (e.g., TestFlight review notes, Steam branch descriptions) and document when a new build is mandatory.
+
+### Engineering quality gates and lab management
+- **CI quality bars**
+  - Enforce unit/integration/E2E coverage thresholds per platform; fail builds on flaky-test detection and require owners to quarantine and fix before promotion.
+  - Include static analysis (SwiftLint/Detekt/ESLint), asset size checks, and shader/packfile validation in preflight jobs; publish artifacts to dashboards for trend tracking.
+  - Require reproducible build stamps (git SHA, feature flags, device tier) in app settings/about screens for rapid incident correlation.
+- **Device labs and playtests**
+  - Maintain a rotating device lab matrix (top OEMs, OS N-2, low-memory tiers, Steam Deck) with automated scheduling for nightly runs; record failures with video/screenshot capture.
+  - Run structured playtests before submissions with scripted flows (first-time user, restore purchases, cross-progression, offline mode) and attach findings to release tickets.
+  - Validate controller/peripheral updates in lab runs after firmware/driver updates; keep a registry of known-good versions for reproducibility.
+
+### Secrets, config, and environment hygiene
+- Separate production, staging, and test configs with strict access controls; block production credential use in lower environments via CI policies.
+- Use short-lived tokens and hardware-backed key storage where possible (Secure Enclave/Keystore/keychain); rotate store/API credentials on a schedule with audit trails.
+- Maintain configuration schemas with defaults and validation in CI; add config drift detection between environments (e.g., feature flags, payment gateways, telemetry endpoints).
+- Document break-glass access with approval/expiration, and log all accesses to signing keys, store accounts, and admin consoles.
 
 ### Operational training and preparedness
 - Maintain onboarding guides for release captains, on-call responders, and store submission owners; include tool access, credential retrieval, and mock drills.

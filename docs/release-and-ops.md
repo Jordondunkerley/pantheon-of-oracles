@@ -287,6 +287,44 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Maintain transparent policy pages for bans/suspensions, dispute steps, and data export; keep in-game links updated with store metadata.
   - Provide on-device privacy controls for telemetry categories and communication preferences; localize consent text and ensure accessibility compliance.
 
+### Game systems design: combat, classes, world state
+- **Combat feel and readability**
+  - Lock target animation budgets (windup, recovery, hitstop) and VFX readability standards to keep encounters legible on mobile screens and Steam Deck. Include color-blind-safe damage/healing cues and camera shake budgets.
+  - Define invulnerability/armor rules, stagger/poise thresholds, and crowd-control diminishing returns; expose these in debug HUDs for playtesters and capture telemetry on status effect uptime.
+  - Validate controller and touch input parity for combos, dodges, and ability wheel usage; record per-input-device failure rates and adjust aim assist curves by platform.
+- **Classes, archetypes, and roles**
+  - Maintain a roster sheet with class identities (e.g., Vanguard, Mystic, Ranger) that maps to party roles (tank, support, DPS) and outlines unique traversal/utility hooks (zipline anchors, aura beacons). Keep talent trees under a point budget to avoid infinite stacking.
+  - Document class ability cooldown formulas, resource generation, and ultimates; track patch history per ability with target DPS/HPS envelopes to keep parity across platforms and controller layouts.
+  - Provide onboarding quests per archetype to teach role expectations (aggro control, cleanse timing, burst windows) with success/failure analytics by platform and input method.
+- **World state and persistence**
+  - Define shard rules (regional shards vs. megaserver) and cross-play visibility limits (platform-only chats, input-based PvP pools). Record decay rules for housing/guild territories to prevent abandoned ownership.
+  - Track dynamic world events (sieges, anomalies, rotating vendors) with schedules, spawn conditions, and rollback toggles. Ensure state replication tolerates packet loss and offers reconciliation for mobile reconnects.
+  - Maintain lore canon and questline dependencies in a graph to prevent soft-locks; include skip/recap options for returning players and archive cutscene triggers in telemetry.
+- **Enemy AI and encounter scripting**
+  - Ship AI behavior trees with tunable aggression, leashing, and focus-fire rules; gate high-compute behaviors on mobile low-tier devices while keeping boss mechanics intact. Capture perf metrics for navmesh, pathfinding, and perception loops.
+  - Provide encounter design briefs with tells, phase transitions, and safe zones; require fail-safe handling for interrupted scripts (disconnects, host migration, Steam overlay focus loss).
+  - Build a spawn budget per arena with concurrency caps to avoid frame drops and network congestion. Include anti-kite and anti-cheese checks (reset timers, tether mechanics) and document overrides used in events.
+- **Exploration, traversal, and puzzles**
+  - Map traversal verbs (climb, glide, mantle, grappling) to stamina/charge systems with fallbacks for touch vs. controller inputs. Validate collision and ledge detection on device matrices.
+  - Catalog puzzle templates (sigils, pressure plates, rhythm, timing) with accessibility variants and hint systems. Include anti-sequence-break safeguards and reset logic after disconnects.
+  - Ensure minimap/world map coherence with fog-of-war states, quest pins, and co-op visibility. Add offline-ready breadcrumbing for mobile with cached tiles.
+- **Crafting, loot, and progression economy**
+  - Balance loot tables with pity timers, duplicate protection, and platform-specific drop-rate disclosures where required. Keep deterministic sources for progression-critical items (boss keys, class unlocks).
+  - Define crafting trees with material sinks and time gates; include queue systems that survive app suspends and Steam offline mode. Track recipe unlock sources to avoid deadlocks.
+  - Require audit trails for loot seed generation and randomness sources; document anti-abuse protections for re-rolling via clock changes or branch hopping.
+- **Social structures and cooperative play**
+  - Implement guild/clan frameworks with rank/permission matrices, contribution logs, and inactivity pruning; include moderation hooks for names/emblems.
+  - Design co-op roles (healer/support benefits, link mechanics, combo finishers) with clear UI prompts and failure messaging. Verify voice/text callouts have localized quick-chat equivalents.
+  - Provide shared bases or hubs with instancing rules, decoration budgets, and cross-platform persistence. Add visitor permissions and social privacy controls.
+- **Competitive modes and anti-toxicity**
+  - Define PvP modes (duels, arenas, battlegrounds) with MMR bands, map rotations, and seasonal reset rules. Add anti-smurf and anti-boosting checks (party MMR caps, decay, queue restrictions).
+  - Calibrate matchmaking inputs for input method, latency, and platform to avoid unfair pairings; log disputes and appeal outcomes to tune enforcement.
+  - Publish a seasonal integrity report (ban counts, exploit fixes, leaderboard adjustments) to maintain player trust; archive evidence for contested bans.
+- **Live tuning and telemetry**
+  - Add per-ability/per-encounter telemetry (hit rate, dodge success, deaths by mechanic) with platform splits to guide tuning. Require patch notes to cite telemetry findings.
+  - Stage live-tuning controls for drop rates, boss health, and spawn density with audit logs and rollback toggles; test in sandboxes before exposing to production branches.
+  - Set experiment guardrails for game systems (new class mechanics, traversal buffs) with capped exposure and automatic rollback on fairness or stability regressions.
+
 ## SRE / Ops Playbooks
 - **Monitoring & observability**
   - Emit RED/USE metrics per service: request rate, errors, latency; CPU/memory saturation; queue lengths; DB/redis health. Capture client-side crash rates segmented by platform/branch.

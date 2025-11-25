@@ -2,6 +2,10 @@
 
 This repository powers the multiplayer astrology-based game experience across Discord, GPT, and future platforms.
 
+## 🚀 Release planning
+
+See [`docs/release-plan.md`](docs/release-plan.md) for milestone goals (Alpha → GA), deliverables per stage (UI/UX, matchmaking, monetization, accessibility/localization, store compliance), and the QA strategy that gates each phase.
+
 ## 🛰 GPT API Router
 
 A new backend service has been added for full cross-platform command execution between ChatGPT and your multiplayer system.

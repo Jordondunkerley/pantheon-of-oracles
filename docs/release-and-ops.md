@@ -146,10 +146,38 @@ This document summarizes store requirements, deployment automation, and SRE play
 - For staged rollouts, record exposure percentages by platform/branch and automate auto-pause on regression thresholds (crash rate, purchase drop, matchmaking failures).
 - Add runbooks for rapidly disabling experiments on specific platforms (e.g., Steam only) without redeploying, and verify the behavior during playtests.
 
+### Platform hardware and peripheral readiness
+- **Controllers and input**
+  - Validate MFi, DualShock/DualSense, Xbox, and Steam Input mappings; ship default layouts and in-game remapping with per-platform glyphs. Confirm haptics, adaptive triggers, and gyro when enabled.
+  - Ensure accessibility modes remain usable with controllers (e.g., menu navigation, hold vs. toggle interactions) and that on-screen prompts match connected devices.
+- **Device matrices and performance tiers**
+  - Maintain tiered device lists (low/medium/high) with FPS/thermal targets and fallback graphics presets; document feature gates for low-memory or older GPUs.
+  - Test background/foreground transitions, battery/performance modes, and windowed/fullscreen behavior (Steam Deck/Big Picture) for stability and UI scaling.
+- **Network and edge scenarios**
+  - Exercise captive portals, IPv6, NAT types, and high-latency/packet-loss profiles. Capture metrics for lobby connectivity, voice quality, and inventory synchronization under these conditions.
+  - Validate offline/airplane-mode behaviors (e.g., save queues, entitlement caching) with clear messaging and graceful retry policies per platform.
+
+### Chaos, disaster recovery, and state restoration
+- Run periodic chaos drills targeting backend dependencies (DB, cache, payments, identity, chat) with clear rollback and failover steps; record expected vs. actual blast radius.
+- Keep disaster recovery runbooks with RPO/RTO per service, secondary region activation steps, DNS/traffic-shift procedures, and data integrity validation after failover.
+- Document save-state and entitlement restoration flows after outages; ensure partial writes or duplicated purchases can be reconciled with deterministic scripts and customer support macros.
+- Include tabletop exercises for "store outage during release" and "Steam branch promotion failure" with decision trees for pausing rollouts and communicating to players.
+
+### Data governance and observability quality
+- Maintain data classification tags across logs, events, and metrics; enforce schema validation in telemetry pipelines and reject PII in disallowed channels.
+- Track dashboard/alert ownership with change control: require PR reviews for metric definition edits, alert threshold changes, and new PII-bearing dimensions.
+- Audit analytics/crash pipelines quarterly for drop rates, sampling changes, and SDK version drift; publish known caveats alongside dashboards to reduce misreads.
+- Align retention and deletion policies across client telemetry, chat logs, and support tickets; verify automation for redaction and data subject requests.
+
 ### Store review resilience and rejection handling
 - Maintain a “store response kit” with pre-written explanations for permissions (microphone, location, Bluetooth), account deletion, and payment flows.
 - Track review submission timestamps, reviewer notes, and quick triage owners; commit to 24h fixes for metadata-only rejections and pre-approved code patches for common blockers.
 - Validate entitlement/config toggles that can be adjusted without resubmission (e.g., TestFlight review notes, Steam branch descriptions) and document when a new build is mandatory.
+
+### Operational training and preparedness
+- Maintain onboarding guides for release captains, on-call responders, and store submission owners; include tool access, credential retrieval, and mock drills.
+- Schedule quarterly joint exercises between release engineering, QA, and customer support to practice rollback/feature-flag kill flows and Steam branch reversions.
+- Track runbook coverage and freshness with an inventory (scenario → owner → last review date); fail readiness checks if critical paths lack tested runbooks.
 
 ### Audit trails, compliance evidence, and approvals
 - **Evidence gathering**

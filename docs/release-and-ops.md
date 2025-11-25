@@ -882,3 +882,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Define cross-planar currencies, trade restrictions, and conversion sinks to avoid inflation; require clear UI for exchange rates and fees.
   - Keep progression segregation where needed (no trivial farming via low-risk planes); add daily/weekly caps and mission gates per shard/branch.
   - Document rollback rules for planar items and travel tokens; ensure cloud saves reconcile planar state safely across Steam/mobile clients.
+
+### Celestial omens, prophecy, and oracle councils
+- **Prophecy generation and validation**
+  - Generate omens through deterministic seeds tied to celestial events; expose audit logs for omen draws and prevent rerolls via account/device fingerprinting.
+  - Calibrate prophecy difficulty and time horizons with player level bands; add accessibility-friendly prompts and alternate paths for complex rituals.
+  - Capture completion evidence (dialogue choices, ritual timings, group composition) to validate rewards and allow dispute resolution without exposing spoilers.
+- **Oracle councils and deliberation**
+  - Design council sessions with structured turn-taking, vote/augury mechanics, and voice/text parity; support reconnect/rejoin flows and session logs for moderation.
+  - Add cooldowns and reputation gates for council influence to prevent brigading; include CS override and rollback tools for fraudulent resolutions.
+  - Provide localized ceremonial UI/VO with captions and haptics; ensure cross-platform timing windows align so console/mobile players can react fairly.
+- **Foresight rewards and narrative hooks**
+  - Bind prophecy outcomes to questline branches, world-state nudges, and cosmetic prestige; require compensation/rollback scripts for incorrect or bugged revelations.
+  - Publish omen clarity standards (contrast, iconography, timing) and add practice/sandbox rituals for new players without impacting leaderboards.
+  - Track prophecy economy health (rarity burn, shard sinks, reroll tokens) and auto-throttle drop rates when inflation or exploits emerge.
+
+### Temporal anomalies, chronicle archives, and replay safety
+- **Time-bending mechanics**
+  - Gate time reversal/slow/skip powers behind charges, cooldowns, and instance-only scopes; enforce authoritative server state to prevent dupes or state drift.
+  - Record pre/post state snapshots for timeline rewinds with cost/eligibility rules; include rollback-friendly deltas and client UI that warns about irreversible actions.
+  - Simulate latency/packet-loss edge cases for time-based abilities on mobile/Steam; ensure camera/UI remains readable during speed shifts with accessibility alternatives.
+- **Chronicle archives and ghosts**
+  - Store ghost runs/replays with signed hashes, build IDs, and input streams for fair leaderboards; expose download/verification tools for esports adjudication.
+  - Add privacy controls for shared replays and opt-outs per platform; enforce retention policies and redaction of chat/PII in archives.
+  - Provide training/coach modes that use ghosts with throttled hints; ensure no advantage is gained from outdated builds or exploitative paths by invalidating mismatched versions.
+- **Paradox prevention and disaster recovery**
+  - Detect paradox conditions (duplicate quest states, conflicting flags) after rewinds/time-skips; auto-heal with server-side reconciliation and player-safe messaging.
+  - Run chaos drills on backup/restore of chronicle data; validate that rewinds do not bypass anti-cheat, commerce, or entitlement logs.
+  - Publish clear rollback policies for failed time-based features, including compensation bundles and shard-aware pause/disablement controls.
+
+### Divine avatars, relic guardians, and celestial governance
+- **Avatar manifestation and control**
+  - Define avatar summon rules, duration, and control handoff between players and AI; add safety rails for disconnects so AI control defaults to defensive states.
+  - Budget particle/lighting/haptics for avatar events across platforms with accessibility toggles; profile performance on low-end devices and cloud streaming builds.
+  - Track avatar actions with authoritative logs (kills, buffs, terrain changes) tied to shard/build IDs for dispute resolution and rollback.
+- **Relic guardians and world impact**
+  - Design guardian encounters with telegraphs, immunity phases, and anti-cheese checks (ledge pulls, stun-locks); validate drop tables and binding rules against exploitation.
+  - Monitor spawn intervals, pathing safety, and co-op scaling; auto-pause guardians if death rates or completion times drift out of budgets.
+  - Provide recovery flows if guardians bug or trap players (failsafe teleports, rescue beacons); store instance seeds for reproduction and QA triage.
+- **Celestial governance and sanctions**
+  - Implement divine favor/reputation tracks with transparent decay and boon/ban lists; include CS override flows and audit logs for every sanction or pardon.
+  - Tie governance changes to world-state updates, map modifiers, and NPC behavior with preview modes and rollback-ready flag layers per platform branch.
+  - Ensure messaging templates are localized and accessible for sanctions/rewards; require opt-in/opt-out toggles for broadcasting major celestial decisions to social feeds.

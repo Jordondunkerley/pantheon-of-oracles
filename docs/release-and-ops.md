@@ -588,3 +588,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Define prize eligibility, account age/minimum matches, and ban checks before grants; store grant manifests with rollback scripts for disputes or rule violations.
   - Monitor suspicious patterns (win-trading, boosting, disconnect dodging) with alerts and automated temporary locks; pair with manual investigations before escalations.
   - Add integrity probes to CI/playtests (input spoofing, macro detection, latency abuse) and simulate adversarial conditions to validate safeguards before live tournaments.
+
+### Cross-platform identity, linking, and cloud progression
+- **Account linking and trust**
+  - Provide clear in-game flows for linking store accounts (Apple/Google/Steam) to a unified game ID; include unlink/relink with cooldowns and proof-of-ownership checks.
+  - Enforce session hygiene (MFA prompts, device fingerprinting where policy allows) and notify users of new device sign-ins; expose session revocation from settings.
+  - Maintain rate limits and anomaly detection for link attempts to prevent account takeovers; include CS macros for contested ownership with audit trails.
+- **Entitlements and receipts**
+  - Normalize receipts across stores into a canonical entitlement ledger; reconcile periodic receipt checks with store APIs and block gameplay advantages on invalid tokens.
+  - Support entitlement replay after outages with idempotent grant scripts; log grants/redactions with platform, build, and branch metadata for dispute resolution.
+  - Validate platform-specific perks (Game Center/Play Games/Steam achievements, DLC) across cross-progression merges; provide player-facing summaries of retained vs. lost entitlements.
+- **Cloud saves and conflict resolution**
+  - Implement authoritative cloud save slots with versioning, checksums, and platform metadata; provide manual conflict resolution UX with previews and rollbacks.
+  - Test offline queues and resumable uploads/downloads across suspend/resume and branch swaps; ensure saves can be restored after partial writes or corruption.
+  - Define data minimization and retention for saves (encryption at rest, least-privilege access) and document support flows for GDPR/CCPA deletion requests.
+
+### Vehicles, naval/air systems, and traversal networks
+- **Vehicle physics and safety**
+  - Set per-vehicle physics budgets (wheels/hover/flight) with capped speeds, collision layers, and damage rules; profile on low-tier devices for stability.
+  - Add safe entry/exit rules (combat locks, steep terrain) and recovery fallbacks when vehicles flip, sink, or clip; include telemetry for stuck events and automatic unstuck triggers.
+  - Validate passenger slots, firing arcs, and seat permissions in co-op; ensure cross-platform input prompts/glyphs map correctly for vehicles.
+- **Transportation networks**
+  - Define fast travel, portals, ferries, and rail systems with load boundaries and fallback spawns; simulate network outages and branch rollbacks to avoid stranded players.
+  - Maintain schedule/state replication for shared transports (airships, trains) with anti-grief rules (AFK kick, friendly-fire suppression) and accessibility seating/telemetry.
+  - Provide map overlays and waypoint rules for land/sea/air routes with localized signage and colorblind-safe icons; log travel costs and uptime for ops dashboards.
+- **Vehicle combat and customization**
+  - Balance vehicle combat with DPS/firing arcs, heat/energy systems, and counterplay; avoid pay-to-win by constraining upgrade deltas and publishing tuning baselines.
+  - Validate cosmetic customization (decals, dyes, contrails) with platform-safe content filters and LOD fallbacks; ensure previews do not leak unreleased items.
+  - Include repair/refuel/resupply economies with sinks and cooldowns; attach rollback scripts for bugged vehicle losses or duped upgrades.
+
+### Modifiers, mutators, and dynamic rulesets
+- **Seasonal and rotating modifiers**
+  - Curate modifier pools (elemental twists, double-jump weeks, loot boosts) with opt-in playlists and exposure caps; validate accessibility variants to avoid blocking players with disabilities.
+  - Track KPI impacts (TTK, completion times, crash rates) per modifier and platform; auto-disable modifiers that exceed regression thresholds.
+  - Require deterministic seeds and reproducible test cases for modifier bugs; document rollback steps and communication templates for early shutdowns.
+- **Encounter and world mutators**
+  - Apply mutators to dungeons/world events with server-side gating and per-tier performance budgets; ensure telegraphs remain readable when mechanics change.
+  - Add anti-exploit checks for synergy stacking (modifiers that trivialize bosses or economy sinks) and guard against unintended XP/loot inflations.
+  - Provide sandbox toggles for QA and live-ops to rehearse upcoming modifiers; include safety rails to revert to baseline ruleset within minutes.
+- **Player-visible ruleset clarity**
+  - Surface active modifiers in HUD/tooltips/loading screens with localization and accessibility cues; archive prior modifier states for dispute handling.
+  - Document how modifiers interact with achievements, leaderboards, and seasonal progression; prevent unintended unlocks during experimental rotations.
+  - Include monitoring for modifier-related crash/latency deltas and annotate dashboards/alerts with the current ruleset to reduce MTTR.

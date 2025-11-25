@@ -189,6 +189,38 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Track data residency controls (regional shards, CDN/geofencing) and encryption export declarations; keep a register of restricted regions and mitigation steps.
   - Run quarterly reviews of access to signing keys, store accounts, and CI secrets; verify least-privilege and session logging are enforced.
 
+### Capacity planning, scaling, and cost controls
+- **Traffic modeling**
+  - Maintain per-platform DAU/CCU forecasts with peak factors for events and store featuring; test backend autoscaling thresholds against these peaks with load tests tied to the latest client build.
+  - Track Steam branch promotions separately to capture opt-in surges; validate CDN/cache hit rates under patch-day load for mobile and Steam depots.
+- **Performance budgets and rate limits**
+  - Set API-level rate limits by auth scope/device type; ensure client-side retries and backoff are tuned to avoid stampedes during outages.
+  - Define shader/asset budgets per tier (mobile low/medium/high, Steam Deck) and enforce them in CI to prevent creeping load times and patch sizes.
+- **Cost governance**
+  - Monitor cloud spend by environment and platform; tag resources by release/branch. Add alerts for CDN egress and third-party SDK overages during staged rollouts.
+  - Capture per-feature flag and experiment cost impacts (e.g., extra telemetry, matchmaking routes) and include them in go/no-go reviews.
+
+### Customer support readiness and player communications
+- **Support playbooks**
+  - Provide macros for store-specific billing issues (Apple/Google refunds, Steam wallet) and for account deletion/export requests. Include entitlement reconciliation steps after rollbacks.
+  - Keep outage/update banners templated for mobile and Steam; localize status messages and link to known-issues docs. Ensure in-game messaging can be targeted by platform/build.
+- **Community and trust/safety**
+  - Pre-stage moderation staffing for events/releases; define escalation to legal/PR for abuse spikes. Log enforcement actions with evidence retention aligned to privacy policies.
+  - Track social sentiment dashboards (Discord/Steam forums/Reddit) and flag spikes in crash or payment complaints; feed back into incident triage.
+- **Feedback loops**
+  - Maintain a pipeline for in-game feedback/ratings prompts that respects platform rules; A/B test timing to avoid review-bombing after incidents.
+  - Aggregate support tickets by build/branch and root cause to inform post-release reviews and store metadata updates.
+
+### Live event operations and seasonal content
+- **Event gating and configs**
+  - Store event configs behind server-driven toggles with explicit start/end times and rollback states; verify entitlement grants and drop tables per platform.
+  - Validate time zone handling and DST changes for event windows; ensure countdown timers match server time and handle offline/paused states gracefully.
+- **Load and matchmaking considerations**
+  - Run stress tests for event-specific modes or cosmetics drops; confirm matchmaking rules and rewards cannot be bypassed via older builds or branch hopping.
+  - Pre-warm caches/CDN for new assets; monitor patch size regressions and download completion rates by region/device tier.
+- **Post-event hygiene**
+  - Clean up expired flags/configs, revoke temporary permissions, and archive event telemetry for re-use. Document any post-event migrations or economy adjustments.
+
 ## SRE / Ops Playbooks
 - **Monitoring & observability**
   - Emit RED/USE metrics per service: request rate, errors, latency; CPU/memory saturation; queue lengths; DB/redis health. Capture client-side crash rates segmented by platform/branch.

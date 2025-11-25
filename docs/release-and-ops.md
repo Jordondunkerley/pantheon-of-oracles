@@ -25,6 +25,20 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Instrument gameplay funnels, matchmaking reliability, purchase success, latency metrics, and platform-specific crash rates; avoid device identifiers outside platform policies.
   - Document data export/retention schedules, log redaction for user content, and retention overrides for security investigations.
 
+### Security, compliance, and legal readiness
+- **Security reviews**
+  - Maintain threat models for mobile clients, backend services, and Steam integration; refresh when adding new authentication flows or cross-play capabilities.
+  - Run SAST/DAST and mobile binary hardening checks (jailbreak/root detection as policy allows, tamper detection, anti-debug toggles). Track findings to closure with ownership.
+  - Generate SBOMs for each platform build; scan dependencies for licenses/CVEs and record overrides with legal sign-off.
+- **Privacy and data minimization**
+  - Re-verify data inventory against telemetry and crash events after new features; ensure payloads minimize user identifiers and strip PII from logs.
+  - Validate consent UX language per locale and store platform rules; confirm withdrawal/deletion flows are reachable from in-game settings.
+  - Review third-party SDK contracts for data use/sharing; keep an approval register with expiry/renewal dates and audit trails.
+- **Legal & policy**
+  - Maintain export control statements for encryption, country sanctions blocks, and age-gating for restricted regions. Document if matchmaking or chat is disabled by region.
+  - Keep ToS/Privacy Policy diffs reviewed by counsel prior to each store submission; update URLs in store metadata when links change.
+  - Document COPPA/child-data exclusions when the audience includes minors; ensure ad SDKs and analytics are configured accordingly.
+
 ### Submission artifacts & checklist
 - Screenshots and trailers per platform locale (iPhone/iPad sizes, Android phone/tablet, Steam capsules/banners). Include updated age ratings, keywords, and localized descriptions.
 - App icons, feature graphics, and store listing disclosures (ads, IAPs, data safety summaries). Verify promotional text matches current feature set.
@@ -46,6 +60,12 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Add parental controls and session limits where required by regional policy; expose reporting/blocking flows on every screen with social features.
   - Run weekly audits of reported content queues and appeal handling SLAs; capture metrics in dashboards and release go/no-go.
 
+### Build provenance, keys, and artifacts
+- Sign iOS/Android artifacts with CI-managed identities; rotate App Store Connect keys, Play service accounts, and Steam partner credentials on a schedule and after staff turnover.
+- Keep notarization/notary tool outputs, release notes, and build manifests as immutable artifacts linked to git SHAs. Store SBOMs and vulnerability scan reports alongside builds.
+- Enforce reproducible builds where possible (locked dependency versions, deterministic asset pipelines); flag differences in binary hashes between local and CI outputs.
+- Maintain a secrets inventory (API keys, signing certs, webhook tokens) with owners, rotation cadence, and break-glass retrieval steps.
+
 ## Deployment Automation
 - **TestFlight (iOS)**
   - CI pipeline: build with Xcode/fastlane `gym`, upload via `pilot` with beta app review notes/screenshots. Example command: `bundle exec fastlane ios beta --env ci`.
@@ -66,6 +86,12 @@ This document summarizes store requirements, deployment automation, and SRE play
 - Go/no-go meeting template: status of blockers, crash/ANR rates from latest build, SLO trendlines, support ticket volume, and rollout plan with staged percentages.
 - Release calendar: avoid peak traffic windows; freeze windows documented with approvers. Include back-out window and engineer on-duty for hotfixes.
 
+### Release communications and support operations
+- Publish release comms templates (patch notes, downtime announcements) with localized variants; include impacted platforms/branches and expected rollout schedule.
+- Align customer support shifts with rollout windows; confirm macros and diagnostics are updated for the new build (log collection steps, device info prompts, refund guidance).
+- Define beta/early-access cohort messaging for TestFlight, Play internal testing, and Steam `beta` branches; include clear instructions to switch branches and submit feedback.
+- Track open incidents and known issues in a single changelog section; link to mitigations and expected fix versions before promoting to production/public branches.
+
 ### Live operations & capacity planning
 - **Capacity readiness**
   - Maintain load test profiles per platform and update target concurrency for planned marketing beats; store baselines and deltas in dashboards. Test Steam branch toggles and mobile feature-flag ramps under load.
@@ -75,6 +101,12 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Publish support contact paths in-game and on store listings; include billing dispute guidance. Triage macros for frequent issues (purchase fails, account lockout, crash on launch) linked to runbooks.
   - Maintain fraud/abuse detection signals (chargeback spikes, suspicious inventory changes) and pair with rate-limit/flag actions. Share weekly summaries with release owners.
   - Track sentiment and crash/regression feedback from reviews/beta channels; feed into release quality gates and incident retros.
+
+### Post-release evaluations and hygiene
+- Run 24h/72h/7d post-release reviews capturing crash-free rate trends, purchase funnel health, matchmaking KPIs, and support ticket deltas by platform/branch.
+- Maintain a “rollback/forward” decision record per incident with the build ID, flags toggled, and customer impact; close the loop with tests and alerts updated.
+- Audit feature flag usage monthly; delete stale flags, document dependencies, and ensure defaults are safe before removing guardrails.
+- Refresh dashboards/alerts ownership as teams change; validate synthetic probes for purchase/login still align with current flows.
 
 ## SRE / Ops Playbooks
 - **Monitoring & observability**

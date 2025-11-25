@@ -66,6 +66,18 @@ This document summarizes store requirements, deployment automation, and SRE play
 - Enforce reproducible builds where possible (locked dependency versions, deterministic asset pipelines); flag differences in binary hashes between local and CI outputs.
 - Maintain a secrets inventory (API keys, signing certs, webhook tokens) with owners, rotation cadence, and break-glass retrieval steps.
 
+### Patch delivery, install integrity, and update experience
+- **Patch sizing and distribution**
+  - Track patch size budgets by platform and device tier; enforce delta/patch compression (e.g., Android App Bundles splits, Steam depot diffs) and validate CDN edge cache hits before rollout.
+  - Verify background download/resume behaviors on unstable networks; measure download success rate and time-to-play metrics across geographies. Add in-app messaging for large downloads and low-storage cases.
+  - Maintain fallback flows for failed updates (retry with smaller chunks, redirect to Wi‑Fi) and document expected user prompts per platform review requirements.
+- **Integrity and compatibility**
+  - Validate app/patch signatures (App Store/Play signing, Steam depots) and enforce build ID compatibility between client, DLC, and backend schema versions. Detect mismatched depots/branches and block login gracefully.
+  - Run install/uninstall/reinstall cycles across device tiers, including encrypted storage and managed device profiles (MDM/EMM). Confirm cached assets and saves survive OS updates where supported.
+- **Update UX and compliance**
+  - Ensure update prompts respect platform UX rules (no forced app restarts without warning, support deferred updates where available). Provide localized release notes and highlight privacy/permission changes.
+  - For mobile, test in-app updates/redirects from store pages; for Steam, verify auto-updates vs. optional branches and pre-load windows for major releases.
+
 ## Deployment Automation
 - **TestFlight (iOS)**
   - CI pipeline: build with Xcode/fastlane `gym`, upload via `pilot` with beta app review notes/screenshots. Example command: `bundle exec fastlane ios beta --env ci`.

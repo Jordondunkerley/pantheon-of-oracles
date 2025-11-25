@@ -672,3 +672,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Offer spectate/replay modes with streamer-safe privacy (chat filters, hide player IDs) and performance caps; validate camera paths and HUD readability on mobile/Steam Deck.
   - Provide data APIs or overlays with rate limits and attribution; coordinate with anti-cheat to mask sensitive telemetry that could aid exploits.
   - Support tournament ops with admin tools for pauses, remakes, seed locking, and prize validation; scriptable tools should log authority actions for later review.
+
+### World bosses, invasions, and shard health
+- **Spawn governance and fairness**
+  - Define predictable spawn windows and shard balancing rules for world bosses/invasions; avoid overcrowding by instancing overflow shards and offering staggered regional timings.
+  - Enforce contribution tracking that rewards participation (damage/healing/objective time) instead of last-hit mechanics; publish loot rules so rewards feel fair across platforms.
+  - Add grief protection (spawn camping shields, AFK removal, revive zones) and accessibility variants (lower visual noise modes, clearer telegraphs) for crowded encounters.
+- **Operations and fail-safes**
+  - Simulate shard recovery/restarts to ensure boss state rolls forward or cleanly resets without duping loot; include GM/CS scripts for refunding keys/tickets when events cancel.
+  - Track capacity/latency dashboards during events with automated throttles for new entrants; trigger branch-specific hotfixes or temporary debuffs when server stability regresses.
+  - Archive event state snapshots for incident review and rollback; annotate alerts with event names/modifiers to reduce MTTR during live disruptions.
+- **Reward pipelines**
+  - Version world boss loot tables and cosmetic drops; attach tuning knobs for drop protection/bad-luck protection and test on non-public branches before global release.
+  - Gate chase rewards behind account binding or time-limited claims to prevent cross-shard trading exploits; log high-rarity drops with player, shard, and platform metadata.
+  - Align community-facing calendars, in-game banners, and store descriptions so players understand availability, eligibility, and platform-specific participation rules.
+
+### Itemization integrity, loot tables, and inflation control
+- **Loot governance**
+  - Centralize loot tables with deterministic seeds and audit history; require code reviews for changes that affect drop rates, pity timers, or duplicate-protection rules.
+  - Segment loot pools by activity tier and platform capability (controller vs. touch complexity, Steam Deck performance) to avoid inaccessible mechanics driving drop disparity.
+  - Validate boss/add-on synergies that could turbocharge loot (e.g., mutators that double chests); add caps and dashboards for average loot per hour across playlists.
+- **Economy resilience**
+  - Model currency sinks vs. faucets with budgets per season; alert when inflation thresholds (pricing drift, trade volume spikes) exceed targets, and gate high-value crafts behind time/effort limits.
+  - Enforce server-side item creation and trade limits; detect dupes via checksum/versioning, and provide one-click rollback scripts scoped by item IDs and player segments.
+  - Keep bind-on-pickup/bind-on-equip rules consistent across platforms; surface clear UI warnings for irreversible binds, reforges, and salvage actions.
+- **Tuning and QA**
+  - Maintain comparative DPS/TTK baselines per archetype and platform input; require A/B sandboxes for major stat or affix changes with telemetry on completion time, deaths, and crash deltas.
+  - Capture golden test cases (build templates, encounter seeds) for performance-sensitive loot changes and verify they hold on low-end devices and Steam Deck.
+  - Coordinate loot and economy patch notes with community/support macros; include compensation plans for rollbacks or fixes that materially change player progression.
+
+### Co-op, party systems, and mentorship
+- **Party lifecycle and reliability**
+  - Standardize party creation/join/invite flows across platforms with presence-awareness; support rejoin after disconnects and branch swaps without losing matchmaking position.
+  - Add ready checks, vote-to-kick safeguards, and AFK detection tuned per platform; keep UI prompts controller- and touch-friendly with accessibility labels.
+  - Provide shared waypoints, ping systems, and loot-visibility rules; ensure cross-play voice/text is opt-in with moderation and recording disclosures where legally required.
+- **Mentorship and new-player protection**
+  - Implement mentor/apprentice programs with level gates, anti-boosting checks, and reward throttles; require opt-in consent and an exit path to avoid coercion.
+  - Offer tutorial overlays and simplified mechanics for first-time party members; allow mentors to share instanced quests without breaking progression or granting unintended rewards.
+  - Track mentorship abuse metrics (power-leveling hotspots, carry-for-hire spam) and provide CS tooling to suspend or reset mentor perks when exploited.
+- **Cross-session continuity**
+  - Persist party state across sessions/time zones with clear ownership of leader settings (difficulty, privacy, voice); store last-known objectives for smooth resume.
+  - Record party composition and role data in telemetry to debug matchmaking fairness and encounter balance; include platform identifiers to isolate device-specific issues.
+  - Provide visibility into feature flag differences per party member (new modifier pilots, economy experiments) and gracefully fall back to the lowest-common ruleset when compatibility fails.

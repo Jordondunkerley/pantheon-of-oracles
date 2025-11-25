@@ -966,3 +966,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Version curricula with change logs, regression tests, and localization updates; include safeguards so outdated drills do not conflict with current mechanics.
   - Validate that training tooltips, damage numbers, and AI behavior match live builds; add automated snapshots that diff tooltips/stats between patches.
   - Publish academy schedules, live instructor events, and reward rotations with rollback/cancellation playbooks and shard-aware notifications.
+
+### Underworld descents, soulbinding, and resurrection protocols
+- **Descent access and safety rails**
+  - Gate underworld entries with ritual costs, party size rules, and shard-aware instancing to prevent griefing or farming; add safe-room checkpoints with deterministic seeds for rollback.
+  - Provide oxygen/torment/metabolic meters with accessibility toggles and clear UI warnings; simulate poor-network/disconnect recovery with auto-parked avatars at safe nodes.
+  - Log descent parameters (ritual catalysts, party roles, debuffs) and completion outcomes with build IDs to triage bugs and prevent reward duplication after crashes.
+- **Soulbinding, anchors, and loss prevention**
+  - Require player consent for soulbinding anchors and resurrection links; expose opt-outs and cooldowns to avoid coercion or exploit chains.
+  - Track anchor locations, durability, and ownership with audit logs; rehearse rollback scripts for misplaced anchors or duped soulbound items.
+  - Provide assisted recovery for lost souls (NPC ferrymen, emergency recalls) with clear economy impacts; integrate CS override flows that respect shard/branch isolation.
+- **Resurrection UX and narrative coherence**
+  - Standardize death/rebirth cutscenes with skippable, localized narration and reduced VFX modes; ensure haptics/audio cues meet accessibility policies on mobile/Steam Deck.
+  - Validate state restoration (buffs, quest flags, inventory) after resurrection with differential snapshots; block re-entry exploits by enforcing invulnerability timers and reset rules.
+  - Maintain lore codex updates and faction reputation effects tied to death/escape outcomes; provide compensation scripts for misapplied penalties.
+
+### Celestial diplomacy, embassies, and treaty enforcement
+- **Embassy operations and permissions**
+  - Create neutral embassy hubs with cross-faction communication safeguards (chat filters, emote restrictions) and synchronized presence across platforms.
+  - Maintain embassy ownership/tenancy records with audit trails; gate high-impact interactions (trade pacts, alliance votes) behind latency-aware confirmations and MFA where appropriate.
+  - Simulate diplomatic immunity and safe zones with collision/ability restrictions; add rollback-ready snapshots for grief incidents or exploitative trades.
+- **Treaty negotiation and ratification**
+  - Provide structured negotiation UIs with proposal templates, timers, and recorded transcripts; store signed treaty hashes with build/shard metadata for dispute resolution.
+  - Add cooling-off periods and referendum tools for player populations; enforce minimum turnout/eligibility rules to prevent manipulation.
+  - Offer sandbox simulations of treaty impacts on economy/territory before ratification; require go/no-go approvals from governance roles and CS override paths.
+- **Enforcement, sanctions, and propaganda hygiene**
+  - Automate treaty compliance checks (resource quotas, safe-pass rules) with alerting; throttle enforcement under high-latency conditions to avoid false positives.
+  - Define sanctions ladders with transparent decay, appeal paths, and compensation for collateral damage; track all actions in exportable logs for audits.
+  - Moderate propaganda/announcement tools with content filters, localization review, and opt-out controls; ensure broadcast cadences respect platform notification policies.
+
+### Star charts, celestial navigation, and observatory networks
+- **Navigation data integrity**
+  - Generate star charts with deterministic seeds per shard/season; version maps with checksum validation and rollback markers to prevent outdated or tampered routes.
+  - Cache navigation layers per platform to meet performance budgets on mobile/Steam while honoring accessibility zoom/contrast settings; test under limited bandwidth scenarios.
+  - Log route usage, anomalies, and discovery claims with provenance; add CS macros for dispute resolution when landmarks shift after patches.
+- **Observatories, telescopes, and data pipelines**
+  - Operate observatories as shard-aware services with maintenance windows, calibration scripts, and performance budgets for particle-heavy skies.
+  - Publish celestial event calendars with API feeds for gameplay triggers; validate timezones and daylight-saving changes to avoid misaligned events across regions.
+  - Secure observatory data streams with signature checks and rate limits; sandbox community-submitted sightings or mods before promotion to live charts.
+- **Wayfinding UX and live corrections**
+  - Provide guided navigation aids (constellation overlays, haptic pulses, audio cues) with localization and accessibility variants; ensure co-op parties see consistent markers across devices.
+  - Add live correction workflows for wrong coordinates or broken paths, including hotfix-safe overrides and rollback-ready navigation states.
+  - Track navigation-related incidents (lost parties, soft-locks) and tie alerting to player reports, anomaly detectors, and build/branch identifiers for fast triage.

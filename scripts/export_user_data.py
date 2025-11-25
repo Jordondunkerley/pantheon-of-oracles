@@ -4,6 +4,7 @@ Export a user's Pantheon data bundle (player account, owned oracles, actions).
 Usage:
   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
   python scripts/export_user_data.py --email you@example.com --include-actions --actions-limit 25
+  python scripts/export_user_data.py --email you@example.com --include-action-stats --actions-since 2024-10-01
 
 This script relies on service-role credentials so it can resolve ownership
 without an API token. Output is JSON printed to stdout.
@@ -30,6 +31,25 @@ def parse_args():
         default=50,
         help="Maximum number of actions to return (default 50, max 500)",
     )
+    parser.add_argument(
+        "--actions-filter",
+        help="Optional action name to filter on (e.g., RITUAL_START)",
+    )
+    parser.add_argument(
+        "--actions-since",
+        help="ISO timestamp to limit actions/stats to recent entries",
+    )
+    parser.add_argument(
+        "--include-action-stats",
+        action="store_true",
+        help="Include aggregated action counts alongside the raw actions list",
+    )
+    parser.add_argument(
+        "--action-stats-limit",
+        type=int,
+        default=200,
+        help="Maximum number of actions to scan when aggregating stats (default 200, max 1000)",
+    )
     return parser.parse_args()
 
 
@@ -41,6 +61,10 @@ def main():
             email=args.email,
             include_actions=args.include_actions,
             actions_limit=args.actions_limit,
+            actions_filter=args.actions_filter,
+            actions_since=args.actions_since,
+            include_action_stats=args.include_action_stats,
+            action_stats_limit=args.action_stats_limit,
         )
     except Exception as exc:  # pragma: no cover - CLI surfacing explicit error
         sys.exit(f"Export failed: {exc}")

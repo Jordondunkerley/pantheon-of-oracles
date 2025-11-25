@@ -233,12 +233,59 @@ def _list_actions_for_owned(
     return res.data or []
 
 
+def _summarize_actions_for_owned(
+    oracle_ids: set,
+    player_ids: set,
+    limit: int,
+    action: Optional[str] = None,
+    since: Optional[str] = None,
+    *,
+    include_ok_flag: bool = False,
+):
+    """Aggregate counts for owned actions with optional filters.
+
+    Reuses ``_list_actions_for_owned`` to enforce ownership scoping and limits, then
+    counts the number of rows per action name. ``include_ok_flag`` mirrors the API
+    response structure when reused in route handlers.
+    """
+
+    actions = _list_actions_for_owned(
+        oracle_ids,
+        player_ids,
+        limit,
+        action,
+        since,
+    )
+
+    counts: Dict[str, int] = {}
+    for row in actions:
+        key = row.get("action") or "UNKNOWN"
+        counts[key] = counts.get(key, 0) + 1
+
+    response = {
+        "total": len(actions),
+        "limit": limit,
+        "since": since,
+        "action_counts": sorted(
+            [{"action": k, "count": v} for k, v in counts.items()],
+            key=lambda x: x["action"],
+        ),
+    }
+
+    if include_ok_flag:
+        response = {"ok": True, **response}
+
+    return response
+
+
 @router.get("/gpt/sync")
 def sync_player_data(
     include_actions: bool = False,
+    include_action_stats: bool = False,
     actions_limit: int = 50,
     actions_filter: Optional[str] = None,
     actions_since: Optional[str] = None,
+    action_stats_limit: int = 200,
     authorization: Optional[str] = Header(None),
 ):
     """
@@ -263,6 +310,7 @@ def sync_player_data(
     orc_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
 
     actions = []
+    action_stats = None
     if include_actions:
         owned_ids = _get_owned_ids(user_id)
         actions = _list_actions_for_owned(
@@ -272,11 +320,22 @@ def sync_player_data(
             actions_filter,
             actions_since,
         )
+    if include_action_stats:
+        owned_ids = _get_owned_ids(user_id)
+        capped_stats_limit = min(action_stats_limit if action_stats_limit and action_stats_limit > 0 else 200, 1000)
+        action_stats = _summarize_actions_for_owned(
+            owned_ids["oracle_ids"],
+            owned_ids["player_ids"],
+            capped_stats_limit,
+            actions_filter,
+            actions_since,
+        )
     return {
         "ok": True,
         "account": acc_res.data,
         "oracles": orc_res.data,
         "actions": actions,
+        "action_stats": action_stats,
     }
 
 
@@ -413,29 +472,14 @@ def oracle_action_stats(
 
     capped_limit = min(limit if limit and limit > 0 else 200, 1000)
 
-    actions = _list_actions_for_owned(
+    return _summarize_actions_for_owned(
         owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
         owned_ids["player_ids"] if not player_id else {player_id},
         capped_limit,
         action,
         since,
+        include_ok_flag=True,
     )
-
-    counts: Dict[str, int] = {}
-    for row in actions:
-        key = row.get("action") or "UNKNOWN"
-        counts[key] = counts.get(key, 0) + 1
-
-    return {
-        "ok": True,
-        "total": len(actions),
-        "limit": capped_limit,
-        "since": since,
-        "action_counts": sorted(
-            [{"action": k, "count": v} for k, v in counts.items()],
-            key=lambda x: x["action"],
-        ),
-    }
 
 
 @router.get("/gpt/oracle-catalog")

@@ -87,6 +87,8 @@ curl -s "$BASE/gpt/sync?include_actions=true&actions_limit=25" -H "Authorization
 curl -s "$BASE/gpt/sync?include_actions=true&actions_filter=RITUAL_START&actions_limit=10" -H "Authorization: $TOKEN"
 # Sync only actions created after a timestamp
 curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
+# Sync and include aggregated action counts (uses the same filters/limits)
+curl -s "$BASE/gpt/sync?include_action_stats=true&actions_since=2024-10-01T00:00:00Z&action_stats_limit=500" -H "Authorization: $TOKEN"
 ```
 
 Or run locally against Supabase using the helper script after seeding:
@@ -96,6 +98,8 @@ python scripts/list_oracles.py --limit 5
 
 # Export a user's bundle using service-role credentials
 python scripts/export_user_data.py --email you@example.com --include-actions --actions-limit 25
+# Export with filtered history and aggregated action stats
+python scripts/export_user_data.py --email you@example.com --include-action-stats --actions-since 2024-10-01 --actions-filter RITUAL_START
 
 # Reset a user for fresh imports (service-role)
 python scripts/purge_user_data.py --email you@example.com --delete-user

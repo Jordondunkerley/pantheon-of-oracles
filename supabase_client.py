@@ -133,9 +133,11 @@ def list_oracles(code: Optional[str] = None, role: Optional[str] = None, limit: 
 def get_user_bundle(
     email: str,
     include_actions: bool = False,
+    include_action_stats: bool = False,
     actions_limit: int = 50,
     actions_filter: Optional[str] = None,
     actions_since: Optional[str] = None,
+    action_stats_limit: int = 200,
 ) -> Dict[str, Any]:
     """Return player account, owned oracles, and optional recent actions for a user."""
 
@@ -147,6 +149,7 @@ def get_user_bundle(
     oracles_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
 
     actions = []
+    action_stats = None
     if include_actions:
         actions = list_user_actions(
             email,
@@ -154,11 +157,20 @@ def get_user_bundle(
             action=actions_filter,
             since=actions_since,
         )
+    if include_action_stats:
+        capped_stats_limit = min(action_stats_limit if action_stats_limit and action_stats_limit > 0 else 200, 1000)
+        action_stats = summarize_user_actions(
+            email,
+            action=actions_filter,
+            since=actions_since,
+            limit=capped_stats_limit,
+        )
 
     return {
         "account": player_res.data,
         "oracles": oracles_res.data or [],
         "actions": actions,
+        "action_stats": action_stats,
     }
 
 

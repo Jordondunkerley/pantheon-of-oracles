@@ -445,6 +445,48 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Require fairness reviews for new mechanics added mid-season; gate them behind flags with opt-in betas and platform-specific toggles if needed.
   - Publish end-of-season summaries with enforcement stats (bans, reversions, prize adjustments) and archive them for dispute handling.
 
+### Dungeons, raids, and instancing safety
+- **Instance lifecycle and scaling**
+  - Define instance creation triggers (queue match, dungeon finder, manual entry) with caps per platform tier and fallback to shard/realm overflow when limits are reached.
+  - Capture join/rejoin rules for disconnects and cross-platform parties; ensure Steam/mobile clients can resync state, loot locks, and checkpoints without duplication.
+  - Maintain performance budgets for instanced content (mob counts, VFX density, network actor replication) and enforce auto-thinning on low-tier devices to preserve FPS.
+- **Boss keys, locks, and progression**
+  - Map key/lock requirements to quests, reputation, or guild ownership; ensure anti-skip checks (party member requirements, puzzle completions) before boss rooms.
+  - Track lock state in authoritative services with rollback scripts for contested completions; record timestamps/build IDs for dispute resolution.
+  - Validate loot locks, personal loot, and shared drops with pity timers; document anti-reset rules for checkpoint abuse and AFK hitchhiking.
+- **Procedural and modular content**
+  - Specify tile sets, modifier pools (affixes/mutators), and objective variants; attach telemetry to modifier impact (clear time, death rate) and platform splits.
+  - Require deterministic seeds for reproducibility in QA and rollback; store seeds with build/branch metadata and player party composition.
+  - Include accessibility variants for puzzle-heavy seeds (hint frequency, timing windows) and ensure controller/touch parity for interactables.
+
+### Character builds, cosmetics, and inventory integrity
+- **Loadouts and respecs**
+  - Ship loadout slots with saved bindings per input type; ensure cross-platform sync and fallbacks when a device lacks mapped inputs (e.g., missing hotkeys on mobile).
+  - Define respec rules (costs, cooldowns, free respec tokens) and log state diffs for rollback; prevent exploit loops via disconnect/resume or branch hopping.
+  - Add QA coverage for talent/gear swaps during combat, matchmaking queues, and cutscenes; verify server authority on stat aggregation to avoid desyncs.
+- **Cosmetic economy and entitlements**
+  - Maintain a cosmetics catalog with rarity, sources (store, battle pass, achievements), and region locks; include proof-of-ownership audits tied to platform receipts.
+  - Enforce binding rules (account-bound vs. tradeable), dye/skin compatibility, and preview safety (no seizure triggers, content ratings). Document refund/chargeback impacts on cosmetic revocation.
+  - Validate cross-platform rendering of cosmetics (LOD, material variants) and ensure fallback appearances on low-tier devices to avoid pay-to-win perception.
+- **Inventory, storage, and loss prevention**
+  - Implement authoritative inventory transactions with idempotent request IDs; include checksums/manifests for stash migrations and cross-progression sync.
+  - Define overflow rules, mail systems, and reclaim windows for expired items; add CS macros and scripts for restoring deleted or lost inventory with audit trails.
+  - Run stress tests on stash sorting, search, and filters for low-memory devices; gate bulk actions with confirmation prompts and rate limits to prevent accidental loss.
+
+### Social overlays, communications, and session safety
+- **Voice, text, and quick-chat**
+  - Validate VOIP region routing, bitrate caps, and fallback to push-to-talk where privacy laws require; include profanity filters and mute/block at user and party levels.
+  - Keep quick-chat wheels/keybinds localized with iconography; ensure accessibility by offering text equivalents and haptic cues where VO is disabled.
+  - Capture telemetry on packet loss, dropouts, and moderation events per platform; auto-retry or downgrade codecs on constrained networks without impacting gameplay latency.
+- **Presence, invites, and cross-play controls**
+  - Maintain rich presence states (activity, party size, platform, input type) with privacy toggles; ensure Steam/mobile presence stays in sync across reconnects.
+  - Provide invitation flows via friends, guilds, and codes/links; add safeguards against spam (rate limits, mutual consent) and age-gating where required.
+  - Expose cross-play toggles and platform/input filters in settings; test matchmaking/instancing behavior when toggles are changed mid-session or during reconnects.
+- **Session stability and recovery**
+  - Record session tokens/checkpoints frequently; on crash/restart, restore party membership, dungeon checkpoint, and outstanding rewards without duplication.
+  - Add safety nets for platform overlays and mobile backgrounding (pause timers, AI take-over, safe logout zones) with clear UI indicators.
+  - Keep reconnection budgets and cooldowns configurable; alert on abnormal reconnect loops that indicate server or client regressions.
+
 ## SRE / Ops Playbooks
 - **Monitoring & observability**
   - Emit RED/USE metrics per service: request rate, errors, latency; CPU/memory saturation; queue lengths; DB/redis health. Capture client-side crash rates segmented by platform/branch.

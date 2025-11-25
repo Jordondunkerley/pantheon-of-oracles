@@ -68,6 +68,28 @@ def _get_oracle_profile(oracle_id: str, user_id: str) -> Optional[Dict[str, Any]
     return res.data
 
 
+def _get_owned_ids(user_id: str) -> Dict[str, set]:
+    """Return the oracle_ids and player_ids belonging to a user for ownership checks."""
+
+    oracles_res = (
+        supabase.table("oracle_profiles")
+        .select("oracle_id")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    players_res = (
+        supabase.table("player_accounts")
+        .select("player_id")
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    return {
+        "oracle_ids": {row["oracle_id"] for row in (oracles_res.data or []) if row.get("oracle_id")},
+        "player_ids": {row["player_id"] for row in (players_res.data or []) if row.get("player_id")},
+    }
+
+
 def _ensure_oracle_row(oracle_id: str, oracle_name: Optional[str], archetype: Optional[str]) -> None:
     """
     Guarantee there is an ``oracles`` row that matches the externally visible oracle_id.
@@ -236,4 +258,52 @@ def log_oracle_action(payload: Dict[str, Any], authorization: Optional[str] = He
         raise HTTPException(status_code=400, detail="Failed to record action")
 
     return {"ok": True, "action": res.data[0]}
+
+
+@router.get("/gpt/oracle-actions")
+def list_oracle_actions(
+    oracle_id: Optional[str] = None,
+    player_id: Optional[str] = None,
+    limit: int = 50,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    List recent oracle actions for the authenticated user.
+
+    Ownership is enforced by intersecting the requested ``oracle_id``/``player_id``
+    with the caller's stored profiles. When no filters are provided, only actions
+    tied to the user's own oracle IDs are returned. ``limit`` defaults to 50.
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    owned_ids = _get_owned_ids(user_id)
+
+    # Validate supplied filters belong to the caller
+    if oracle_id and oracle_id not in owned_ids["oracle_ids"]:
+        raise HTTPException(status_code=404, detail="Oracle not found for this user")
+    if player_id and player_id not in owned_ids["player_ids"]:
+        raise HTTPException(status_code=404, detail="Player account not found for this user")
+
+    query = supabase.table("oracle_actions").select("*").order("created_at", desc=True)
+
+    if oracle_id:
+        query = query.eq("oracle_id", oracle_id)
+    else:
+        # Constrain to caller-owned oracle_ids to avoid leaking other users' actions
+        if not owned_ids["oracle_ids"]:
+            return {"ok": True, "actions": []}
+        query = query.in_("oracle_id", list(owned_ids["oracle_ids"]))
+
+    if player_id:
+        query = query.eq("player_id", player_id)
+
+    if limit and limit > 0:
+        query = query.limit(limit)
+
+    res = query.execute()
+    return {"ok": True, "actions": res.data or []}
 

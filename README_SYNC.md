@@ -67,6 +67,9 @@ curl -s -X POST $BASE/gpt/update-oracle -H "Authorization: $TOKEN" \
 curl -s -X POST $BASE/gpt/oracle-action -H "Authorization: $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"oracle_id":"<uuid>","player_id":"<player_uuid>","action":"RITUAL_START"}'
+
+# List recent actions scoped to your oracle/player IDs (optional filters)
+curl -s "$BASE/gpt/oracle-actions?limit=10" -H "Authorization: $TOKEN"
 ```
 
 ## 7) Legacy code

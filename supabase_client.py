@@ -176,3 +176,60 @@ def get_user_bundle(
         "oracles": oracles_res.data or [],
         "actions": actions,
     }
+
+
+def delete_user_bundle(
+    email: str,
+    *,
+    delete_actions: bool = True,
+    delete_user: bool = False,
+) -> Dict[str, Any]:
+    """Delete a user's account, oracles, and optionally actions + user row.
+
+    This helper is intended for service-role scripts to reset demo data. It removes
+    player/oracle profiles for the given email. When ``delete_actions`` is True, it
+    also purges oracle_actions linked to the user's oracle_ids (and player_id when
+    present). Set ``delete_user`` to remove the user record after dependent rows
+    are cleared.
+    """
+
+    user_record = _get_user_record(email)
+    if not user_record:
+        raise ValueError("User not found for provided email")
+
+    user_id = user_record.get("id")
+
+    player_res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
+    oracles_res = supabase.table("oracle_profiles").select("oracle_id").eq("user_id", user_id).execute()
+
+    player_row = player_res.data or {}
+    oracle_ids = [row.get("oracle_id") for row in (oracles_res.data or []) if row.get("oracle_id")]
+
+    deleted_actions = 0
+    if delete_actions:
+        query = supabase.table("oracle_actions").delete()
+
+        if oracle_ids:
+            query = query.in_("oracle_id", oracle_ids)
+        if player_row.get("player_id"):
+            query = query.eq("player_id", player_row["player_id"])
+
+        # Only execute when we have at least one constraint to avoid wiping all rows
+        if oracle_ids or player_row.get("player_id"):
+            actions_res = query.execute()
+            deleted_actions = len(actions_res.data or []) if hasattr(actions_res, "data") else 0
+
+    profiles_res = supabase.table("oracle_profiles").delete().eq("user_id", user_id).execute()
+    players_res = supabase.table("player_accounts").delete().eq("user_id", user_id).execute()
+
+    user_deleted = False
+    if delete_user:
+        supabase.table("users").delete().eq("id", user_id).execute()
+        user_deleted = True
+
+    return {
+        "deleted_actions": deleted_actions,
+        "deleted_oracle_profiles": len(profiles_res.data or []) if hasattr(profiles_res, "data") else 0,
+        "deleted_player_accounts": len(players_res.data or []) if hasattr(players_res, "data") else 0,
+        "user_deleted": user_deleted,
+    }

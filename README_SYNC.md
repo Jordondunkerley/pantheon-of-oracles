@@ -85,6 +85,9 @@ python scripts/list_oracles.py --limit 5
 
 # Export a user's bundle using service-role credentials
 python scripts/export_user_data.py --email you@example.com --include-actions --actions-limit 25
+
+# Reset a user for fresh imports (service-role)
+python scripts/purge_user_data.py --email you@example.com --delete-user
 ```
 
 ## 7) Legacy code

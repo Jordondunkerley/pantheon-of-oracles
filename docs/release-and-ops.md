@@ -546,3 +546,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Triage process: declare severity, assign incident commander and scribe, open comms channel, capture timeline. Maintain on-call rotation per platform (iOS/Android/Steam/backend).
   - Runbooks per failure class: auth outage, payment errors, matchmaking instability, gateway timeouts, crash regression. Each runbook must list log/trace queries and rollback knobs.
   - Post-incident: root-cause analysis, action items with owners/dates, update dashboards/tests/alerts to catch recurrence. Close the loop with updated release checklists.
+
+### World interaction, physics, and hazard safety
+- **Physics and collision budgets**
+  - Set physics step budgets per device tier and platform; cap rigidbody counts, solver iterations, and cloth/hair simulations with graceful degradation on low-end devices.
+  - Validate collision layers/masks for combat, traversal, and puzzle interactables; ensure controller/touch aim assist respects collision priority and does not soft-lock players in geometry.
+  - Add regression tests for navmesh baking, dynamic obstacles, and destructible props; capture telemetry for stuck locations and auto-heal problematic areas via live config.
+- **Environmental hazards and status effects**
+  - Catalog hazard types (fire, poison, cold, fall, environmental puzzles) with stacking rules, cleanse counters, and accessibility-friendly tells (colorblind-safe, audio cues, haptics).
+  - Enforce damage caps and safe fallbacks for sudden spikes (physics explosions, chain reactions) to avoid one-shots on mobile/Steam Deck; add rollback scripts for accidental deaths during outages.
+  - Validate crowd control durations, diminishing returns, and immunity windows across PvE/PvP; log outlier chains for design review and exploit detection.
+- **Traversal assists and recovery**
+  - Provide unstuck/self-recover tools with cooldowns; support safe respawn anchors per biome/instance and record use for telemetry heatmaps.
+  - Guard grapple/glide/teleport endpoints against out-of-bounds exploits and visual seams; ensure fallback paths exist for accessibility/low-performance modes.
+  - Test water/swim/underwater rules (breath timers, buoyancy) with clear UI and accessibility variants; document edge cases for ladders, ledges, and mount dismounts near hazards.
+
+### Mini-games, side activities, and hubs
+- **Mini-game design and fairness**
+  - Standardize input rules (timing windows, aim assist allowances) across controller/touch/mouse; provide latency compensation where networked mini-games exist.
+  - Prevent resource inflation by capping rewards, daily limits, and tying mini-game currencies to sinks; include anti-bot signals and server validation for score submissions.
+  - Ship tutorial overlays and practice modes; log completion and failure reasons to tune difficulty without breaking retention or accessibility needs.
+- **Social hubs and events**
+  - Define hub population caps, instancing rules, and AFK handling to protect FPS and chat/voice stability; validate emote/gesture spam limits and camera culling behaviors.
+  - Curate hub vendors and services (crafting, mail, matchmaking kiosks) with outage-safe fallbacks and queue systems; ensure regional legal notices and payment flows render correctly in hubs.
+  - Instrument live events hosted in hubs (concerts, announcements) with broadcast reliability metrics, abuse/mute controls, and graceful exits when branches roll back.
+- **Collection rooms and showrooms**
+  - Provide safe display spaces for cosmetics, mounts, and trophies with privacy toggles; include permission layers for visitors and screenshot/capture guidance.
+  - Validate lighting/performance presets for showrooms on mobile and Steam Deck; cap spawnable NPCs/pets to prevent frame drops.
+  - Record showroom layout changes for rollback and dispute resolution; ensure entitlements sync when cross-progression merges occur.
+
+### Competitive modes, tournaments, and integrity
+- **Playlist and ruleset governance**
+  - Document playlists (ranked, unranked, limited-time) with map/mode rotations, party size limits, and input matchmaking pools (cross-play, input-based, platform-only).
+  - Publish rulesets for scoring, tie-breakers, overtime, and surrender; include accessibility variants (longer timers, reduced APM) without granting competitive advantage.
+  - Maintain dispute and appeal processes for contested matches, DC handling, and suspected cheating; link CS scripts and evidence preservation rules.
+- **Tournaments and brackets**
+  - Support bracket formats (single/double elimination, Swiss) with server-authoritative match reporting and redundancy for score submissions; protect against spoofed results and timing exploits.
+  - Provide admin tools for reschedules, pauses, and rulings; log all interventions with build/branch metadata and participant IDs for audit trails.
+  - Integrate spectator modes with privacy controls, delay options (anti-stream-snipe), and performance caps; validate capture/stream overlays on mobile/Steam.
+- **Competitive rewards and anti-exploit**
+  - Define prize eligibility, account age/minimum matches, and ban checks before grants; store grant manifests with rollback scripts for disputes or rule violations.
+  - Monitor suspicious patterns (win-trading, boosting, disconnect dodging) with alerts and automated temporary locks; pair with manual investigations before escalations.
+  - Add integrity probes to CI/playtests (input spoofing, macro detection, latency abuse) and simulate adversarial conditions to validate safeguards before live tournaments.

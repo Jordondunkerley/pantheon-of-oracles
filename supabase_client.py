@@ -134,6 +134,7 @@ def get_user_bundle(
     email: str,
     include_actions: bool = False,
     actions_limit: int = 50,
+    actions_filter: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Return player account, owned oracles, and optional recent actions for a user."""
 
@@ -146,36 +147,71 @@ def get_user_bundle(
 
     actions = []
     if include_actions:
-        capped_limit = actions_limit if actions_limit and actions_limit > 0 else 50
-        capped_limit = min(capped_limit, 500)
-
-        oracle_ids = [row["oracle_id"] for row in (oracles_res.data or []) if row.get("oracle_id")]
-        player_ids = []
-        if player_res.data:
-            pid = player_res.data.get("player_id")
-            if pid:
-                player_ids.append(pid)
-
-        if oracle_ids:
-            query = (
-                supabase.table("oracle_actions")
-                .select("*")
-                .in_("oracle_id", oracle_ids)
-                .order("created_at", desc=True)
-                .limit(capped_limit)
-            )
-
-            if player_ids:
-                query = query.in_("player_id", player_ids)
-
-            actions_res = query.execute()
-            actions = actions_res.data or []
+        actions = list_user_actions(
+            email,
+            limit=actions_limit,
+            action=actions_filter,
+        )
 
     return {
         "account": player_res.data,
         "oracles": oracles_res.data or [],
         "actions": actions,
     }
+
+
+def list_user_actions(
+    email: str,
+    *,
+    oracle_id: Optional[str] = None,
+    player_id: Optional[str] = None,
+    action: Optional[str] = None,
+    limit: int = 50,
+) -> list[Dict[str, Any]]:
+    """Return recent oracle_actions constrained to the user's owned IDs.
+
+    This helper mirrors the ownership rules used by the FastAPI endpoints. When no
+    explicit filters are supplied, results are limited to the caller's oracle_ids
+    (and, if present, the player's stored player_id). Limits are capped to 500 to
+    avoid heavy queries.
+    """
+
+    user_id = _get_user_id_by_email(email)
+    if not user_id:
+        raise ValueError("User not found for provided email")
+
+    oracles_res = supabase.table("oracle_profiles").select("oracle_id").eq("user_id", user_id).execute()
+    players_res = supabase.table("player_accounts").select("player_id").eq("user_id", user_id).single().execute()
+
+    owned_oracles = {row["oracle_id"] for row in (oracles_res.data or []) if row.get("oracle_id")}
+    owned_players = {players_res.data.get("player_id")} if players_res.data and players_res.data.get("player_id") else set()
+
+    capped_limit = limit if limit and limit > 0 else 50
+    capped_limit = min(capped_limit, 500)
+
+    if oracle_id and oracle_id not in owned_oracles:
+        raise ValueError("Oracle not found for this user")
+    if player_id and player_id not in owned_players:
+        raise ValueError("Player account not found for this user")
+
+    query = supabase.table("oracle_actions").select("*").order("created_at", desc=True)
+
+    if oracle_id:
+        query = query.eq("oracle_id", oracle_id)
+    else:
+        if not owned_oracles:
+            return []
+        query = query.in_("oracle_id", list(owned_oracles))
+
+    if player_id:
+        query = query.eq("player_id", player_id)
+
+    if action:
+        query = query.eq("action", action)
+
+    query = query.limit(capped_limit)
+    res = query.execute()
+    return res.data or []
 
 
 def delete_user_bundle(

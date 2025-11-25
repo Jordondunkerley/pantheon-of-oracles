@@ -197,6 +197,7 @@ def _list_actions_for_owned(
     oracle_ids: set,
     player_ids: set,
     limit: int,
+    action: Optional[str] = None,
 ):
     """
     Fetch recent oracle_actions scoped to owned oracle/player IDs.
@@ -204,6 +205,7 @@ def _list_actions_for_owned(
     This helper mirrors the ownership protections in ``/gpt/oracle-actions``
     by constraining the Supabase query to the caller's oracle_ids. Player
     filtering is optional but constrained to known player_ids when present.
+    ``limit`` is capped at 500, and ``action`` can filter by action name.
     """
 
     capped_limit = limit if limit and limit > 0 else 50
@@ -218,6 +220,9 @@ def _list_actions_for_owned(
     if player_ids:
         query = query.in_("player_id", list(player_ids))
 
+    if action:
+        query = query.eq("action", action)
+
     query = query.limit(capped_limit)
 
     res = query.execute()
@@ -228,6 +233,7 @@ def _list_actions_for_owned(
 def sync_player_data(
     include_actions: bool = False,
     actions_limit: int = 50,
+    actions_filter: Optional[str] = None,
     authorization: Optional[str] = Header(None),
 ):
     """
@@ -235,7 +241,9 @@ def sync_player_data(
 
     This endpoint combines the logic of ``/gpt/player-account`` and ``/gpt/my-oracles``
     into a single call. It verifies the JWT, resolves the user's ID, and then
-    retrieves both the player's account and list of oracles from Supabase. This
+    retrieves both the player's account and list of oracles from Supabase. When
+    ``include_actions`` is true, recent oracle_actions are also returned, capped
+    to 500 rows and optionally filtered by ``actions_filter`` (action name). This
     allows the Pantheon GPT router to fetch all relevant data in one request,
     enabling continuous syncing across sessions without manual imports.
     """
@@ -251,7 +259,12 @@ def sync_player_data(
     actions = []
     if include_actions:
         owned_ids = _get_owned_ids(user_id)
-        actions = _list_actions_for_owned(owned_ids["oracle_ids"], owned_ids["player_ids"], actions_limit)
+        actions = _list_actions_for_owned(
+            owned_ids["oracle_ids"],
+            owned_ids["player_ids"],
+            actions_limit,
+            actions_filter,
+        )
     return {
         "ok": True,
         "account": acc_res.data,
@@ -305,6 +318,7 @@ def log_oracle_action(payload: Dict[str, Any], authorization: Optional[str] = He
 def list_oracle_actions(
     oracle_id: Optional[str] = None,
     player_id: Optional[str] = None,
+    action: Optional[str] = None,
     limit: int = 50,
     authorization: Optional[str] = Header(None),
 ):
@@ -313,7 +327,8 @@ def list_oracle_actions(
 
     Ownership is enforced by intersecting the requested ``oracle_id``/``player_id``
     with the caller's stored profiles. When no filters are provided, only actions
-    tied to the user's own oracle IDs are returned. ``limit`` defaults to 50.
+    tied to the user's own oracle IDs are returned. ``limit`` defaults to 50 and
+    is capped at 500. ``action`` can be supplied to filter by action name.
     """
 
     user_email = require_auth(authorization)
@@ -329,6 +344,9 @@ def list_oracle_actions(
     if player_id and player_id not in owned_ids["player_ids"]:
         raise HTTPException(status_code=404, detail="Player account not found for this user")
 
+    capped_limit = limit if limit and limit > 0 else 50
+    capped_limit = min(capped_limit, 500)
+
     query = supabase.table("oracle_actions").select("*").order("created_at", desc=True)
 
     if oracle_id:
@@ -342,8 +360,10 @@ def list_oracle_actions(
     if player_id:
         query = query.eq("player_id", player_id)
 
-    if limit and limit > 0:
-        query = query.limit(limit)
+    if action:
+        query = query.eq("action", action)
+
+    query = query.limit(capped_limit)
 
     res = query.execute()
     return {"ok": True, "actions": res.data or []}

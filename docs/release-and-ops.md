@@ -798,3 +798,45 @@ This document summarizes store requirements, deployment automation, and SRE play
   - Define sunsetting policies for outdated quests, loot, or seasonal mechanics with compensation plans; archive states for dispute resolution and legacy achievements.
   - Add deprecation warnings and time-limited conversions for currencies or items; keep migration scripts idempotent and auditable.
   - Maintain lore/canon integrity checks when rotating content out; ensure UI, maps, and NPCs handle removed nodes gracefully without soft-locks.
+
+### Relics, artifacts, and ancient site operations
+- **Discovery and gating**
+  - Define relic tiers, shard collection rules, and puzzle locks with telemetry on solve paths; prevent sequence breaks by enforcing prerequisite flags server-side.
+  - Add environmental hazard checks (traps, collapsing floors) with accessibility variants and mobile-friendly prompts; include safe extraction/evacuation flows on disconnects.
+  - Record seed/version metadata for procedurally placed relic rooms to reproduce bugs and rollback unsafe layouts across Steam/mobile branches.
+- **Curation, upgrades, and lore**
+  - Maintain an artifact catalog with provenance, lore unlocks, and upgrade paths; require rollback-friendly stat deltas and visual variants per tier.
+  - Enforce upgrade materials sinks and cooldowns to avoid runaway power creep; include CS macros for restoring lost progress after crashes or fraud investigations.
+  - Localize lore entries with spoiler-aware gating and audio/text parity; ensure codex updates sync across platforms and survive partial downloads.
+- **Exploits, trading, and fairness**
+  - Add anti-duplication checks for relic shards and bind-on-acquire rules for high-tier artifacts; log acquisition context (party, instance seed, modifiers) for dispute resolution.
+  - Gate trading/auction eligibility by account age and completion of integrity checks; include escrow and refund windows for contested trades.
+  - Monitor completion times, death rates, and drop distributions for relic sites; auto-pause rotations if anomalies suggest exploits or tuning regressions.
+
+### Naval, airship, and caravan systems
+- **Vehicle construction and ownership**
+  - Define blueprint rarity, crafting inputs, and crew role requirements for ships/airships; validate ownership/auth permissions for shared vehicles across platforms.
+  - Track durability, fuel/energy, and maintenance intervals; add repair docks/stations with queueing and offline/steam branch-friendly persistence.
+  - Include recovery flows for sunken/crashed vehicles with item preservation rules and insurance-like restitution scripts for CS.
+- **Navigation, combat, and hazards**
+  - Map traversal lanes, wind/currents/thermals, and fast-travel anchors; provide autopilot with safe-stop behavior for disconnects or high-latency mobile sessions.
+  - Budget cannons/weapon systems, boarding mechanics, and crew stations to meet performance caps; validate camera/UI readability for deck and cockpit views.
+  - Script storms, reefs, and piracy events with shard-aware scaling; ensure collision/navmesh updates do not strand players and that fail-safes teleport to safe harbors when needed.
+- **Logistics, trade, and multiplayer flows**
+  - Support caravan/convoy missions with escort rules, loot weight limits, and anti-bot route randomization; log risk/reward balance for tuning.
+  - Provide guild/party permissions for cargo loading/unloading with audit trails; add anti-theft locks and grace windows for accidental drops.
+  - Integrate matchmaking for naval/airship PvP and co-op voyages with cross-platform latency disclosures; include surrender/retreat mechanics to avoid grief loops.
+
+### Professions, crafting mastery, and economy specialization
+- **Profession leveling and perks**
+  - Define profession XP curves, specialization branches, and mastery perks with caps to prevent runaway stacking; expose respec tokens with audit logs.
+  - Add daily/weekly work orders and contracts to stabilize resource inflows; ensure quests respect device-specific interaction limits (touch drag-drop alternatives).
+  - Provide telemetry for resource scarcity, completion rates, and gold-per-hour to tune faucets/sinks by platform and branch.
+- **Crafting mini-games and quality control**
+  - Standardize crafting mini-games (timing/precision/pattern) with accessibility modes and alternative auto-craft paths that respect balance; log input sources for anti-bot checks.
+  - Require QA validations for quality tiers and affix pools before release; include rollback scripts for misrolled items and compensation plans for affected players.
+  - Add provenance tags to crafted goods (crafter ID, station, build ID) to support fraud investigations and leaderboard/market filters.
+- **Market influence and regionalization**
+  - Implement regional price bands and tax/fee modifiers to control inflation; monitor cross-region arbitrage and adjust trade restrictions as needed.
+  - Provide platform-aware notification and delivery systems for completed orders/sales; ensure offline/mobile clients receive reliable updates without duping.
+  - Publish economic health dashboards (supply/demand, price indices, crafting success rates) with alert thresholds that gate release go/no-go when drifting.

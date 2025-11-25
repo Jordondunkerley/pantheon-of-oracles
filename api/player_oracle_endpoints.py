@@ -307,3 +307,39 @@ def list_oracle_actions(
     res = query.execute()
     return {"ok": True, "actions": res.data or []}
 
+
+@router.get("/gpt/oracle-catalog")
+def list_oracle_catalog(
+    code: Optional[str] = None,
+    role: Optional[str] = None,
+    limit: int = 100,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Return seeded oracle catalog entries for authenticated callers.
+
+    This surfaces the compact rules and metadata stored in the ``oracles``
+    table (seeded from the GPT patches). Callers can optionally filter by
+    oracle ``code`` or ``role`` and cap the result size with ``limit``
+    (defaults to 100, max 500).
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    capped_limit = min(limit if limit and limit > 0 else 100, 500)
+
+    query = supabase.table("oracles").select("id,code,name,role,rules").order("code")
+
+    if code:
+        query = query.eq("code", code)
+    if role:
+        query = query.eq("role", role)
+
+    query = query.limit(capped_limit)
+
+    res = query.execute()
+    return {"ok": True, "oracles": res.data or []}
+

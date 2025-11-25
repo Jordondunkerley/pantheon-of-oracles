@@ -111,3 +111,20 @@ def record_oracle_action(oracle_id: str, player_id: str, action: str, metadata: 
     if not res.data:
         raise ValueError("Failed to record oracle action")
     return res.data[0]
+
+
+def list_oracles(code: Optional[str] = None, role: Optional[str] = None, limit: int = 100) -> list[Dict[str, Any]]:
+    """Fetch seeded oracle catalog entries, optionally filtered by code or role."""
+
+    capped_limit = min(limit if limit and limit > 0 else 100, 500)
+
+    query = supabase.table("oracles").select("id,code,name,role,rules").order("code")
+
+    if code:
+        query = query.eq("code", code)
+    if role:
+        query = query.eq("role", role)
+
+    query = query.limit(capped_limit)
+    res = query.execute()
+    return res.data or []

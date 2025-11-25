@@ -70,6 +70,15 @@ curl -s -X POST $BASE/gpt/oracle-action -H "Authorization: $TOKEN" \
 
 # List recent actions scoped to your oracle/player IDs (optional filters)
 curl -s "$BASE/gpt/oracle-actions?limit=10" -H "Authorization: $TOKEN"
+
+# Fetch seeded oracle catalog entries (requires at least one account for auth)
+curl -s "$BASE/gpt/oracle-catalog?limit=5" -H "Authorization: $TOKEN"
+```
+
+Or run locally against Supabase using the helper script after seeding:
+
+```
+python scripts/list_oracles.py --limit 5
 ```
 
 ## 7) Legacy code

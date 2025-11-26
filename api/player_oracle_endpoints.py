@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Header, HTTPException
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from uuid import uuid4
 from jose import jwt, JWTError
 from supabase import create_client
+from datetime import datetime
 import os
 
 router = APIRouter()
@@ -18,6 +20,60 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
     raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+
+def _cap_limit(value: Optional[int], *, default: int = 50, max_limit: int = 500) -> int:
+    """Return a sane limit value bounded by ``max_limit``.
+
+    Negative or zero values fall back to ``default`` to avoid unexpected empty
+    responses or heavy Supabase scans.
+    """
+
+    if value is None or value <= 0:
+        return default
+    return min(value, max_limit)
+
+
+def _parse_iso_timestamp(value: Optional[str]) -> Optional[str]:
+    """Validate and normalize ISO-8601 timestamps.
+
+    Returns a string suitable for Supabase queries or raises ``HTTPException``
+    when the input cannot be parsed. Accepts ``Z`` suffixes by translating them
+    to ``+00:00`` for ``datetime.fromisoformat`` compatibility.
+    """
+
+    if not value:
+        return None
+
+    normalized = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid ISO timestamp format")
+
+    return parsed.isoformat()
+
+
+class PlayerAccountPayload(BaseModel):
+    player_id: Optional[str] = Field(None, description="Stable player UUID/string")
+    username: Optional[str] = None
+    email: Optional[str] = None
+    profile: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OracleProfilePayload(BaseModel):
+    oracle_id: Optional[str] = Field(None, description="Stable oracle UUID/string")
+    oracle_name: Optional[str] = None
+    name: Optional[str] = None
+    archetype: Optional[str] = None
+    profile: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OracleActionPayload(BaseModel):
+    oracle_id: str
+    player_id: str
+    action: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 def require_auth(authorization: Optional[str]) -> str:
     """
@@ -109,7 +165,7 @@ def _ensure_oracle_row(oracle_id: str, oracle_name: Optional[str], archetype: Op
     ).execute()
 
 @router.post("/gpt/create-player-account")
-def create_player_account(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
+def create_player_account(payload: PlayerAccountPayload, authorization: Optional[str] = Header(None)):
     """
     Create or update a player account associated with the authenticated user.
 
@@ -122,16 +178,18 @@ def create_player_account(payload: Dict[str, Any], authorization: Optional[str] 
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
 
-    player_id = payload.get("player_id") or str(uuid4())
-    username = payload.get("username")
-    email = payload.get("email") or user_email
+    player_id = payload.player_id or str(uuid4())
+    username = payload.username
+    email = payload.email or user_email
+
+    profile_data = payload.profile or payload.dict(exclude={"profile"}, exclude_none=True)
 
     insert_data = {
         "user_id": user_id,
         "player_id": player_id,
         "username": username,
         "email": email,
-        "profile": payload,
+        "profile": profile_data,
     }
     res = supabase.table("player_accounts").upsert(insert_data, on_conflict="player_id").execute()
     return {"ok": True, "account": res.data, "player_id": player_id}
@@ -149,7 +207,7 @@ def get_player_account(authorization: Optional[str] = Header(None)):
     return {"ok": True, "account": res.data}
 
 @router.post("/gpt/create-oracle")
-def create_oracle(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
+def create_oracle(payload: OracleProfilePayload, authorization: Optional[str] = Header(None)):
     """
     Create or update an oracle profile associated with the authenticated user.
 
@@ -162,16 +220,18 @@ def create_oracle(payload: Dict[str, Any], authorization: Optional[str] = Header
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
 
-    oracle_id = payload.get("oracle_id") or str(uuid4())
-    oracle_name = payload.get("oracle_name") or payload.get("name")
-    archetype = payload.get("archetype")
+    oracle_id = payload.oracle_id or str(uuid4())
+    oracle_name = payload.oracle_name or payload.name
+    archetype = payload.archetype
+
+    profile_data = payload.profile or payload.dict(exclude={"profile"}, exclude_none=True)
 
     insert_data = {
         "user_id": user_id,
         "oracle_id": oracle_id,
         "oracle_name": oracle_name,
         "archetype": archetype,
-        "profile": payload,
+        "profile": profile_data,
     }
     res = supabase.table("oracle_profiles").upsert(insert_data, on_conflict="oracle_id").execute()
 
@@ -209,8 +269,8 @@ def _list_actions_for_owned(
     ``limit`` is capped at 500, and ``action`` can filter by action name.
     """
 
-    capped_limit = limit if limit and limit > 0 else 50
-    capped_limit = min(capped_limit, 500)
+    capped_limit = _cap_limit(limit, default=50, max_limit=500)
+    normalized_since = _parse_iso_timestamp(since)
 
     if not oracle_ids:
         return []
@@ -224,8 +284,8 @@ def _list_actions_for_owned(
     if action:
         query = query.eq("action", action)
 
-    if since:
-        query = query.gte("created_at", since)
+    if normalized_since:
+        query = query.gte("created_at", normalized_since)
 
     query = query.limit(capped_limit)
 
@@ -311,24 +371,25 @@ def sync_player_data(
 
     actions = []
     action_stats = None
+    normalized_since = _parse_iso_timestamp(actions_since)
     if include_actions:
         owned_ids = _get_owned_ids(user_id)
         actions = _list_actions_for_owned(
             owned_ids["oracle_ids"],
             owned_ids["player_ids"],
-            actions_limit,
+            _cap_limit(actions_limit, default=50, max_limit=500),
             actions_filter,
-            actions_since,
+            normalized_since,
         )
     if include_action_stats:
         owned_ids = _get_owned_ids(user_id)
-        capped_stats_limit = min(action_stats_limit if action_stats_limit and action_stats_limit > 0 else 200, 1000)
+        capped_stats_limit = _cap_limit(action_stats_limit, default=200, max_limit=1000)
         action_stats = _summarize_actions_for_owned(
             owned_ids["oracle_ids"],
             owned_ids["player_ids"],
             capped_stats_limit,
             actions_filter,
-            actions_since,
+            normalized_since,
         )
     return {
         "ok": True,
@@ -340,7 +401,7 @@ def sync_player_data(
 
 
 @router.post("/gpt/oracle-action")
-def log_oracle_action(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
+def log_oracle_action(payload: OracleActionPayload, authorization: Optional[str] = Header(None)):
     """
     Record an oracle action after verifying ownership of the supplied player/oracle IDs.
 
@@ -353,13 +414,10 @@ def log_oracle_action(payload: Dict[str, Any], authorization: Optional[str] = He
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
 
-    oracle_id = payload.get("oracle_id")
-    player_id = payload.get("player_id")
-    action = payload.get("action")
-    metadata = payload.get("metadata") or {}
-
-    if not oracle_id or not player_id or not action:
-        raise HTTPException(status_code=400, detail="oracle_id, player_id, and action are required")
+    oracle_id = payload.oracle_id
+    player_id = payload.player_id
+    action = payload.action
+    metadata = payload.metadata or {}
 
     if not _get_oracle_profile(oracle_id, user_id):
         raise HTTPException(status_code=404, detail="Oracle not found for this user")
@@ -412,8 +470,8 @@ def list_oracle_actions(
     if player_id and player_id not in owned_ids["player_ids"]:
         raise HTTPException(status_code=404, detail="Player account not found for this user")
 
-    capped_limit = limit if limit and limit > 0 else 50
-    capped_limit = min(capped_limit, 500)
+    capped_limit = _cap_limit(limit, default=50, max_limit=500)
+    normalized_since = _parse_iso_timestamp(since)
 
     query = supabase.table("oracle_actions").select("*").order("created_at", desc=True)
 
@@ -431,8 +489,8 @@ def list_oracle_actions(
     if action:
         query = query.eq("action", action)
 
-    if since:
-        query = query.gte("created_at", since)
+    if normalized_since:
+        query = query.gte("created_at", normalized_since)
 
     query = query.limit(capped_limit)
 
@@ -470,14 +528,15 @@ def oracle_action_stats(
     if player_id and player_id not in owned_ids["player_ids"]:
         raise HTTPException(status_code=404, detail="Player account not found for this user")
 
-    capped_limit = min(limit if limit and limit > 0 else 200, 1000)
+    capped_limit = _cap_limit(limit, default=200, max_limit=1000)
+    normalized_since = _parse_iso_timestamp(since)
 
     return _summarize_actions_for_owned(
         owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
         owned_ids["player_ids"] if not player_id else {player_id},
         capped_limit,
         action,
-        since,
+        normalized_since,
         include_ok_flag=True,
     )
 

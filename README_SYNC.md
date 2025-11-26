@@ -85,13 +85,17 @@ curl -s "$BASE/gpt/oracle-catalog?limit=5" -H "Authorization: $TOKEN"
 curl -s "$BASE/gpt/sync?include_actions=true&actions_limit=25" -H "Authorization: $TOKEN"
 # Sync only a specific action type when fetching history
 curl -s "$BASE/gpt/sync?include_actions=true&actions_filter=RITUAL_START&actions_limit=10" -H "Authorization: $TOKEN"
-# Sync only actions created after a timestamp
-curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
-# Sync and include aggregated action counts (uses the same filters/limits)
-curl -s "$BASE/gpt/sync?include_action_stats=true&actions_since=2024-10-01T00:00:00Z&action_stats_limit=500" -H "Authorization: $TOKEN"
-```
+ # Sync only actions created after a timestamp
+ curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
+ # Sync and include aggregated action counts (uses the same filters/limits)
+ curl -s "$BASE/gpt/sync?include_action_stats=true&actions_since=2024-10-01T00:00:00Z&action_stats_limit=500" -H "Authorization: $TOKEN"
+ ```
 
-Or run locally against Supabase using the helper script after seeding:
+**Timestamps & limits**
+- All `since` parameters require ISO-8601 strings (e.g., `2024-10-01T00:00:00Z`). Invalid timestamps now return `400` so problems surface quickly.
+- Limits are capped automatically (actions: max 500, action stats: max 1000) to keep Supabase queries efficient.
+
+ Or run locally against Supabase using the helper script after seeding:
 
 ```
 python scripts/list_oracles.py --limit 5

@@ -8,6 +8,7 @@ player/oracle profiles without re-implementing the FastAPI validation logic.
 from supabase import create_client, Client
 from passlib.context import CryptContext
 from uuid import uuid4
+from datetime import datetime
 import os
 from typing import Dict, Any, Optional
 
@@ -23,6 +24,29 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def _cap_limit(value: Optional[int], *, default: int, max_limit: int) -> int:
+    """Clamp result sizes for Supabase queries."""
+
+    if value is None or value <= 0:
+        return default
+    return min(value, max_limit)
+
+
+def _parse_iso_timestamp(value: Optional[str]) -> Optional[str]:
+    """Normalize ISO-8601 timestamps and raise on invalid input."""
+
+    if not value:
+        return None
+
+    normalized = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError as exc:
+        raise ValueError("Invalid ISO timestamp format") from exc
+
+    return parsed.isoformat()
 
 
 def _get_user_record(email: str) -> Optional[Dict[str, Any]]:
@@ -150,19 +174,20 @@ def get_user_bundle(
 
     actions = []
     action_stats = None
+    normalized_since = _parse_iso_timestamp(actions_since)
     if include_actions:
         actions = list_user_actions(
             email,
-            limit=actions_limit,
+            limit=_cap_limit(actions_limit, default=50, max_limit=500),
             action=actions_filter,
-            since=actions_since,
+            since=normalized_since,
         )
     if include_action_stats:
-        capped_stats_limit = min(action_stats_limit if action_stats_limit and action_stats_limit > 0 else 200, 1000)
+        capped_stats_limit = _cap_limit(action_stats_limit, default=200, max_limit=1000)
         action_stats = summarize_user_actions(
             email,
             action=actions_filter,
-            since=actions_since,
+            since=normalized_since,
             limit=capped_stats_limit,
         )
 
@@ -201,8 +226,8 @@ def list_user_actions(
     owned_oracles = {row["oracle_id"] for row in (oracles_res.data or []) if row.get("oracle_id")}
     owned_players = {players_res.data.get("player_id")} if players_res.data and players_res.data.get("player_id") else set()
 
-    capped_limit = limit if limit and limit > 0 else 50
-    capped_limit = min(capped_limit, 500)
+    capped_limit = _cap_limit(limit, default=50, max_limit=500)
+    normalized_since = _parse_iso_timestamp(since)
 
     if oracle_id and oracle_id not in owned_oracles:
         raise ValueError("Oracle not found for this user")
@@ -224,8 +249,8 @@ def list_user_actions(
     if action:
         query = query.eq("action", action)
 
-    if since:
-        query = query.gte("created_at", since)
+    if normalized_since:
+        query = query.gte("created_at", normalized_since)
 
     query = query.limit(capped_limit)
     res = query.execute()
@@ -248,13 +273,16 @@ def summarize_user_actions(
     fetch before aggregation to avoid heavy queries.
     """
 
+    capped_limit = _cap_limit(limit, default=200, max_limit=1000)
+    normalized_since = _parse_iso_timestamp(since)
+
     rows = list_user_actions(
         email,
         oracle_id=oracle_id,
         player_id=player_id,
         action=action,
-        since=since,
-        limit=limit,
+        since=normalized_since,
+        limit=capped_limit,
     )
 
     counts: Dict[str, int] = {}
@@ -264,8 +292,8 @@ def summarize_user_actions(
 
     return {
         "total": len(rows),
-        "limit": limit,
-        "since": since,
+        "limit": capped_limit,
+        "since": normalized_since,
         "action_counts": sorted(
             [{"action": k, "count": v} for k, v in counts.items()],
             key=lambda x: x["action"],

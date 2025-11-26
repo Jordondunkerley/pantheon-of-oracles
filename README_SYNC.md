@@ -78,6 +78,10 @@ curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&limit=25" -H "Autho
 # Aggregate counts per action type for your owned IDs
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z" -H "Authorization: $TOKEN"
 
+# Reset your own bundle (player + oracles + optional actions)
+curl -s -X POST $BASE/gpt/delete-bundle -H "Authorization: $TOKEN" \
+  -H "Content-Type: application/json" -d '{"delete_actions":true}'
+
 # Fetch seeded oracle catalog entries (requires at least one account for auth)
 curl -s "$BASE/gpt/oracle-catalog?limit=5" -H "Authorization: $TOKEN"
 

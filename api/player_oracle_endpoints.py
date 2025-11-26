@@ -75,6 +75,13 @@ class OracleActionPayload(BaseModel):
     action: str
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
+
+class DeleteBundlePayload(BaseModel):
+    delete_actions: bool = Field(
+        default=True,
+        description="Whether to remove oracle_actions linked to the user's IDs.",
+    )
+
 def require_auth(authorization: Optional[str]) -> str:
     """
     Validate bearer token and return the email (sub) from the JWT.
@@ -338,6 +345,58 @@ def _summarize_actions_for_owned(
     return response
 
 
+def _delete_bundle_for_owned(
+    user_id: str,
+    *,
+    delete_actions: bool = True,
+) -> Dict[str, Any]:
+    """Delete a caller's player/oracle rows and optionally their actions.
+
+    Oracle actions are only removed when we have at least one owned oracle_id or
+    player_id to constrain the delete query, preventing accidental table-wide
+    wipes. This mirrors the service-role purge helper but scopes everything to
+    the authenticated user's IDs.
+    """
+
+    player_res = (
+        supabase.table("player_accounts")
+        .select("id,player_id")
+        .eq("user_id", user_id)
+        .single()
+        .execute()
+    )
+    oracles_res = (
+        supabase.table("oracle_profiles")
+        .select("oracle_id")
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    player_row = player_res.data or {}
+    oracle_ids = [row.get("oracle_id") for row in (oracles_res.data or []) if row.get("oracle_id")]
+
+    deleted_actions = 0
+    if delete_actions and (oracle_ids or player_row.get("player_id")):
+        action_query = supabase.table("oracle_actions").delete()
+
+        if oracle_ids:
+            action_query = action_query.in_("oracle_id", oracle_ids)
+        if player_row.get("player_id"):
+            action_query = action_query.eq("player_id", player_row["player_id"])
+
+        actions_res = action_query.execute()
+        deleted_actions = len(actions_res.data or []) if hasattr(actions_res, "data") else 0
+
+    profiles_res = supabase.table("oracle_profiles").delete().eq("user_id", user_id).execute()
+    players_res = supabase.table("player_accounts").delete().eq("user_id", user_id).execute()
+
+    return {
+        "deleted_actions": deleted_actions,
+        "deleted_oracle_profiles": len(profiles_res.data or []) if hasattr(profiles_res, "data") else 0,
+        "deleted_player_accounts": len(players_res.data or []) if hasattr(players_res, "data") else 0,
+    }
+
+
 @router.get("/gpt/sync")
 def sync_player_data(
     include_actions: bool = False,
@@ -539,6 +598,25 @@ def oracle_action_stats(
         normalized_since,
         include_ok_flag=True,
     )
+
+
+@router.post("/gpt/delete-bundle")
+def delete_bundle(payload: DeleteBundlePayload, authorization: Optional[str] = Header(None)):
+    """Allow callers to purge their own profiles and optionally action history.
+
+    This is useful for resetting a demo account before re-importing templates from
+    the GPT patches. Auth is enforced via JWT, and deletes are scoped to the
+    caller's owned IDs to prevent cross-user data loss. Actions are only removed
+    when at least one owned oracle/player ID exists.
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    result = _delete_bundle_for_owned(user_id, delete_actions=payload.delete_actions)
+    return {"ok": True, **result}
 
 
 @router.get("/gpt/oracle-catalog")

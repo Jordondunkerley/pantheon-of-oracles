@@ -184,18 +184,22 @@ def get_user_bundle(
     oracles_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
 
     actions = []
+    actions_meta: Optional[Dict[str, Any]] = None
     action_stats = None
     normalized_since = _parse_iso_timestamp(actions_since)
     normalized_until = _parse_iso_timestamp(actions_until)
     if include_actions:
-        actions = list_user_actions(
+        actions_result = list_user_actions(
             email,
             limit=_cap_limit(actions_limit, default=50, max_limit=500),
             offset=_normalize_offset(actions_offset),
             action=actions_filter,
             since=normalized_since,
             until=normalized_until,
+            include_metadata=True,
         )
+        actions = actions_result.get("actions", []) if isinstance(actions_result, dict) else actions_result
+        actions_meta = actions_result.get("meta") if isinstance(actions_result, dict) else None
     if include_action_stats:
         capped_stats_limit = _cap_limit(action_stats_limit, default=200, max_limit=1000)
         action_stats = summarize_user_actions(
@@ -211,6 +215,7 @@ def get_user_bundle(
         "account": player_res.data,
         "oracles": oracles_res.data or [],
         "actions": actions,
+        "actions_meta": actions_meta,
         "action_stats": action_stats,
     }
 
@@ -225,13 +230,15 @@ def list_user_actions(
     until: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
-) -> list[Dict[str, Any]]:
+    include_metadata: bool = False,
+) -> Any:
     """Return recent oracle_actions constrained to the user's owned IDs.
 
     This helper mirrors the ownership rules used by the FastAPI endpoints. When no
     explicit filters are supplied, results are limited to the caller's oracle_ids
     (and, if present, the player's stored player_id). Limits are capped to 500 to
-    avoid heavy queries.
+    avoid heavy queries. When ``include_metadata`` is True, pagination metadata is
+    returned alongside the rows so CLI callers can plan follow-up pages.
     """
 
     user_id = _get_user_id_by_email(email)
@@ -254,12 +261,29 @@ def list_user_actions(
     if player_id and player_id not in owned_players:
         raise ValueError("Player account not found for this user")
 
-    query = supabase.table("oracle_actions").select("*").order("created_at", desc=True)
+    select_kwargs = {"count": "exact"} if include_metadata else {}
+    query = supabase.table("oracle_actions").select("*", **select_kwargs).order("created_at", desc=True)
 
     if oracle_id:
         query = query.eq("oracle_id", oracle_id)
     else:
         if not owned_oracles:
+            if include_metadata:
+                return {
+                    "actions": [],
+                    "meta": {
+                        "total_available": 0,
+                        "returned": 0,
+                        "limit": capped_limit,
+                        "offset": normalized_offset,
+                        "oracle_ids": [],
+                        "player_ids": list(owned_players),
+                        "since": normalized_since,
+                        "until": normalized_until,
+                        "action": action,
+                        "has_more": False,
+                    },
+                }
             return []
         query = query.in_("oracle_id", list(owned_oracles))
 
@@ -277,7 +301,35 @@ def list_user_actions(
 
     query = query.range(normalized_offset, normalized_offset + capped_limit - 1)
     res = query.execute()
-    return res.data or []
+    actions = res.data or []
+
+    if not include_metadata:
+        return actions
+
+    total_available = getattr(res, "count", None)
+    has_more = False
+    if total_available is not None:
+        has_more = normalized_offset + len(actions) < total_available
+    else:
+        has_more = len(actions) >= capped_limit
+
+    return {
+        "actions": actions,
+        "meta": {
+            "total_available": total_available,
+            "returned": len(actions),
+            "limit": capped_limit,
+            "offset": normalized_offset,
+            "oracle_id": oracle_id,
+            "player_id": player_id,
+            "since": normalized_since,
+            "until": normalized_until,
+            "action": action,
+            "oracle_ids": sorted(list(owned_oracles)) if not oracle_id else [oracle_id],
+            "player_ids": sorted(list(owned_players)) if not player_id else [player_id],
+            "has_more": has_more,
+        },
+    }
 
 
 def summarize_user_actions(
@@ -303,7 +355,7 @@ def summarize_user_actions(
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
 
-    rows = list_user_actions(
+    rows_result = list_user_actions(
         email,
         oracle_id=oracle_id,
         player_id=player_id,
@@ -312,7 +364,11 @@ def summarize_user_actions(
         until=normalized_until,
         limit=capped_limit,
         offset=normalized_offset,
+        include_metadata=True,
     )
+
+    rows = rows_result.get("actions", []) if isinstance(rows_result, dict) else rows_result
+    meta = rows_result.get("meta", {}) if isinstance(rows_result, dict) else {}
 
     counts: Dict[str, int] = {}
     for row in rows:
@@ -321,10 +377,13 @@ def summarize_user_actions(
 
     return {
         "total": len(rows),
-        "limit": capped_limit,
-        "offset": normalized_offset,
-        "since": normalized_since,
-        "until": normalized_until,
+        "limit": meta.get("limit", capped_limit),
+        "offset": meta.get("offset", normalized_offset),
+        "since": meta.get("since", normalized_since),
+        "until": meta.get("until", normalized_until),
+        "returned": meta.get("returned", len(rows)),
+        "total_available": meta.get("total_available"),
+        "has_more": meta.get("has_more", False),
         "action_counts": sorted(
             [{"action": k, "count": v} for k, v in counts.items()],
             key=lambda x: x["action"],

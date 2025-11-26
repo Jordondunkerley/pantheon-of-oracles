@@ -276,6 +276,8 @@ def _list_actions_for_owned(
     action: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
+    *,
+    include_metadata: bool = False,
 ):
     """
     Fetch recent oracle_actions scoped to owned oracle/player IDs.
@@ -284,6 +286,10 @@ def _list_actions_for_owned(
     by constraining the Supabase query to the caller's oracle_ids. Player
     filtering is optional but constrained to known player_ids when present.
     ``limit`` is capped at 500, and ``action`` can filter by action name.
+
+    When ``include_metadata`` is true, the response includes pagination
+    metadata (limit, offset, normalized timestamps, total_count when available,
+    and a ``has_more`` hint) to support client-side pagination.
     """
 
     capped_limit = _cap_limit(limit, default=50, max_limit=500)
@@ -292,9 +298,26 @@ def _list_actions_for_owned(
     normalized_until = _parse_iso_timestamp(until)
 
     if not oracle_ids:
+        if include_metadata:
+            return {
+                "actions": [],
+                "meta": {
+                    "total_available": 0,
+                    "returned": 0,
+                    "limit": capped_limit,
+                    "offset": normalized_offset,
+                    "oracle_ids": [],
+                    "player_ids": [],
+                    "since": normalized_since,
+                    "until": normalized_until,
+                    "action": action,
+                    "has_more": False,
+                },
+            }
         return []
 
-    query = supabase.table("oracle_actions").select("*").order("created_at", desc=True)
+    select_kwargs = {"count": "exact"} if include_metadata else {}
+    query = supabase.table("oracle_actions").select("*", **select_kwargs).order("created_at", desc=True)
     query = query.in_("oracle_id", list(oracle_ids))
 
     if player_ids:
@@ -312,7 +335,33 @@ def _list_actions_for_owned(
     query = query.range(normalized_offset, normalized_offset + capped_limit - 1)
 
     res = query.execute()
-    return res.data or []
+    actions = res.data or []
+
+    if not include_metadata:
+        return actions
+
+    total_available = getattr(res, "count", None)
+    has_more = False
+    if total_available is not None:
+        has_more = normalized_offset + len(actions) < total_available
+    else:
+        has_more = len(actions) >= capped_limit
+
+    return {
+        "actions": actions,
+        "meta": {
+            "total_available": total_available,
+            "returned": len(actions),
+            "limit": capped_limit,
+            "offset": normalized_offset,
+            "oracle_ids": sorted(list(oracle_ids)) if oracle_ids else [],
+            "player_ids": sorted(list(player_ids)) if player_ids else [],
+            "since": normalized_since,
+            "until": normalized_until,
+            "action": action,
+            "has_more": has_more,
+        },
+    }
 
 
 def _summarize_actions_for_owned(
@@ -333,7 +382,7 @@ def _summarize_actions_for_owned(
     response structure when reused in route handlers.
     """
 
-    actions = _list_actions_for_owned(
+    actions_result = _list_actions_for_owned(
         oracle_ids,
         player_ids,
         limit,
@@ -341,7 +390,10 @@ def _summarize_actions_for_owned(
         action,
         since,
         until,
+        include_metadata=True,
     )
+    actions = actions_result.get("actions", [])
+    meta = actions_result.get("meta", {})
 
     counts: Dict[str, int] = {}
     for row in actions:
@@ -350,9 +402,16 @@ def _summarize_actions_for_owned(
 
     response = {
         "total": len(actions),
-        "limit": limit,
-        "since": since,
-        "until": until,
+        "limit": meta.get("limit", limit),
+        "offset": meta.get("offset", offset),
+        "since": meta.get("since", since),
+        "until": meta.get("until", until),
+        "oracle_ids": meta.get("oracle_ids"),
+        "player_ids": meta.get("player_ids"),
+        "action": action,
+        "returned": meta.get("returned", len(actions)),
+        "total_available": meta.get("total_available"),
+        "has_more": meta.get("has_more", False),
         "action_counts": sorted(
             [{"action": k, "count": v} for k, v in counts.items()],
             key=lambda x: x["action"],
@@ -438,9 +497,11 @@ def sync_player_data(
     retrieves both the player's account and list of oracles from Supabase. When
     ``include_actions`` is true, recent oracle_actions are also returned, capped
     to 500 rows and optionally filtered by ``actions_filter`` (action name) or
-    timestamp bounds (``actions_since``/``actions_until``). This allows the
-    Pantheon GPT router to fetch all relevant data in one request, enabling
-    continuous syncing across sessions without manual imports.
+    timestamp bounds (``actions_since``/``actions_until``). The response now
+    includes ``actions_meta`` (limit, offset, filters, total when available, and
+    ``has_more``) so clients can paginate consistently. This allows the Pantheon
+    GPT router to fetch all relevant data in one request, enabling continuous
+    syncing across sessions without manual imports.
     """
     user_email = require_auth(authorization)
     user_id = get_user_id_by_email(user_email)
@@ -452,12 +513,13 @@ def sync_player_data(
     orc_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
 
     actions = []
+    actions_meta: Optional[Dict[str, Any]] = None
     action_stats = None
     normalized_since = _parse_iso_timestamp(actions_since)
     normalized_until = _parse_iso_timestamp(actions_until)
     if include_actions:
         owned_ids = _get_owned_ids(user_id)
-        actions = _list_actions_for_owned(
+        actions_result = _list_actions_for_owned(
             owned_ids["oracle_ids"],
             owned_ids["player_ids"],
             _cap_limit(actions_limit, default=50, max_limit=500),
@@ -465,7 +527,10 @@ def sync_player_data(
             actions_filter,
             normalized_since,
             normalized_until,
+            include_metadata=True,
         )
+        actions = actions_result.get("actions", [])
+        actions_meta = actions_result.get("meta")
     if include_action_stats:
         owned_ids = _get_owned_ids(user_id)
         capped_stats_limit = _cap_limit(action_stats_limit, default=200, max_limit=1000)
@@ -483,6 +548,7 @@ def sync_player_data(
         "account": acc_res.data,
         "oracles": orc_res.data,
         "actions": actions,
+        "actions_meta": actions_meta,
         "action_stats": action_stats,
     }
 
@@ -544,7 +610,8 @@ def list_oracle_actions(
     tied to the user's own oracle IDs are returned. ``limit`` defaults to 50 and
     is capped at 500. ``action`` can be supplied to filter by action name, and
     ``since``/``until`` can bound results by ``created_at`` to slice windows of
-    history.
+    history. The response includes ``meta`` with limit/offset, applied filters,
+    and a ``has_more`` hint to drive pagination.
     """
 
     user_email = require_auth(authorization)
@@ -560,37 +627,22 @@ def list_oracle_actions(
     if player_id and player_id not in owned_ids["player_ids"]:
         raise HTTPException(status_code=404, detail="Player account not found for this user")
 
-    capped_limit = _cap_limit(limit, default=50, max_limit=500)
-    normalized_offset = _normalize_offset(offset)
-    normalized_since = _parse_iso_timestamp(since)
-    normalized_until = _parse_iso_timestamp(until)
+    actions_result = _list_actions_for_owned(
+        owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
+        owned_ids["player_ids"] if not player_id else {player_id},
+        limit,
+        offset,
+        action,
+        since,
+        until,
+        include_metadata=True,
+    )
 
-    query = supabase.table("oracle_actions").select("*").order("created_at", desc=True)
-
-    if oracle_id:
-        query = query.eq("oracle_id", oracle_id)
-    else:
-        # Constrain to caller-owned oracle_ids to avoid leaking other users' actions
-        if not owned_ids["oracle_ids"]:
-            return {"ok": True, "actions": []}
-        query = query.in_("oracle_id", list(owned_ids["oracle_ids"]))
-
-    if player_id:
-        query = query.eq("player_id", player_id)
-
-    if action:
-        query = query.eq("action", action)
-
-    if normalized_since:
-        query = query.gte("created_at", normalized_since)
-
-    if normalized_until:
-        query = query.lte("created_at", normalized_until)
-
-    query = query.range(normalized_offset, normalized_offset + capped_limit - 1)
-
-    res = query.execute()
-    return {"ok": True, "actions": res.data or []}
+    return {
+        "ok": True,
+        "actions": actions_result.get("actions", []),
+        "meta": actions_result.get("meta"),
+    }
 
 
 @router.get("/gpt/oracle-action-stats")

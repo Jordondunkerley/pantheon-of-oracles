@@ -113,6 +113,10 @@ curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&
 - All `since`/`until` parameters require ISO-8601 strings (e.g., `2024-10-01T00:00:00Z`). Invalid timestamps now return `400` so problems surface quickly.
 - Limits are capped automatically (actions: max 500, action stats: max 1000) to keep Supabase queries efficient.
 
+**Pagination metadata**
+- `/gpt/oracle-actions` returns a `meta` block with the applied limit/offset, filters, and `has_more` + `total_available` (when Supabase provides it) so clients can walk paginated windows safely.
+- `/gpt/sync` mirrors the same `actions_meta` structure alongside the combined bundle, and `scripts/list_actions.py` echoes the metadata to help plan subsequent CLI calls.
+
  Or run locally against Supabase using the helper script after seeding:
 
 ```

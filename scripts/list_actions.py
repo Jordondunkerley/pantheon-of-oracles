@@ -54,7 +54,7 @@ def main() -> None:
     limit = args.get("limit") or 50
     offset = args.get("offset") or 0
 
-    actions = list_user_actions(
+    actions_result = list_user_actions(
         email,
         oracle_id=oracle_id,
         player_id=player_id,
@@ -63,9 +63,20 @@ def main() -> None:
         until=until,
         limit=limit,
         offset=offset,
+        include_metadata=True,
     )
 
-    print(f"Found {len(actions)} actions")
+    actions = actions_result.get("actions", []) if isinstance(actions_result, dict) else actions_result
+    meta = actions_result.get("meta") if isinstance(actions_result, dict) else None
+
+    if meta:
+        print(
+            f"Returned {meta.get('returned', len(actions))} / {meta.get('total_available', 'unknown')} actions "
+            f"(limit={meta.get('limit')}, offset={meta.get('offset')}, has_more={meta.get('has_more')})"
+        )
+    else:
+        print(f"Found {len(actions)} actions")
+
     for row in actions:
         print(row)
 

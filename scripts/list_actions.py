@@ -21,6 +21,14 @@ def parse_args() -> Dict[str, Any]:
     parser.add_argument("--player-id", help="Filter by player_id owned by the user")
     parser.add_argument("--action", help="Filter by action type (e.g., RITUAL_START)")
     parser.add_argument(
+        "--since",
+        help="Only include actions created at or after this ISO timestamp",
+    )
+    parser.add_argument(
+        "--until",
+        help="Only include actions created at or before this ISO timestamp",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=50,
@@ -35,6 +43,8 @@ def main() -> None:
     oracle_id = args.get("oracle_id")
     player_id = args.get("player_id")
     action = args.get("action")
+    since = args.get("since")
+    until = args.get("until")
     limit = args.get("limit") or 50
 
     actions = list_user_actions(
@@ -42,6 +52,8 @@ def main() -> None:
         oracle_id=oracle_id,
         player_id=player_id,
         action=action,
+        since=since,
+        until=until,
         limit=limit,
     )
 

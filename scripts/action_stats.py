@@ -22,6 +22,10 @@ parser.add_argument(
     help="Only include actions created at or after this ISO timestamp",
 )
 parser.add_argument(
+    "--until",
+    help="Only include actions created at or before this ISO timestamp",
+)
+parser.add_argument(
     "--limit",
     type=int,
     default=200,
@@ -39,6 +43,7 @@ def main():
         player_id=args.player_id,
         action=args.action,
         since=args.since,
+        until=args.until,
         limit=limit,
     )
 

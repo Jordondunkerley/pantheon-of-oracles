@@ -161,6 +161,7 @@ def get_user_bundle(
     actions_limit: int = 50,
     actions_filter: Optional[str] = None,
     actions_since: Optional[str] = None,
+    actions_until: Optional[str] = None,
     action_stats_limit: int = 200,
 ) -> Dict[str, Any]:
     """Return player account, owned oracles, and optional recent actions for a user."""
@@ -175,12 +176,14 @@ def get_user_bundle(
     actions = []
     action_stats = None
     normalized_since = _parse_iso_timestamp(actions_since)
+    normalized_until = _parse_iso_timestamp(actions_until)
     if include_actions:
         actions = list_user_actions(
             email,
             limit=_cap_limit(actions_limit, default=50, max_limit=500),
             action=actions_filter,
             since=normalized_since,
+            until=normalized_until,
         )
     if include_action_stats:
         capped_stats_limit = _cap_limit(action_stats_limit, default=200, max_limit=1000)
@@ -188,6 +191,7 @@ def get_user_bundle(
             email,
             action=actions_filter,
             since=normalized_since,
+            until=normalized_until,
             limit=capped_stats_limit,
         )
 
@@ -206,6 +210,7 @@ def list_user_actions(
     player_id: Optional[str] = None,
     action: Optional[str] = None,
     since: Optional[str] = None,
+    until: Optional[str] = None,
     limit: int = 50,
 ) -> list[Dict[str, Any]]:
     """Return recent oracle_actions constrained to the user's owned IDs.
@@ -228,6 +233,7 @@ def list_user_actions(
 
     capped_limit = _cap_limit(limit, default=50, max_limit=500)
     normalized_since = _parse_iso_timestamp(since)
+    normalized_until = _parse_iso_timestamp(until)
 
     if oracle_id and oracle_id not in owned_oracles:
         raise ValueError("Oracle not found for this user")
@@ -252,6 +258,9 @@ def list_user_actions(
     if normalized_since:
         query = query.gte("created_at", normalized_since)
 
+    if normalized_until:
+        query = query.lte("created_at", normalized_until)
+
     query = query.limit(capped_limit)
     res = query.execute()
     return res.data or []
@@ -264,6 +273,7 @@ def summarize_user_actions(
     player_id: Optional[str] = None,
     action: Optional[str] = None,
     since: Optional[str] = None,
+    until: Optional[str] = None,
     limit: int = 200,
 ) -> Dict[str, Any]:
     """Aggregate action counts for a user's owned oracle/player IDs.
@@ -275,6 +285,7 @@ def summarize_user_actions(
 
     capped_limit = _cap_limit(limit, default=200, max_limit=1000)
     normalized_since = _parse_iso_timestamp(since)
+    normalized_until = _parse_iso_timestamp(until)
 
     rows = list_user_actions(
         email,
@@ -282,6 +293,7 @@ def summarize_user_actions(
         player_id=player_id,
         action=action,
         since=normalized_since,
+        until=normalized_until,
         limit=capped_limit,
     )
 
@@ -294,6 +306,7 @@ def summarize_user_actions(
         "total": len(rows),
         "limit": capped_limit,
         "since": normalized_since,
+        "until": normalized_until,
         "action_counts": sorted(
             [{"action": k, "count": v} for k, v in counts.items()],
             key=lambda x: x["action"],

@@ -266,6 +266,7 @@ def _list_actions_for_owned(
     limit: int,
     action: Optional[str] = None,
     since: Optional[str] = None,
+    until: Optional[str] = None,
 ):
     """
     Fetch recent oracle_actions scoped to owned oracle/player IDs.
@@ -278,6 +279,7 @@ def _list_actions_for_owned(
 
     capped_limit = _cap_limit(limit, default=50, max_limit=500)
     normalized_since = _parse_iso_timestamp(since)
+    normalized_until = _parse_iso_timestamp(until)
 
     if not oracle_ids:
         return []
@@ -294,6 +296,9 @@ def _list_actions_for_owned(
     if normalized_since:
         query = query.gte("created_at", normalized_since)
 
+    if normalized_until:
+        query = query.lte("created_at", normalized_until)
+
     query = query.limit(capped_limit)
 
     res = query.execute()
@@ -306,6 +311,7 @@ def _summarize_actions_for_owned(
     limit: int,
     action: Optional[str] = None,
     since: Optional[str] = None,
+    until: Optional[str] = None,
     *,
     include_ok_flag: bool = False,
 ):
@@ -322,6 +328,7 @@ def _summarize_actions_for_owned(
         limit,
         action,
         since,
+        until,
     )
 
     counts: Dict[str, int] = {}
@@ -333,6 +340,7 @@ def _summarize_actions_for_owned(
         "total": len(actions),
         "limit": limit,
         "since": since,
+        "until": until,
         "action_counts": sorted(
             [{"action": k, "count": v} for k, v in counts.items()],
             key=lambda x: x["action"],
@@ -404,6 +412,7 @@ def sync_player_data(
     actions_limit: int = 50,
     actions_filter: Optional[str] = None,
     actions_since: Optional[str] = None,
+    actions_until: Optional[str] = None,
     action_stats_limit: int = 200,
     authorization: Optional[str] = Header(None),
 ):
@@ -415,9 +424,9 @@ def sync_player_data(
     retrieves both the player's account and list of oracles from Supabase. When
     ``include_actions`` is true, recent oracle_actions are also returned, capped
     to 500 rows and optionally filtered by ``actions_filter`` (action name) or
-    ``actions_since`` (ISO timestamp). This allows the Pantheon GPT router to
-    fetch all relevant data in one request, enabling continuous syncing across
-    sessions without manual imports.
+    timestamp bounds (``actions_since``/``actions_until``). This allows the
+    Pantheon GPT router to fetch all relevant data in one request, enabling
+    continuous syncing across sessions without manual imports.
     """
     user_email = require_auth(authorization)
     user_id = get_user_id_by_email(user_email)
@@ -431,6 +440,7 @@ def sync_player_data(
     actions = []
     action_stats = None
     normalized_since = _parse_iso_timestamp(actions_since)
+    normalized_until = _parse_iso_timestamp(actions_until)
     if include_actions:
         owned_ids = _get_owned_ids(user_id)
         actions = _list_actions_for_owned(
@@ -439,6 +449,7 @@ def sync_player_data(
             _cap_limit(actions_limit, default=50, max_limit=500),
             actions_filter,
             normalized_since,
+            normalized_until,
         )
     if include_action_stats:
         owned_ids = _get_owned_ids(user_id)
@@ -449,6 +460,7 @@ def sync_player_data(
             capped_stats_limit,
             actions_filter,
             normalized_since,
+            normalized_until,
         )
     return {
         "ok": True,
@@ -503,6 +515,7 @@ def list_oracle_actions(
     player_id: Optional[str] = None,
     action: Optional[str] = None,
     since: Optional[str] = None,
+    until: Optional[str] = None,
     limit: int = 50,
     authorization: Optional[str] = Header(None),
 ):
@@ -513,7 +526,8 @@ def list_oracle_actions(
     with the caller's stored profiles. When no filters are provided, only actions
     tied to the user's own oracle IDs are returned. ``limit`` defaults to 50 and
     is capped at 500. ``action`` can be supplied to filter by action name, and
-    ``since`` can restrict results to recent entries via ``created_at``.
+    ``since``/``until`` can bound results by ``created_at`` to slice windows of
+    history.
     """
 
     user_email = require_auth(authorization)
@@ -531,6 +545,7 @@ def list_oracle_actions(
 
     capped_limit = _cap_limit(limit, default=50, max_limit=500)
     normalized_since = _parse_iso_timestamp(since)
+    normalized_until = _parse_iso_timestamp(until)
 
     query = supabase.table("oracle_actions").select("*").order("created_at", desc=True)
 
@@ -551,6 +566,9 @@ def list_oracle_actions(
     if normalized_since:
         query = query.gte("created_at", normalized_since)
 
+    if normalized_until:
+        query = query.lte("created_at", normalized_until)
+
     query = query.limit(capped_limit)
 
     res = query.execute()
@@ -563,6 +581,7 @@ def oracle_action_stats(
     player_id: Optional[str] = None,
     action: Optional[str] = None,
     since: Optional[str] = None,
+    until: Optional[str] = None,
     limit: int = 200,
     authorization: Optional[str] = Header(None),
 ):
@@ -571,8 +590,9 @@ def oracle_action_stats(
 
     Returns a simple count per action type drawn from ``oracle_actions`` after
     enforcing ownership of the supplied IDs. ``since`` can restrict results to
-    recent activity (based on ``created_at`` timestamps), and ``limit`` caps the
-    number of rows fetched before aggregation (default 200, max 1000).
+    recent activity (based on ``created_at`` timestamps), ``until`` can cap the
+    upper bound, and ``limit`` caps the number of rows fetched before
+    aggregation (default 200, max 1000).
     """
 
     user_email = require_auth(authorization)
@@ -589,6 +609,7 @@ def oracle_action_stats(
 
     capped_limit = _cap_limit(limit, default=200, max_limit=1000)
     normalized_since = _parse_iso_timestamp(since)
+    normalized_until = _parse_iso_timestamp(until)
 
     return _summarize_actions_for_owned(
         owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
@@ -596,6 +617,7 @@ def oracle_action_stats(
         capped_limit,
         action,
         normalized_since,
+        normalized_until,
         include_ok_flag=True,
     )
 

@@ -74,9 +74,13 @@ curl -s "$BASE/gpt/oracle-actions?limit=10" -H "Authorization: $TOKEN"
 curl -s "$BASE/gpt/oracle-actions?action=RITUAL_START&limit=5" -H "Authorization: $TOKEN"
 # Only pull actions created after a timestamp
 curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&limit=25" -H "Authorization: $TOKEN"
+# Slice a window using inclusive bounds
+curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&until=2024-11-01T00:00:00Z&limit=25" -H "Authorization: $TOKEN"
 
 # Aggregate counts per action type for your owned IDs
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z" -H "Authorization: $TOKEN"
+# Aggregate within a bounded window
+curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z&until=2024-11-01T00:00:00Z" -H "Authorization: $TOKEN"
 
 # Reset your own bundle (player + oracles + optional actions)
 curl -s -X POST $BASE/gpt/delete-bundle -H "Authorization: $TOKEN" \
@@ -91,12 +95,14 @@ curl -s "$BASE/gpt/sync?include_actions=true&actions_limit=25" -H "Authorization
 curl -s "$BASE/gpt/sync?include_actions=true&actions_filter=RITUAL_START&actions_limit=10" -H "Authorization: $TOKEN"
  # Sync only actions created after a timestamp
  curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
+ # Sync within a bounded window (actions_since + actions_until)
+ curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_until=2024-11-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
  # Sync and include aggregated action counts (uses the same filters/limits)
- curl -s "$BASE/gpt/sync?include_action_stats=true&actions_since=2024-10-01T00:00:00Z&action_stats_limit=500" -H "Authorization: $TOKEN"
+ curl -s "$BASE/gpt/sync?include_action_stats=true&actions_since=2024-10-01T00:00:00Z&actions_until=2024-11-01T00:00:00Z&action_stats_limit=500" -H "Authorization: $TOKEN"
  ```
 
 **Timestamps & limits**
-- All `since` parameters require ISO-8601 strings (e.g., `2024-10-01T00:00:00Z`). Invalid timestamps now return `400` so problems surface quickly.
+- All `since`/`until` parameters require ISO-8601 strings (e.g., `2024-10-01T00:00:00Z`). Invalid timestamps now return `400` so problems surface quickly.
 - Limits are capped automatically (actions: max 500, action stats: max 1000) to keep Supabase queries efficient.
 
  Or run locally against Supabase using the helper script after seeding:
@@ -107,16 +113,16 @@ python scripts/list_oracles.py --limit 5
 # Export a user's bundle using service-role credentials
 python scripts/export_user_data.py --email you@example.com --include-actions --actions-limit 25
 # Export with filtered history and aggregated action stats
-python scripts/export_user_data.py --email you@example.com --include-action-stats --actions-since 2024-10-01 --actions-filter RITUAL_START
+python scripts/export_user_data.py --email you@example.com --include-action-stats --actions-since 2024-10-01 --actions-until 2024-11-01 --actions-filter RITUAL_START
 
 # Reset a user for fresh imports (service-role)
 python scripts/purge_user_data.py --email you@example.com --delete-user
 
 # Inspect a user's oracle_actions with optional filters (service-role)
-python scripts/list_actions.py --email you@example.com --action RITUAL_START --limit 10
+python scripts/list_actions.py --email you@example.com --action RITUAL_START --since 2024-10-01 --until 2024-11-01 --limit 10
 
 # Summarize a user's action counts (service-role)
-python scripts/action_stats.py --email you@example.com --since 2024-10-01
+python scripts/action_stats.py --email you@example.com --since 2024-10-01 --until 2024-11-01
 ```
 
 ## 7) Legacy code

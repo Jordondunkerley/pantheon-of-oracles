@@ -40,6 +40,10 @@ def parse_args():
         help="ISO timestamp to limit actions/stats to recent entries",
     )
     parser.add_argument(
+        "--actions-until",
+        help="ISO timestamp to limit actions/stats to entries created at or before this time",
+    )
+    parser.add_argument(
         "--include-action-stats",
         action="store_true",
         help="Include aggregated action counts alongside the raw actions list",
@@ -63,6 +67,7 @@ def main():
             actions_limit=args.actions_limit,
             actions_filter=args.actions_filter,
             actions_since=args.actions_since,
+            actions_until=args.actions_until,
             include_action_stats=args.include_action_stats,
             action_stats_limit=args.action_stats_limit,
         )

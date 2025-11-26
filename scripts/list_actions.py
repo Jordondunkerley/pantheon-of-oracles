@@ -34,6 +34,12 @@ def parse_args() -> Dict[str, Any]:
         default=50,
         help="Maximum number of rows to return (defaults to 50, max 500)",
     )
+    parser.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="Number of rows to skip before returning results",
+    )
     return vars(parser.parse_args())
 
 
@@ -46,6 +52,7 @@ def main() -> None:
     since = args.get("since")
     until = args.get("until")
     limit = args.get("limit") or 50
+    offset = args.get("offset") or 0
 
     actions = list_user_actions(
         email,
@@ -55,6 +62,7 @@ def main() -> None:
         since=since,
         until=until,
         limit=limit,
+        offset=offset,
     )
 
     print(f"Found {len(actions)} actions")

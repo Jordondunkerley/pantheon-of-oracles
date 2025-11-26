@@ -34,6 +34,14 @@ def _cap_limit(value: Optional[int], *, default: int = 50, max_limit: int = 500)
     return min(value, max_limit)
 
 
+def _normalize_offset(value: Optional[int], *, default: int = 0) -> int:
+    """Return a non-negative offset with a sensible default."""
+
+    if value is None or value < 0:
+        return default
+    return value
+
+
 def _parse_iso_timestamp(value: Optional[str]) -> Optional[str]:
     """Validate and normalize ISO-8601 timestamps.
 
@@ -264,6 +272,7 @@ def _list_actions_for_owned(
     oracle_ids: set,
     player_ids: set,
     limit: int,
+    offset: int,
     action: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
@@ -278,6 +287,7 @@ def _list_actions_for_owned(
     """
 
     capped_limit = _cap_limit(limit, default=50, max_limit=500)
+    normalized_offset = _normalize_offset(offset)
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
 
@@ -299,7 +309,7 @@ def _list_actions_for_owned(
     if normalized_until:
         query = query.lte("created_at", normalized_until)
 
-    query = query.limit(capped_limit)
+    query = query.range(normalized_offset, normalized_offset + capped_limit - 1)
 
     res = query.execute()
     return res.data or []
@@ -309,6 +319,7 @@ def _summarize_actions_for_owned(
     oracle_ids: set,
     player_ids: set,
     limit: int,
+    offset: int,
     action: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
@@ -326,6 +337,7 @@ def _summarize_actions_for_owned(
         oracle_ids,
         player_ids,
         limit,
+        offset,
         action,
         since,
         until,
@@ -410,10 +422,12 @@ def sync_player_data(
     include_actions: bool = False,
     include_action_stats: bool = False,
     actions_limit: int = 50,
+    actions_offset: int = 0,
     actions_filter: Optional[str] = None,
     actions_since: Optional[str] = None,
     actions_until: Optional[str] = None,
     action_stats_limit: int = 200,
+    action_stats_offset: int = 0,
     authorization: Optional[str] = Header(None),
 ):
     """
@@ -447,6 +461,7 @@ def sync_player_data(
             owned_ids["oracle_ids"],
             owned_ids["player_ids"],
             _cap_limit(actions_limit, default=50, max_limit=500),
+            _normalize_offset(actions_offset),
             actions_filter,
             normalized_since,
             normalized_until,
@@ -458,6 +473,7 @@ def sync_player_data(
             owned_ids["oracle_ids"],
             owned_ids["player_ids"],
             capped_stats_limit,
+            _normalize_offset(action_stats_offset),
             actions_filter,
             normalized_since,
             normalized_until,
@@ -517,6 +533,7 @@ def list_oracle_actions(
     since: Optional[str] = None,
     until: Optional[str] = None,
     limit: int = 50,
+    offset: int = 0,
     authorization: Optional[str] = Header(None),
 ):
     """
@@ -544,6 +561,7 @@ def list_oracle_actions(
         raise HTTPException(status_code=404, detail="Player account not found for this user")
 
     capped_limit = _cap_limit(limit, default=50, max_limit=500)
+    normalized_offset = _normalize_offset(offset)
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
 
@@ -569,7 +587,7 @@ def list_oracle_actions(
     if normalized_until:
         query = query.lte("created_at", normalized_until)
 
-    query = query.limit(capped_limit)
+    query = query.range(normalized_offset, normalized_offset + capped_limit - 1)
 
     res = query.execute()
     return {"ok": True, "actions": res.data or []}
@@ -583,6 +601,7 @@ def oracle_action_stats(
     since: Optional[str] = None,
     until: Optional[str] = None,
     limit: int = 200,
+    offset: int = 0,
     authorization: Optional[str] = Header(None),
 ):
     """
@@ -608,6 +627,7 @@ def oracle_action_stats(
         raise HTTPException(status_code=404, detail="Player account not found for this user")
 
     capped_limit = _cap_limit(limit, default=200, max_limit=1000)
+    normalized_offset = _normalize_offset(offset)
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
 
@@ -615,6 +635,7 @@ def oracle_action_stats(
         owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
         owned_ids["player_ids"] if not player_id else {player_id},
         capped_limit,
+        normalized_offset,
         action,
         normalized_since,
         normalized_until,

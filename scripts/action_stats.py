@@ -31,6 +31,12 @@ parser.add_argument(
     default=200,
     help="Max rows to fetch before aggregation (default 200, max 1000)",
 )
+parser.add_argument(
+    "--offset",
+    type=int,
+    default=0,
+    help="Number of rows to skip before aggregating counts",
+)
 
 
 def main():
@@ -45,6 +51,7 @@ def main():
         since=args.since,
         until=args.until,
         limit=limit,
+        offset=args.offset,
     )
 
     print(stats)

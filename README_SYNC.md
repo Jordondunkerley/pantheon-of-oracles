@@ -70,6 +70,8 @@ curl -s -X POST $BASE/gpt/oracle-action -H "Authorization: $TOKEN" \
 
 # List recent actions scoped to your oracle/player IDs (optional filters)
 curl -s "$BASE/gpt/oracle-actions?limit=10" -H "Authorization: $TOKEN"
+# Skip the first 25 results (pagination style)
+curl -s "$BASE/gpt/oracle-actions?limit=10&offset=25" -H "Authorization: $TOKEN"
 # Filter to a specific action type (e.g., only ritual starts)
 curl -s "$BASE/gpt/oracle-actions?action=RITUAL_START&limit=5" -H "Authorization: $TOKEN"
 # Only pull actions created after a timestamp
@@ -79,6 +81,8 @@ curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&until=2024-11-01T00
 
 # Aggregate counts per action type for your owned IDs
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z" -H "Authorization: $TOKEN"
+# Offset aggregation to paginate through larger windows
+curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z&offset=100&limit=200" -H "Authorization: $TOKEN"
 # Aggregate within a bounded window
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z&until=2024-11-01T00:00:00Z" -H "Authorization: $TOKEN"
 
@@ -93,13 +97,17 @@ curl -s "$BASE/gpt/oracle-catalog?limit=5" -H "Authorization: $TOKEN"
 curl -s "$BASE/gpt/sync?include_actions=true&actions_limit=25" -H "Authorization: $TOKEN"
 # Sync only a specific action type when fetching history
 curl -s "$BASE/gpt/sync?include_actions=true&actions_filter=RITUAL_START&actions_limit=10" -H "Authorization: $TOKEN"
- # Sync only actions created after a timestamp
- curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
- # Sync within a bounded window (actions_since + actions_until)
+# Sync only actions created after a timestamp
+curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
+# Sync within a bounded window (actions_since + actions_until)
  curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_until=2024-11-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
+ # Sync starting from a higher offset for pagination
+ curl -s "$BASE/gpt/sync?include_actions=true&actions_offset=50&actions_limit=25" -H "Authorization: $TOKEN"
  # Sync and include aggregated action counts (uses the same filters/limits)
  curl -s "$BASE/gpt/sync?include_action_stats=true&actions_since=2024-10-01T00:00:00Z&actions_until=2024-11-01T00:00:00Z&action_stats_limit=500" -H "Authorization: $TOKEN"
- ```
+ # Paginate action stats while keeping filters aligned
+ curl -s "$BASE/gpt/sync?include_action_stats=true&actions_offset=100&action_stats_offset=100&actions_limit=25" -H "Authorization: $TOKEN"
+```
 
 **Timestamps & limits**
 - All `since`/`until` parameters require ISO-8601 strings (e.g., `2024-10-01T00:00:00Z`). Invalid timestamps now return `400` so problems surface quickly.
@@ -112,6 +120,8 @@ python scripts/list_oracles.py --limit 5
 
 # Export a user's bundle using service-role credentials
 python scripts/export_user_data.py --email you@example.com --include-actions --actions-limit 25
+# Export with an action offset for pagination and matching stats window
+python scripts/export_user_data.py --email you@example.com --include-actions --actions-offset 25 --include-action-stats --action-stats-offset 25
 # Export with filtered history and aggregated action stats
 python scripts/export_user_data.py --email you@example.com --include-action-stats --actions-since 2024-10-01 --actions-until 2024-11-01 --actions-filter RITUAL_START
 
@@ -123,6 +133,8 @@ python scripts/list_actions.py --email you@example.com --action RITUAL_START --s
 
 # Summarize a user's action counts (service-role)
 python scripts/action_stats.py --email you@example.com --since 2024-10-01 --until 2024-11-01
+# Summarize with an offset to paginate aggregation
+python scripts/action_stats.py --email you@example.com --since 2024-10-01 --until 2024-11-01 --offset 100
 ```
 
 ## 7) Legacy code

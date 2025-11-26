@@ -34,6 +34,14 @@ def _cap_limit(value: Optional[int], *, default: int, max_limit: int) -> int:
     return min(value, max_limit)
 
 
+def _normalize_offset(value: Optional[int], *, default: int = 0) -> int:
+    """Ensure offsets are non-negative to avoid Supabase errors."""
+
+    if value is None or value < 0:
+        return default
+    return value
+
+
 def _parse_iso_timestamp(value: Optional[str]) -> Optional[str]:
     """Normalize ISO-8601 timestamps and raise on invalid input."""
 
@@ -159,10 +167,12 @@ def get_user_bundle(
     include_actions: bool = False,
     include_action_stats: bool = False,
     actions_limit: int = 50,
+    actions_offset: int = 0,
     actions_filter: Optional[str] = None,
     actions_since: Optional[str] = None,
     actions_until: Optional[str] = None,
     action_stats_limit: int = 200,
+    action_stats_offset: int = 0,
 ) -> Dict[str, Any]:
     """Return player account, owned oracles, and optional recent actions for a user."""
 
@@ -181,6 +191,7 @@ def get_user_bundle(
         actions = list_user_actions(
             email,
             limit=_cap_limit(actions_limit, default=50, max_limit=500),
+            offset=_normalize_offset(actions_offset),
             action=actions_filter,
             since=normalized_since,
             until=normalized_until,
@@ -193,6 +204,7 @@ def get_user_bundle(
             since=normalized_since,
             until=normalized_until,
             limit=capped_stats_limit,
+            offset=_normalize_offset(action_stats_offset),
         )
 
     return {
@@ -212,6 +224,7 @@ def list_user_actions(
     since: Optional[str] = None,
     until: Optional[str] = None,
     limit: int = 50,
+    offset: int = 0,
 ) -> list[Dict[str, Any]]:
     """Return recent oracle_actions constrained to the user's owned IDs.
 
@@ -232,6 +245,7 @@ def list_user_actions(
     owned_players = {players_res.data.get("player_id")} if players_res.data and players_res.data.get("player_id") else set()
 
     capped_limit = _cap_limit(limit, default=50, max_limit=500)
+    normalized_offset = _normalize_offset(offset)
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
 
@@ -261,7 +275,7 @@ def list_user_actions(
     if normalized_until:
         query = query.lte("created_at", normalized_until)
 
-    query = query.limit(capped_limit)
+    query = query.range(normalized_offset, normalized_offset + capped_limit - 1)
     res = query.execute()
     return res.data or []
 
@@ -275,6 +289,7 @@ def summarize_user_actions(
     since: Optional[str] = None,
     until: Optional[str] = None,
     limit: int = 200,
+    offset: int = 0,
 ) -> Dict[str, Any]:
     """Aggregate action counts for a user's owned oracle/player IDs.
 
@@ -284,6 +299,7 @@ def summarize_user_actions(
     """
 
     capped_limit = _cap_limit(limit, default=200, max_limit=1000)
+    normalized_offset = _normalize_offset(offset)
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
 
@@ -295,6 +311,7 @@ def summarize_user_actions(
         since=normalized_since,
         until=normalized_until,
         limit=capped_limit,
+        offset=normalized_offset,
     )
 
     counts: Dict[str, int] = {}
@@ -305,6 +322,7 @@ def summarize_user_actions(
     return {
         "total": len(rows),
         "limit": capped_limit,
+        "offset": normalized_offset,
         "since": normalized_since,
         "until": normalized_until,
         "action_counts": sorted(

@@ -79,6 +79,27 @@ def _normalize_sort_direction(value: Optional[str], *, default: str = "desc") ->
     return lowered
 
 
+def _normalize_client_action_id(value: Optional[str]) -> Optional[str]:
+    """Trim and validate optional client-supplied action IDs.
+
+    Empty strings collapse to ``None`` so callers can omit the field without
+    causing unique constraint issues. A defensive length cap prevents oversized
+    payloads from bloating the table.
+    """
+
+    if value is None:
+        return None
+
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+
+    if len(trimmed) > 255:
+        raise HTTPException(status_code=400, detail="client_action_id must be 255 characters or fewer")
+
+    return trimmed
+
+
 class PlayerAccountPayload(BaseModel):
     player_id: Optional[str] = Field(None, description="Stable player UUID/string")
     username: Optional[str] = None
@@ -98,6 +119,9 @@ class OracleActionPayload(BaseModel):
     oracle_id: str
     player_id: str
     action: str
+    client_action_id: Optional[str] = Field(
+        None, description="Idempotency key to deduplicate repeated submissions"
+    )
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -201,6 +225,27 @@ def _ensure_oracle_row(oracle_id: str, oracle_name: Optional[str], archetype: Op
         },
         on_conflict="code",
     ).execute()
+
+
+def _fetch_existing_actions_by_client_id(client_ids: set[str], oracle_ids: set[str]) -> Dict[tuple, Dict[str, Any]]:
+    """Return existing actions keyed by (oracle_id, client_action_id)."""
+
+    if not client_ids or not oracle_ids:
+        return {}
+
+    res = (
+        supabase.table("oracle_actions")
+        .select("*")
+        .in_("client_action_id", list(client_ids))
+        .in_("oracle_id", list(oracle_ids))
+        .execute()
+    )
+
+    return {
+        (row["oracle_id"], row["client_action_id"]): row
+        for row in (res.data or [])
+        if row.get("client_action_id") is not None and row.get("oracle_id") is not None
+    }
 
 @router.post("/gpt/create-player-account")
 def create_player_account(payload: PlayerAccountPayload, authorization: Optional[str] = Header(None)):
@@ -614,6 +659,7 @@ def log_oracle_action(payload: OracleActionPayload, authorization: Optional[str]
     oracle_id = payload.oracle_id
     player_id = payload.player_id
     action = payload.action
+    client_action_id = _normalize_client_action_id(payload.client_action_id)
     metadata = payload.metadata or {}
 
     if not _get_oracle_profile(oracle_id, user_id):
@@ -623,16 +669,31 @@ def log_oracle_action(payload: OracleActionPayload, authorization: Optional[str]
 
     # Ensure oracle exists in `oracles` for FK constraint safety
     _ensure_oracle_row(oracle_id, None, None)
+    existing = {}
+    if client_action_id:
+        existing = _fetch_existing_actions_by_client_id({client_action_id}, {oracle_id})
+    if existing:
+        return {"ok": True, "action": existing.get((oracle_id, client_action_id)), "meta": {"duplicate": True}}
 
-    res = (
-        supabase.table("oracle_actions")
-        .insert({"oracle_id": oracle_id, "player_id": player_id, "action": action, "metadata": metadata})
-        .execute()
-    )
+    payload_dict = {
+        "oracle_id": oracle_id,
+        "player_id": player_id,
+        "action": action,
+        "metadata": metadata,
+    }
+    if client_action_id:
+        payload_dict["client_action_id"] = client_action_id
+
+    insert_query = supabase.table("oracle_actions")
+    if client_action_id:
+        res = insert_query.upsert(payload_dict, on_conflict="oracle_id,client_action_id").execute()
+    else:
+        res = insert_query.insert(payload_dict).execute()
+
     if not res.data:
         raise HTTPException(status_code=400, detail="Failed to record action")
 
-    return {"ok": True, "action": res.data[0]}
+    return {"ok": True, "action": res.data[0], "meta": {"duplicate": False}}
 
 
 @router.post("/gpt/oracle-actions/bulk")
@@ -662,18 +723,49 @@ def log_oracle_actions_bulk(
 
     rows = []
     touched_oracles: set[str] = set()
+    seen_client_ids: dict[str, int] = {}
+    batch_client_ids: set[str] = set()
+    normalized_payloads: list[tuple[OracleActionPayload, Optional[str]]] = []
+
     for idx, action in enumerate(payload.actions):
         if action.oracle_id not in owned_oracles:
             raise HTTPException(status_code=404, detail=f"Oracle not found for this user at index {idx}")
         if action.player_id not in owned_players:
             raise HTTPException(status_code=404, detail=f"Player account not found for this user at index {idx}")
 
+        normalized_client_action_id = _normalize_client_action_id(action.client_action_id)
+        if normalized_client_action_id:
+            if normalized_client_action_id in seen_client_ids:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Duplicate client_action_id detected between payload indexes "
+                        f"{seen_client_ids[normalized_client_action_id]} and {idx}"
+                    ),
+                )
+            seen_client_ids[normalized_client_action_id] = idx
+            batch_client_ids.add(normalized_client_action_id)
+
+        normalized_payloads.append((action, normalized_client_action_id))
         touched_oracles.add(action.oracle_id)
+
+    existing_by_key = _fetch_existing_actions_by_client_id(batch_client_ids, owned_oracles)
+    deduped_actions = []
+
+    for action, normalized_client_action_id in normalized_payloads:
+        existing_match = None
+        if normalized_client_action_id:
+            existing_match = existing_by_key.get((action.oracle_id, normalized_client_action_id))
+        if existing_match:
+            deduped_actions.append(existing_match)
+            continue
+
         rows.append(
             {
                 "oracle_id": action.oracle_id,
                 "player_id": action.player_id,
                 "action": action.action,
+                "client_action_id": normalized_client_action_id,
                 "metadata": action.metadata or {},
             }
         )
@@ -682,15 +774,20 @@ def log_oracle_actions_bulk(
     for oid in touched_oracles:
         _ensure_oracle_row(oid, None, None)
 
-    res = supabase.table("oracle_actions").insert(rows).execute()
-    if not res.data:
-        raise HTTPException(status_code=400, detail="Failed to record actions")
+    inserted_actions = []
+    if rows:
+        res = supabase.table("oracle_actions").upsert(rows, on_conflict="oracle_id,client_action_id").execute()
+        if not res.data:
+            raise HTTPException(status_code=400, detail="Failed to record actions")
+        inserted_actions = res.data
 
+    all_actions = inserted_actions + deduped_actions
     return {
         "ok": True,
-        "inserted": len(res.data),
-        "actions": res.data,
-        "meta": {"requested": len(payload.actions)},
+        "inserted": len(inserted_actions),
+        "deduped": len(deduped_actions),
+        "actions": all_actions,
+        "meta": {"requested": len(payload.actions), "skipped_existing": len(deduped_actions)},
     }
 
 

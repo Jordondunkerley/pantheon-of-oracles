@@ -80,6 +80,10 @@ curl -s "$BASE/gpt/oracle-actions?limit=10&order=asc" -H "Authorization: $TOKEN"
 curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&limit=25" -H "Authorization: $TOKEN"
 # Slice a window using inclusive bounds
 curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&until=2024-11-01T00:00:00Z&limit=25" -H "Authorization: $TOKEN"
+# Send an idempotent action with client_action_id to avoid duplicates on retries
+curl -s -X POST $BASE/gpt/oracle-action -H "Authorization: $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"oracle_id":"<uuid>","player_id":"<player_uuid>","action":"RITUAL_START","client_action_id":"retry-safe-123"}'
 # Insert a batch of actions in one call (max 100 items)
 curl -s -X POST $BASE/gpt/oracle-actions/bulk -H "Authorization: $TOKEN" \
   -H "Content-Type: application/json" \
@@ -124,6 +128,9 @@ curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&
 - Limits are capped automatically (actions: max 500, action stats: max 1000) to keep Supabase queries efficient.
 - `order` parameters accept `asc` or `desc` (default) to control the `created_at` sort across history and aggregation.
 
+**Idempotency**
+- Supply an optional `client_action_id` when logging actions (single or bulk) to deduplicate retries. The API and service-role helpers will skip existing rows (keyed by `oracle_id` + `client_action_id`) and surface counts/metadata about how many entries were inserted versus deduped.
+
 **Pagination metadata**
 - `/gpt/oracle-actions` returns a `meta` block with the applied limit/offset, filters, sort direction, and `has_more` + `total_available` (when Supabase provides it) so clients can walk paginated windows safely.
 - `/gpt/oracle-action-stats` echoes a `meta` block (limit, offset, filters, sort direction, rows_aggregated, and `has_more`) to mirror the history endpoint and align aggregation windows with paginated fetches.
@@ -148,6 +155,8 @@ python scripts/purge_user_data.py --email you@example.com --delete-user
 python scripts/list_actions.py --email you@example.com --action RITUAL_START --since 2024-10-01 --until 2024-11-01 --limit 10
 # Bulk insert actions from a JSON file (service-role)
 python scripts/log_actions_bulk.py --email you@example.com --actions-file actions.json
+  # Include optional client_action_id fields for idempotent retries
+# Bulk inserts will now return how many rows were deduped vs inserted
 
 # Summarize a user's action counts (service-role)
 python scripts/action_stats.py --email you@example.com --since 2024-10-01 --until 2024-11-01

@@ -22,9 +22,14 @@ create table if not exists oracle_actions (
   oracle_id uuid not null references oracles(id) on delete cascade,
   player_id text not null,
   action text not null,
+  client_action_id text,
   metadata jsonb,
   created_at timestamptz default now()
 );
+
+create unique index if not exists oracle_actions_client_action_key
+  on oracle_actions(oracle_id, client_action_id)
+  where client_action_id is not null;
 
 -- Player accounts store the full profile payload provided by the Pantheon GPT
 -- router. The player_id is a stable, client-visible identifier, while profile

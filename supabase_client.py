@@ -70,6 +70,22 @@ def _normalize_sort_direction(value: Optional[str], *, default: str = "desc") ->
     return lowered
 
 
+def _normalize_client_action_id(value: Optional[str]) -> Optional[str]:
+    """Normalize optional client_action_id strings with a defensive length cap."""
+
+    if value is None:
+        return None
+
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+
+    if len(trimmed) > 255:
+        raise ValueError("client_action_id must be 255 characters or fewer")
+
+    return trimmed
+
+
 def _get_user_record(email: str) -> Optional[Dict[str, Any]]:
     """Return the full user row for the given email, if it exists."""
     res = supabase.table("users").select("id,email,password_hash").eq("email", email).single().execute()
@@ -145,21 +161,48 @@ def upsert_oracle_profile(user_email: str, profile: Dict[str, Any]) -> Dict[str,
     return res.data[0] if res.data else insert_data
 
 
-def record_oracle_action(oracle_id: str, player_id: str, action: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """Insert an action row tied to an oracle_id/player_id pair."""
-    res = supabase.table("oracle_actions").insert({
+def record_oracle_action(
+    oracle_id: str,
+    player_id: str,
+    action: str,
+    metadata: Optional[Dict[str, Any]] = None,
+    *,
+    client_action_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Insert an action row tied to an oracle_id/player_id pair with optional idempotency."""
+
+    normalized_client_action_id = _normalize_client_action_id(client_action_id)
+    payload = {
         "oracle_id": oracle_id,
         "player_id": player_id,
         "action": action,
         "metadata": metadata or {},
-    }).execute()
+    }
+
+    if normalized_client_action_id:
+        payload["client_action_id"] = normalized_client_action_id
+        existing = (
+            supabase.table("oracle_actions")
+            .select("*")
+            .eq("oracle_id", oracle_id)
+            .eq("client_action_id", normalized_client_action_id)
+            .single()
+            .execute()
+        )
+        if existing.data:
+            return {"action": existing.data, "duplicate": True}
+
+        res = supabase.table("oracle_actions").upsert(payload, on_conflict="oracle_id,client_action_id").execute()
+    else:
+        res = supabase.table("oracle_actions").insert(payload).execute()
+
     if not res.data:
         raise ValueError("Failed to record oracle action")
-    return res.data[0]
+    return {"action": res.data[0], "duplicate": False}
 
 
 def record_oracle_actions_bulk(email: str, actions: list[Dict[str, Any]], *, max_batch: int = 100) -> Dict[str, Any]:
-    """Insert a batch of oracle actions for a user after ownership checks."""
+    """Insert a batch of oracle actions for a user after ownership checks and idempotency."""
 
     if not actions:
         raise ValueError("At least one action payload is required")
@@ -178,6 +221,10 @@ def record_oracle_actions_bulk(email: str, actions: list[Dict[str, Any]], *, max
 
     rows = []
     touched_oracles: set[str] = set()
+    seen_client_ids: dict[str, int] = {}
+    batch_client_ids: set[str] = set()
+    normalized_payloads: list[tuple[Dict[str, Any], Optional[str]]] = []
+
     for idx, action in enumerate(actions):
         oracle_id = action.get("oracle_id")
         player_id = action.get("player_id")
@@ -190,12 +237,48 @@ def record_oracle_actions_bulk(email: str, actions: list[Dict[str, Any]], *, max
         if not action_name:
             raise ValueError(f"Action name is required at index {idx}")
 
+        normalized_client_action_id = _normalize_client_action_id(action.get("client_action_id"))
+        if normalized_client_action_id:
+            if normalized_client_action_id in seen_client_ids:
+                raise ValueError(
+                    f"Duplicate client_action_id detected between payload indexes {seen_client_ids[normalized_client_action_id]} and {idx}"
+                )
+            seen_client_ids[normalized_client_action_id] = idx
+            batch_client_ids.add(normalized_client_action_id)
+
+        normalized_payloads.append((action, normalized_client_action_id))
         touched_oracles.add(oracle_id)
+
+    existing_by_key = {}
+    if batch_client_ids:
+        existing_res = (
+            supabase.table("oracle_actions")
+            .select("*")
+            .in_("client_action_id", list(batch_client_ids))
+            .in_("oracle_id", list(owned_oracles))
+            .execute()
+        )
+        existing_by_key = {
+            (row["oracle_id"], row["client_action_id"]): row
+            for row in (existing_res.data or [])
+            if row.get("client_action_id") is not None and row.get("oracle_id") is not None
+        }
+
+    deduped_actions = []
+    for action, normalized_client_action_id in normalized_payloads:
+        existing_match = None
+        if normalized_client_action_id:
+            existing_match = existing_by_key.get((action["oracle_id"], normalized_client_action_id))
+        if existing_match:
+            deduped_actions.append(existing_match)
+            continue
+
         rows.append(
             {
-                "oracle_id": oracle_id,
-                "player_id": player_id,
-                "action": action_name,
+                "oracle_id": action["oracle_id"],
+                "player_id": action["player_id"],
+                "action": action["action"],
+                "client_action_id": normalized_client_action_id,
                 "metadata": action.get("metadata") or {},
             }
         )
@@ -206,11 +289,19 @@ def record_oracle_actions_bulk(email: str, actions: list[Dict[str, Any]], *, max
             on_conflict="code",
         ).execute()
 
-    res = supabase.table("oracle_actions").insert(rows).execute()
-    if not res.data:
-        raise ValueError("Failed to record oracle actions")
+    inserted_actions = []
+    if rows:
+        res = supabase.table("oracle_actions").upsert(rows, on_conflict="oracle_id,client_action_id").execute()
+        if not res.data:
+            raise ValueError("Failed to record oracle actions")
+        inserted_actions = res.data
 
-    return {"inserted": len(res.data), "actions": res.data, "meta": {"requested": len(actions)}}
+    return {
+        "inserted": len(inserted_actions),
+        "deduped": len(deduped_actions),
+        "actions": inserted_actions + deduped_actions,
+        "meta": {"requested": len(actions), "skipped_existing": len(deduped_actions)},
+    }
 
 
 def list_oracles(code: Optional[str] = None, role: Optional[str] = None, limit: int = 100) -> list[Dict[str, Any]]:

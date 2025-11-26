@@ -4,9 +4,10 @@ Usage:
     python scripts/log_actions_bulk.py --email you@example.com --actions-file actions.json
 
 The actions file should be a JSON list with objects containing ``oracle_id``,
-``player_id``, ``action``, and optional ``metadata`` fields. The script reuses
-the service-role ownership protections defined in ``supabase_client`` to prevent
-cross-user inserts.
+``player_id``, ``action``, optional ``client_action_id`` (for idempotency), and
+ optional ``metadata`` fields. The script reuses the service-role ownership
+ protections defined in ``supabase_client`` to prevent cross-user inserts and
+ will report how many entries were deduplicated vs inserted.
 """
 
 import argparse

@@ -57,6 +57,19 @@ def _parse_iso_timestamp(value: Optional[str]) -> Optional[str]:
     return parsed.isoformat()
 
 
+def _normalize_sort_direction(value: Optional[str], *, default: str = "desc") -> str:
+    """Return ``asc`` or ``desc`` for ordering."""
+
+    if not value:
+        return default
+
+    lowered = value.lower()
+    if lowered not in {"asc", "desc"}:
+        raise ValueError("Invalid sort direction; use 'asc' or 'desc'")
+
+    return lowered
+
+
 def _get_user_record(email: str) -> Optional[Dict[str, Any]]:
     """Return the full user row for the given email, if it exists."""
     res = supabase.table("users").select("id,email,password_hash").eq("email", email).single().execute()
@@ -168,11 +181,13 @@ def get_user_bundle(
     include_action_stats: bool = False,
     actions_limit: int = 50,
     actions_offset: int = 0,
+    actions_order: str = "desc",
     actions_filter: Optional[str] = None,
     actions_since: Optional[str] = None,
     actions_until: Optional[str] = None,
     action_stats_limit: int = 200,
     action_stats_offset: int = 0,
+    action_stats_order: str = "desc",
 ) -> Dict[str, Any]:
     """Return player account, owned oracles, and optional recent actions for a user."""
 
@@ -194,6 +209,7 @@ def get_user_bundle(
             email,
             limit=_cap_limit(actions_limit, default=50, max_limit=500),
             offset=_normalize_offset(actions_offset),
+            order=actions_order,
             action=actions_filter,
             since=normalized_since,
             until=normalized_until,
@@ -208,6 +224,7 @@ def get_user_bundle(
             action=actions_filter,
             since=normalized_since,
             until=normalized_until,
+            order=action_stats_order,
             limit=capped_stats_limit,
             offset=_normalize_offset(action_stats_offset),
         )
@@ -232,6 +249,7 @@ def list_user_actions(
     action: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
+    order: str = "desc",
     limit: int = 50,
     offset: int = 0,
     include_metadata: bool = False,
@@ -259,6 +277,7 @@ def list_user_actions(
     normalized_offset = _normalize_offset(offset)
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
+    normalized_order = _normalize_sort_direction(order)
 
     if oracle_id and oracle_id not in owned_oracles:
         raise ValueError("Oracle not found for this user")
@@ -266,7 +285,9 @@ def list_user_actions(
         raise ValueError("Player account not found for this user")
 
     select_kwargs = {"count": "exact"} if include_metadata else {}
-    query = supabase.table("oracle_actions").select("*", **select_kwargs).order("created_at", desc=True)
+    query = supabase.table("oracle_actions").select("*", **select_kwargs).order(
+        "created_at", desc=normalized_order == "desc"
+    )
 
     if oracle_id:
         query = query.eq("oracle_id", oracle_id)
@@ -285,6 +306,7 @@ def list_user_actions(
                         "since": normalized_since,
                         "until": normalized_until,
                         "action": action,
+                        "order": normalized_order,
                         "has_more": False,
                     },
                 }
@@ -329,6 +351,7 @@ def list_user_actions(
             "since": normalized_since,
             "until": normalized_until,
             "action": action,
+            "order": normalized_order,
             "oracle_ids": sorted(list(owned_oracles)) if not oracle_id else [oracle_id],
             "player_ids": sorted(list(owned_players)) if not player_id else [player_id],
             "has_more": has_more,
@@ -344,6 +367,7 @@ def summarize_user_actions(
     action: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
+    order: str = "desc",
     limit: int = 200,
     offset: int = 0,
 ) -> Dict[str, Any]:
@@ -360,6 +384,7 @@ def summarize_user_actions(
     normalized_offset = _normalize_offset(offset)
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
+    normalized_order = _normalize_sort_direction(order)
 
     rows_result = list_user_actions(
         email,
@@ -368,6 +393,7 @@ def summarize_user_actions(
         action=action,
         since=normalized_since,
         until=normalized_until,
+        order=normalized_order,
         limit=capped_limit,
         offset=normalized_offset,
         include_metadata=True,
@@ -396,6 +422,7 @@ def summarize_user_actions(
             "oracle_ids": meta.get("oracle_ids"),
             "player_ids": meta.get("player_ids"),
             "action": action,
+            "order": meta.get("order", normalized_order),
             "total_available": meta.get("total_available"),
             "has_more": meta.get("has_more", False),
         },

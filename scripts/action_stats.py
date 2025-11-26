@@ -38,6 +38,12 @@ parser.add_argument(
     default=0,
     help="Number of rows to skip before aggregating counts",
 )
+parser.add_argument(
+    "--order",
+    choices=["asc", "desc"],
+    default="desc",
+    help="Sort direction for created_at before aggregation",
+)
 
 
 def main():
@@ -51,6 +57,7 @@ def main():
         action=args.action,
         since=args.since,
         until=args.until,
+        order=args.order,
         limit=limit,
         offset=args.offset,
     )

@@ -74,6 +74,8 @@ curl -s "$BASE/gpt/oracle-actions?limit=10" -H "Authorization: $TOKEN"
 curl -s "$BASE/gpt/oracle-actions?limit=10&offset=25" -H "Authorization: $TOKEN"
 # Filter to a specific action type (e.g., only ritual starts)
 curl -s "$BASE/gpt/oracle-actions?action=RITUAL_START&limit=5" -H "Authorization: $TOKEN"
+# Sort oldest-first while paginating (asc|desc, desc is default)
+curl -s "$BASE/gpt/oracle-actions?limit=10&order=asc" -H "Authorization: $TOKEN"
 # Only pull actions created after a timestamp
 curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&limit=25" -H "Authorization: $TOKEN"
 # Slice a window using inclusive bounds
@@ -85,6 +87,8 @@ curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z" -H "Authoriza
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z&offset=100&limit=200" -H "Authorization: $TOKEN"
 # Aggregate within a bounded window
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z&until=2024-11-01T00:00:00Z" -H "Authorization: $TOKEN"
+# Aggregate oldest-first before counting (asc|desc, desc is default)
+curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z&order=asc" -H "Authorization: $TOKEN"
 
 # Reset your own bundle (player + oracles + optional actions)
 curl -s -X POST $BASE/gpt/delete-bundle -H "Authorization: $TOKEN" \
@@ -101,8 +105,10 @@ curl -s "$BASE/gpt/sync?include_actions=true&actions_filter=RITUAL_START&actions
 curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
 # Sync within a bounded window (actions_since + actions_until)
  curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&actions_until=2024-11-01T00:00:00Z&actions_limit=25" -H "Authorization: $TOKEN"
- # Sync starting from a higher offset for pagination
+# Sync starting from a higher offset for pagination
  curl -s "$BASE/gpt/sync?include_actions=true&actions_offset=50&actions_limit=25" -H "Authorization: $TOKEN"
+# Sync oldest-first for both history and stats
+ curl -s "$BASE/gpt/sync?include_actions=true&actions_order=asc&include_action_stats=true&action_stats_order=asc" -H "Authorization: $TOKEN"
  # Sync and include aggregated action counts (uses the same filters/limits)
  curl -s "$BASE/gpt/sync?include_action_stats=true&actions_since=2024-10-01T00:00:00Z&actions_until=2024-11-01T00:00:00Z&action_stats_limit=500" -H "Authorization: $TOKEN"
  # Paginate action stats while keeping filters aligned
@@ -112,10 +118,11 @@ curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&
 **Timestamps & limits**
 - All `since`/`until` parameters require ISO-8601 strings (e.g., `2024-10-01T00:00:00Z`). Invalid timestamps now return `400` so problems surface quickly.
 - Limits are capped automatically (actions: max 500, action stats: max 1000) to keep Supabase queries efficient.
+- `order` parameters accept `asc` or `desc` (default) to control the `created_at` sort across history and aggregation.
 
 **Pagination metadata**
-- `/gpt/oracle-actions` returns a `meta` block with the applied limit/offset, filters, and `has_more` + `total_available` (when Supabase provides it) so clients can walk paginated windows safely.
-- `/gpt/oracle-action-stats` echoes a `meta` block (limit, offset, filters, rows_aggregated, and `has_more`) to mirror the history endpoint and align aggregation windows with paginated fetches.
+- `/gpt/oracle-actions` returns a `meta` block with the applied limit/offset, filters, sort direction, and `has_more` + `total_available` (when Supabase provides it) so clients can walk paginated windows safely.
+- `/gpt/oracle-action-stats` echoes a `meta` block (limit, offset, filters, sort direction, rows_aggregated, and `has_more`) to mirror the history endpoint and align aggregation windows with paginated fetches.
 - `/gpt/sync` mirrors both `actions_meta` and `action_stats_meta` alongside the combined bundle, and `scripts/list_actions.py` echoes the metadata to help plan subsequent CLI calls.
 
  Or run locally against Supabase using the helper script after seeding:

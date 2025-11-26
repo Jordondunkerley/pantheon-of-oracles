@@ -62,6 +62,23 @@ def _parse_iso_timestamp(value: Optional[str]) -> Optional[str]:
     return parsed.isoformat()
 
 
+def _normalize_sort_direction(value: Optional[str], *, default: str = "desc") -> str:
+    """Normalize a sort direction value to ``asc`` or ``desc``.
+
+    Raises ``HTTPException`` for unsupported inputs to prevent accidental heavy
+    scans or unpredictable ordering.
+    """
+
+    if not value:
+        return default
+
+    lowered = value.lower()
+    if lowered not in {"asc", "desc"}:
+        raise HTTPException(status_code=400, detail="Invalid sort direction; use 'asc' or 'desc'")
+
+    return lowered
+
+
 class PlayerAccountPayload(BaseModel):
     player_id: Optional[str] = Field(None, description="Stable player UUID/string")
     username: Optional[str] = None
@@ -273,6 +290,7 @@ def _list_actions_for_owned(
     player_ids: set,
     limit: int,
     offset: int,
+    order: str,
     action: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
@@ -296,6 +314,7 @@ def _list_actions_for_owned(
     normalized_offset = _normalize_offset(offset)
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
+    normalized_order = _normalize_sort_direction(order)
 
     if not oracle_ids:
         if include_metadata:
@@ -311,13 +330,16 @@ def _list_actions_for_owned(
                     "since": normalized_since,
                     "until": normalized_until,
                     "action": action,
+                    "order": normalized_order,
                     "has_more": False,
                 },
             }
         return []
 
     select_kwargs = {"count": "exact"} if include_metadata else {}
-    query = supabase.table("oracle_actions").select("*", **select_kwargs).order("created_at", desc=True)
+    query = supabase.table("oracle_actions").select("*", **select_kwargs).order(
+        "created_at", desc=normalized_order == "desc"
+    )
     query = query.in_("oracle_id", list(oracle_ids))
 
     if player_ids:
@@ -359,6 +381,7 @@ def _list_actions_for_owned(
             "since": normalized_since,
             "until": normalized_until,
             "action": action,
+            "order": normalized_order,
             "has_more": has_more,
         },
     }
@@ -369,6 +392,7 @@ def _summarize_actions_for_owned(
     player_ids: set,
     limit: int,
     offset: int,
+    order: str,
     action: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
@@ -387,6 +411,7 @@ def _summarize_actions_for_owned(
         player_ids,
         limit,
         offset,
+        order,
         action,
         since,
         until,
@@ -414,6 +439,7 @@ def _summarize_actions_for_owned(
             "oracle_ids": meta.get("oracle_ids"),
             "player_ids": meta.get("player_ids"),
             "action": action,
+            "order": meta.get("order"),
             "returned": meta.get("returned", len(actions)),
             "total_available": meta.get("total_available"),
             "has_more": meta.get("has_more", False),
@@ -484,11 +510,13 @@ def sync_player_data(
     include_action_stats: bool = False,
     actions_limit: int = 50,
     actions_offset: int = 0,
+    actions_order: str = "desc",
     actions_filter: Optional[str] = None,
     actions_since: Optional[str] = None,
     actions_until: Optional[str] = None,
     action_stats_limit: int = 200,
     action_stats_offset: int = 0,
+    action_stats_order: str = "desc",
     authorization: Optional[str] = Header(None),
 ):
     """
@@ -520,6 +548,8 @@ def sync_player_data(
     action_stats_meta: Optional[Dict[str, Any]] = None
     normalized_since = _parse_iso_timestamp(actions_since)
     normalized_until = _parse_iso_timestamp(actions_until)
+    normalized_actions_order = _normalize_sort_direction(actions_order)
+    normalized_action_stats_order = _normalize_sort_direction(action_stats_order)
     if include_actions:
         owned_ids = _get_owned_ids(user_id)
         actions_result = _list_actions_for_owned(
@@ -527,6 +557,7 @@ def sync_player_data(
             owned_ids["player_ids"],
             _cap_limit(actions_limit, default=50, max_limit=500),
             _normalize_offset(actions_offset),
+            normalized_actions_order,
             actions_filter,
             normalized_since,
             normalized_until,
@@ -542,6 +573,7 @@ def sync_player_data(
             owned_ids["player_ids"],
             capped_stats_limit,
             _normalize_offset(action_stats_offset),
+            normalized_action_stats_order,
             actions_filter,
             normalized_since,
             normalized_until,
@@ -604,6 +636,7 @@ def list_oracle_actions(
     action: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
+    order: str = "desc",
     limit: int = 50,
     offset: int = 0,
     authorization: Optional[str] = Header(None),
@@ -617,7 +650,7 @@ def list_oracle_actions(
     is capped at 500. ``action`` can be supplied to filter by action name, and
     ``since``/``until`` can bound results by ``created_at`` to slice windows of
     history. The response includes ``meta`` with limit/offset, applied filters,
-    and a ``has_more`` hint to drive pagination.
+    the applied sort direction, and a ``has_more`` hint to drive pagination.
     """
 
     user_email = require_auth(authorization)
@@ -633,11 +666,14 @@ def list_oracle_actions(
     if player_id and player_id not in owned_ids["player_ids"]:
         raise HTTPException(status_code=404, detail="Player account not found for this user")
 
+    normalized_order = _normalize_sort_direction(order)
+
     actions_result = _list_actions_for_owned(
         owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
         owned_ids["player_ids"] if not player_id else {player_id},
         limit,
         offset,
+        normalized_order,
         action,
         since,
         until,
@@ -658,6 +694,7 @@ def oracle_action_stats(
     action: Optional[str] = None,
     since: Optional[str] = None,
     until: Optional[str] = None,
+    order: str = "desc",
     limit: int = 200,
     offset: int = 0,
     authorization: Optional[str] = Header(None),
@@ -691,12 +728,14 @@ def oracle_action_stats(
     normalized_offset = _normalize_offset(offset)
     normalized_since = _parse_iso_timestamp(since)
     normalized_until = _parse_iso_timestamp(until)
+    normalized_order = _normalize_sort_direction(order)
 
     return _summarize_actions_for_owned(
         owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
         owned_ids["player_ids"] if not player_id else {player_id},
         capped_limit,
         normalized_offset,
+        normalized_order,
         action,
         normalized_since,
         normalized_until,

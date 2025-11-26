@@ -40,6 +40,12 @@ def parse_args() -> Dict[str, Any]:
         default=0,
         help="Number of rows to skip before returning results",
     )
+    parser.add_argument(
+        "--order",
+        choices=["asc", "desc"],
+        default="desc",
+        help="Sort direction for created_at (desc by default)",
+    )
     return vars(parser.parse_args())
 
 
@@ -53,6 +59,7 @@ def main() -> None:
     until = args.get("until")
     limit = args.get("limit") or 50
     offset = args.get("offset") or 0
+    order = args.get("order") or "desc"
 
     actions_result = list_user_actions(
         email,
@@ -61,6 +68,7 @@ def main() -> None:
         action=action,
         since=since,
         until=until,
+        order=order,
         limit=limit,
         offset=offset,
         include_metadata=True,

@@ -38,6 +38,12 @@ def parse_args():
         help="Number of actions to skip before returning results",
     )
     parser.add_argument(
+        "--actions-order",
+        choices=["asc", "desc"],
+        default="desc",
+        help="Sort direction for action history (default desc)",
+    )
+    parser.add_argument(
         "--actions-filter",
         help="Optional action name to filter on (e.g., RITUAL_START)",
     )
@@ -66,6 +72,12 @@ def parse_args():
         default=0,
         help="Number of actions to skip before aggregating counts",
     )
+    parser.add_argument(
+        "--action-stats-order",
+        choices=["asc", "desc"],
+        default="desc",
+        help="Sort direction before aggregating counts",
+    )
     return parser.parse_args()
 
 
@@ -78,12 +90,14 @@ def main():
             include_actions=args.include_actions,
             actions_limit=args.actions_limit,
             actions_offset=args.actions_offset,
+            actions_order=args.actions_order,
             actions_filter=args.actions_filter,
             actions_since=args.actions_since,
             actions_until=args.actions_until,
             include_action_stats=args.include_action_stats,
             action_stats_limit=args.action_stats_limit,
             action_stats_offset=args.action_stats_offset,
+            action_stats_order=args.action_stats_order,
         )
     except Exception as exc:  # pragma: no cover - CLI surfacing explicit error
         sys.exit(f"Export failed: {exc}")

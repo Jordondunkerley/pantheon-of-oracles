@@ -80,6 +80,10 @@ curl -s "$BASE/gpt/oracle-actions?limit=10&order=asc" -H "Authorization: $TOKEN"
 curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&limit=25" -H "Authorization: $TOKEN"
 # Slice a window using inclusive bounds
 curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&until=2024-11-01T00:00:00Z&limit=25" -H "Authorization: $TOKEN"
+# Insert a batch of actions in one call (max 100 items)
+curl -s -X POST $BASE/gpt/oracle-actions/bulk -H "Authorization: $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"actions":[{"oracle_id":"...","player_id":"...","action":"RITUAL_START","metadata":{"source":"bulk"}}]}'
 
 # Aggregate counts per action type for your owned IDs (now with meta)
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z" -H "Authorization: $TOKEN"
@@ -142,6 +146,8 @@ python scripts/purge_user_data.py --email you@example.com --delete-user
 
 # Inspect a user's oracle_actions with optional filters (service-role)
 python scripts/list_actions.py --email you@example.com --action RITUAL_START --since 2024-10-01 --until 2024-11-01 --limit 10
+# Bulk insert actions from a JSON file (service-role)
+python scripts/log_actions_bulk.py --email you@example.com --actions-file actions.json
 
 # Summarize a user's action counts (service-role)
 python scripts/action_stats.py --email you@example.com --since 2024-10-01 --until 2024-11-01

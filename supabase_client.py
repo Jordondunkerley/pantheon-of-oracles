@@ -158,6 +158,61 @@ def record_oracle_action(oracle_id: str, player_id: str, action: str, metadata: 
     return res.data[0]
 
 
+def record_oracle_actions_bulk(email: str, actions: list[Dict[str, Any]], *, max_batch: int = 100) -> Dict[str, Any]:
+    """Insert a batch of oracle actions for a user after ownership checks."""
+
+    if not actions:
+        raise ValueError("At least one action payload is required")
+    if len(actions) > max_batch:
+        raise ValueError(f"Batch too large; maximum {max_batch} actions supported")
+
+    user_id = _get_user_id_by_email(email)
+    if not user_id:
+        raise ValueError("User not found for provided email")
+
+    oracles_res = supabase.table("oracle_profiles").select("oracle_id").eq("user_id", user_id).execute()
+    players_res = supabase.table("player_accounts").select("player_id").eq("user_id", user_id).single().execute()
+
+    owned_oracles = {row["oracle_id"] for row in (oracles_res.data or []) if row.get("oracle_id")}
+    owned_players = {players_res.data.get("player_id")} if players_res.data and players_res.data.get("player_id") else set()
+
+    rows = []
+    touched_oracles: set[str] = set()
+    for idx, action in enumerate(actions):
+        oracle_id = action.get("oracle_id")
+        player_id = action.get("player_id")
+        action_name = action.get("action")
+
+        if not oracle_id or oracle_id not in owned_oracles:
+            raise ValueError(f"Oracle not found for this user at index {idx}")
+        if not player_id or player_id not in owned_players:
+            raise ValueError(f"Player account not found for this user at index {idx}")
+        if not action_name:
+            raise ValueError(f"Action name is required at index {idx}")
+
+        touched_oracles.add(oracle_id)
+        rows.append(
+            {
+                "oracle_id": oracle_id,
+                "player_id": player_id,
+                "action": action_name,
+                "metadata": action.get("metadata") or {},
+            }
+        )
+
+    for oid in touched_oracles:
+        supabase.table("oracles").upsert(
+            {"id": oid, "code": oid, "name": oid},
+            on_conflict="code",
+        ).execute()
+
+    res = supabase.table("oracle_actions").insert(rows).execute()
+    if not res.data:
+        raise ValueError("Failed to record oracle actions")
+
+    return {"inserted": len(res.data), "actions": res.data, "meta": {"requested": len(actions)}}
+
+
 def list_oracles(code: Optional[str] = None, role: Optional[str] = None, limit: int = 100) -> list[Dict[str, Any]]:
     """Fetch seeded oracle catalog entries, optionally filtered by code or role."""
 

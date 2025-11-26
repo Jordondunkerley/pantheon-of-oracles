@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from uuid import uuid4
 from jose import jwt, JWTError
 from supabase import create_client
@@ -99,6 +99,12 @@ class OracleActionPayload(BaseModel):
     player_id: str
     action: str
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OracleActionBatchPayload(BaseModel):
+    actions: List[OracleActionPayload] = Field(
+        ..., min_items=1, max_items=100, description="Batch of oracle actions to insert"
+    )
 
 
 class DeleteBundlePayload(BaseModel):
@@ -627,6 +633,65 @@ def log_oracle_action(payload: OracleActionPayload, authorization: Optional[str]
         raise HTTPException(status_code=400, detail="Failed to record action")
 
     return {"ok": True, "action": res.data[0]}
+
+
+@router.post("/gpt/oracle-actions/bulk")
+def log_oracle_actions_bulk(
+    payload: OracleActionBatchPayload, authorization: Optional[str] = Header(None)
+):
+    """
+    Insert a batch of oracle actions after enforcing ownership and batch safety.
+
+    The payload accepts up to 100 action objects. Each entry must reference oracle
+    and player IDs owned by the authenticated user. The endpoint mirrors the
+    single-action handler but performs a single Supabase insert for efficiency
+    while preserving the same FK safety via oracle catalog upserts.
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    owned_ids = _get_owned_ids(user_id)
+    owned_oracles = owned_ids["oracle_ids"]
+    owned_players = owned_ids["player_ids"]
+
+    if len(payload.actions) > 100:
+        raise HTTPException(status_code=400, detail="Batch too large; max 100 actions")
+
+    rows = []
+    touched_oracles: set[str] = set()
+    for idx, action in enumerate(payload.actions):
+        if action.oracle_id not in owned_oracles:
+            raise HTTPException(status_code=404, detail=f"Oracle not found for this user at index {idx}")
+        if action.player_id not in owned_players:
+            raise HTTPException(status_code=404, detail=f"Player account not found for this user at index {idx}")
+
+        touched_oracles.add(action.oracle_id)
+        rows.append(
+            {
+                "oracle_id": action.oracle_id,
+                "player_id": action.player_id,
+                "action": action.action,
+                "metadata": action.metadata or {},
+            }
+        )
+
+    # Ensure oracle catalog entries exist for FK compatibility
+    for oid in touched_oracles:
+        _ensure_oracle_row(oid, None, None)
+
+    res = supabase.table("oracle_actions").insert(rows).execute()
+    if not res.data:
+        raise HTTPException(status_code=400, detail="Failed to record actions")
+
+    return {
+        "ok": True,
+        "inserted": len(res.data),
+        "actions": res.data,
+        "meta": {"requested": len(payload.actions)},
+    }
 
 
 @router.get("/gpt/oracle-actions")

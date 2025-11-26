@@ -8,6 +8,7 @@ Env:
   SUPABASE_SERVICE_ROLE_KEY
 """
 import argparse
+import json
 
 from supabase_client import summarize_user_actions
 
@@ -54,7 +55,7 @@ def main():
         offset=args.offset,
     )
 
-    print(stats)
+    print(json.dumps(stats, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

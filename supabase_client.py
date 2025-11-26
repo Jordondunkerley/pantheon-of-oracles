@@ -186,6 +186,7 @@ def get_user_bundle(
     actions = []
     actions_meta: Optional[Dict[str, Any]] = None
     action_stats = None
+    action_stats_meta: Optional[Dict[str, Any]] = None
     normalized_since = _parse_iso_timestamp(actions_since)
     normalized_until = _parse_iso_timestamp(actions_until)
     if include_actions:
@@ -202,7 +203,7 @@ def get_user_bundle(
         actions_meta = actions_result.get("meta") if isinstance(actions_result, dict) else None
     if include_action_stats:
         capped_stats_limit = _cap_limit(action_stats_limit, default=200, max_limit=1000)
-        action_stats = summarize_user_actions(
+        stats_result = summarize_user_actions(
             email,
             action=actions_filter,
             since=normalized_since,
@@ -210,6 +211,8 @@ def get_user_bundle(
             limit=capped_stats_limit,
             offset=_normalize_offset(action_stats_offset),
         )
+        action_stats = stats_result.get("action_counts") if isinstance(stats_result, dict) else None
+        action_stats_meta = stats_result.get("meta") if isinstance(stats_result, dict) else None
 
     return {
         "account": player_res.data,
@@ -217,6 +220,7 @@ def get_user_bundle(
         "actions": actions,
         "actions_meta": actions_meta,
         "action_stats": action_stats,
+        "action_stats_meta": action_stats_meta,
     }
 
 
@@ -347,7 +351,9 @@ def summarize_user_actions(
 
     The helper reuses ``list_user_actions`` for ownership checks and filtering, then
     computes a simple count per action type. ``limit`` caps the number of rows to
-    fetch before aggregation to avoid heavy queries.
+    fetch before aggregation to avoid heavy queries. The response now includes a
+    ``meta`` block mirroring the actions listing so clients can paginate through
+    aggregation windows while keeping filters aligned.
     """
 
     capped_limit = _cap_limit(limit, default=200, max_limit=1000)
@@ -376,18 +382,23 @@ def summarize_user_actions(
         counts[key] = counts.get(key, 0) + 1
 
     return {
-        "total": len(rows),
-        "limit": meta.get("limit", capped_limit),
-        "offset": meta.get("offset", normalized_offset),
-        "since": meta.get("since", normalized_since),
-        "until": meta.get("until", normalized_until),
-        "returned": meta.get("returned", len(rows)),
-        "total_available": meta.get("total_available"),
-        "has_more": meta.get("has_more", False),
         "action_counts": sorted(
             [{"action": k, "count": v} for k, v in counts.items()],
             key=lambda x: x["action"],
         ),
+        "meta": {
+            "rows_aggregated": len(rows),
+            "returned": meta.get("returned", len(rows)),
+            "limit": meta.get("limit", capped_limit),
+            "offset": meta.get("offset", normalized_offset),
+            "since": meta.get("since", normalized_since),
+            "until": meta.get("until", normalized_until),
+            "oracle_ids": meta.get("oracle_ids"),
+            "player_ids": meta.get("player_ids"),
+            "action": action,
+            "total_available": meta.get("total_available"),
+            "has_more": meta.get("has_more", False),
+        },
     }
 
 

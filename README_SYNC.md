@@ -79,9 +79,9 @@ curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&limit=25" -H "Autho
 # Slice a window using inclusive bounds
 curl -s "$BASE/gpt/oracle-actions?since=2024-10-01T00:00:00Z&until=2024-11-01T00:00:00Z&limit=25" -H "Authorization: $TOKEN"
 
-# Aggregate counts per action type for your owned IDs
+# Aggregate counts per action type for your owned IDs (now with meta)
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z" -H "Authorization: $TOKEN"
-# Offset aggregation to paginate through larger windows
+# Offset aggregation to paginate through larger windows; meta echoes limits/filters
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z&offset=100&limit=200" -H "Authorization: $TOKEN"
 # Aggregate within a bounded window
 curl -s "$BASE/gpt/oracle-action-stats?since=2024-10-01T00:00:00Z&until=2024-11-01T00:00:00Z" -H "Authorization: $TOKEN"
@@ -115,7 +115,8 @@ curl -s "$BASE/gpt/sync?include_actions=true&actions_since=2024-10-01T00:00:00Z&
 
 **Pagination metadata**
 - `/gpt/oracle-actions` returns a `meta` block with the applied limit/offset, filters, and `has_more` + `total_available` (when Supabase provides it) so clients can walk paginated windows safely.
-- `/gpt/sync` mirrors the same `actions_meta` structure alongside the combined bundle, and `scripts/list_actions.py` echoes the metadata to help plan subsequent CLI calls.
+- `/gpt/oracle-action-stats` echoes a `meta` block (limit, offset, filters, rows_aggregated, and `has_more`) to mirror the history endpoint and align aggregation windows with paginated fetches.
+- `/gpt/sync` mirrors both `actions_meta` and `action_stats_meta` alongside the combined bundle, and `scripts/list_actions.py` echoes the metadata to help plan subsequent CLI calls.
 
  Or run locally against Supabase using the helper script after seeding:
 

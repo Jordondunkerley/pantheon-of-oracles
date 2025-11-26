@@ -401,21 +401,23 @@ def _summarize_actions_for_owned(
         counts[key] = counts.get(key, 0) + 1
 
     response = {
-        "total": len(actions),
-        "limit": meta.get("limit", limit),
-        "offset": meta.get("offset", offset),
-        "since": meta.get("since", since),
-        "until": meta.get("until", until),
-        "oracle_ids": meta.get("oracle_ids"),
-        "player_ids": meta.get("player_ids"),
-        "action": action,
-        "returned": meta.get("returned", len(actions)),
-        "total_available": meta.get("total_available"),
-        "has_more": meta.get("has_more", False),
         "action_counts": sorted(
             [{"action": k, "count": v} for k, v in counts.items()],
             key=lambda x: x["action"],
         ),
+        "meta": {
+            "rows_aggregated": len(actions),
+            "limit": meta.get("limit", limit),
+            "offset": meta.get("offset", offset),
+            "since": meta.get("since", since),
+            "until": meta.get("until", until),
+            "oracle_ids": meta.get("oracle_ids"),
+            "player_ids": meta.get("player_ids"),
+            "action": action,
+            "returned": meta.get("returned", len(actions)),
+            "total_available": meta.get("total_available"),
+            "has_more": meta.get("has_more", False),
+        },
     }
 
     if include_ok_flag:
@@ -515,6 +517,7 @@ def sync_player_data(
     actions = []
     actions_meta: Optional[Dict[str, Any]] = None
     action_stats = None
+    action_stats_meta: Optional[Dict[str, Any]] = None
     normalized_since = _parse_iso_timestamp(actions_since)
     normalized_until = _parse_iso_timestamp(actions_until)
     if include_actions:
@@ -534,7 +537,7 @@ def sync_player_data(
     if include_action_stats:
         owned_ids = _get_owned_ids(user_id)
         capped_stats_limit = _cap_limit(action_stats_limit, default=200, max_limit=1000)
-        action_stats = _summarize_actions_for_owned(
+        stats_result = _summarize_actions_for_owned(
             owned_ids["oracle_ids"],
             owned_ids["player_ids"],
             capped_stats_limit,
@@ -543,6 +546,8 @@ def sync_player_data(
             normalized_since,
             normalized_until,
         )
+        action_stats = stats_result.get("action_counts")
+        action_stats_meta = stats_result.get("meta")
     return {
         "ok": True,
         "account": acc_res.data,
@@ -550,6 +555,7 @@ def sync_player_data(
         "actions": actions,
         "actions_meta": actions_meta,
         "action_stats": action_stats,
+        "action_stats_meta": action_stats_meta,
     }
 
 
@@ -663,7 +669,10 @@ def oracle_action_stats(
     enforcing ownership of the supplied IDs. ``since`` can restrict results to
     recent activity (based on ``created_at`` timestamps), ``until`` can cap the
     upper bound, and ``limit`` caps the number of rows fetched before
-    aggregation (default 200, max 1000).
+    aggregation (default 200, max 1000). The response now mirrors the action
+    listing pagination metadata via a ``meta`` block (limit, offset, applied
+    filters, and ``has_more``) so clients can align aggregation windows with
+    paginated history calls.
     """
 
     user_email = require_auth(authorization)

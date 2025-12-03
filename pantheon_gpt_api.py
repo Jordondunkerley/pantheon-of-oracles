@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from supabase import Client
 
 from api.config import get_settings, get_supabase_client
+from api.supabase_utils import run_supabase
 
 
 def _require_env(name: str) -> str:
@@ -89,26 +90,19 @@ async def healthz():
 def _insert_oracle_action(data: OracleUpdate) -> Dict[str, object]:
     """Insert an oracle action into Supabase and return the stored row."""
 
-    try:
-        response = (
-            supabase.table("oracle_actions")
-            .insert(
-                {
-                    "oracle_id": str(data.oracle_id),
-                    "player_id": data.player_id,
-                    "action": data.action,
-                    "metadata": data.metadata,
-                }
-            )
-            .execute()
+    response = run_supabase(
+        lambda: supabase.table("oracle_actions")
+        .insert(
+            {
+                "oracle_id": str(data.oracle_id),
+                "player_id": data.player_id,
+                "action": data.action,
+                "metadata": data.metadata,
+            }
         )
-    except Exception as exc:  # pragma: no cover - defensive guard around client
-        logging.exception("[%s] Supabase insert raised an exception", APP_NAME)
-        raise HTTPException(status_code=500, detail="Failed to record oracle action") from exc
-
-    if response.error:
-        logging.error("[%s] Supabase insert failed: %s", APP_NAME, response.error)
-        raise HTTPException(status_code=500, detail="Failed to record oracle action")
+        .execute(),
+        "insert oracle action",
+    )
 
     rows = response.data or []
     if not rows:

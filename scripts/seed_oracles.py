@@ -1,48 +1,117 @@
-"""
-Seed Oracles from GPT patches JSON into Supabase.
-Idempotent: upserts by 'code'.
-Env:
+"""Seed oracle definitions from GPT patch JSON files into Supabase.
+
+This utility is idempotent (upserts by `code`) and now reuses the shared
+Pantheon API configuration so secret handling is centralized. Provide a
+patch file via ``--patches`` or the ``PATCHES_PATH`` environment variable.
+
+Environment variables (validated via ``api.config``):
   SUPABASE_URL
   SUPABASE_SERVICE_ROLE_KEY
-  PATCHES_PATH  (path to a patches JSON file)
+
+Usage examples:
+  python scripts/seed_oracles.py --patches "./Patches 1-25 – Pantheon of Oracles GPT.JSON"
+  PATCHES_PATH="./Patches 26-41 – Pantheon of Oracles GPT.JSON" python scripts/seed_oracles.py
 """
-import os, json, sys
-from supabase import create_client
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-PATCHES_PATH = os.environ.get("PATCHES_PATH")
+from __future__ import annotations
 
-if not (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY and PATCHES_PATH):
-    sys.exit("Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and PATCHES_PATH")
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Any, Dict, Iterable, List
 
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+from supabase import Client
 
-with open(PATCHES_PATH, "r", encoding="utf-8") as f:
-    patches = json.load(f)
+from api.config import get_supabase_client
 
-acc = {}
-# Expected structure: a list/dict containing patches, each with an "oracles" array
-# Adapt mapping here if your JSON uses different keys.
-def maybe_iter(x):
-    if isinstance(x, list): return x
-    if isinstance(x, dict): return [x]
-    return []
 
-for patch in maybe_iter(patches):
-    for o in maybe_iter(patch.get("oracles", [])):
-        code = o.get("code") or o.get("name")
-        if not code: continue
-        acc[code] = {
-            "code": code,
-            "name": o.get("name", code.title()),
-            "role": o.get("role"),
-            "rules": o.get("rules", {})
-        }
+def _load_patches(path: Path) -> Iterable[Dict[str, Any]]:
+    """Read a patch file into an iterable of patch dictionaries."""
 
-count = 0
-for row in acc.values():
-    supabase.table("oracles").upsert(row, on_conflict="code").execute()
-    count += 1
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        sys.exit(f"Patch file not found: {path}")
+    except json.JSONDecodeError as exc:  # pragma: no cover - defensive guard
+        sys.exit(f"Invalid JSON in {path}: {exc}")
 
-print(f"Seeded/updated {count} oracles from {os.path.basename(PATCHES_PATH)}")
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        return [data]
+    sys.exit(f"Unsupported patch structure in {path} (expected list or object)")
+
+
+def _iter_oracles(patches: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """Collect oracle rows keyed by code/name to avoid duplicate inserts."""
+
+    oracles: Dict[str, Dict[str, Any]] = {}
+
+    for patch in patches:
+        for oracle in patch.get("oracles", []) or []:
+            code = oracle.get("code") or oracle.get("name")
+            if not code:
+                continue
+            oracles[code] = {
+                "code": code,
+                "name": oracle.get("name", code.title()),
+                "role": oracle.get("role"),
+                "rules": oracle.get("rules", {}),
+            }
+
+    return oracles
+
+
+def _upsert_oracles(client: Client, oracles: Dict[str, Dict[str, Any]]) -> int:
+    """Persist oracle definitions into Supabase and return the count inserted."""
+
+    count = 0
+
+    for oracle in oracles.values():
+        response = client.table("oracles").upsert(oracle, on_conflict="code").execute()
+        if response.error:
+            sys.exit(f"Failed to upsert oracle '{oracle['code']}': {response.error}")
+        count += 1
+
+    return count
+
+
+def parse_args(argv: List[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Seed Pantheon oracles from GPT patch JSON")
+    parser.add_argument(
+        "--patches",
+        type=Path,
+        default=None,
+        help="Path to a GPT patch JSON file (or set PATCHES_PATH)",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: List[str] | None = None) -> None:
+    args = parse_args(argv or [])
+
+    env_path = os.getenv("PATCHES_PATH")
+    patch_path = args.patches or (Path(env_path) if env_path else None)
+
+    if not patch_path:
+        sys.exit("Provide a patch file with --patches or set PATCHES_PATH")
+
+    patches = _load_patches(patch_path)
+    oracles = _iter_oracles(patches)
+
+    if not oracles:
+        sys.exit(f"No oracles found in {patch_path}")
+
+    try:
+        client = get_supabase_client()
+    except RuntimeError as exc:  # pragma: no cover - environment validation
+        sys.exit(str(exc))
+    count = _upsert_oracles(client, oracles)
+
+    print(f"Seeded/updated {count} oracles from {patch_path.name}")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

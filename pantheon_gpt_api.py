@@ -67,30 +67,47 @@ async def update_oracle(data: OracleUpdate, authorization: Optional[str] = Heade
     payload = data.model_dump()
     logging.info("[%s] Received GPT update: %s", APP_NAME, payload)
 
-    res = (
-        supabase.table("oracle_actions")
-        .insert(
-            {
-                "oracle_name": data.oracle_name,
-                "action": data.action,
-                "command": data.command,
-                "metadata": data.metadata,
-            }
-        )
-        .execute()
-    )
-
-    if not res.data:
-        logging.error("[%s] Supabase insert failed: %s", APP_NAME, res.error)
-        raise HTTPException(status_code=500, detail="Failed to record oracle action")
+    record = _insert_oracle_action(data)
 
     return {
         "status": "success",
         "message": f"{data.oracle_name} will be {data.action}",
-        "record": res.data,
+        "record": record,
     }
 
 
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok", "service": APP_NAME}
+
+
+def _insert_oracle_action(data: OracleUpdate) -> Dict[str, object]:
+    """Insert an oracle action into Supabase and return the stored row."""
+
+    try:
+        response = (
+            supabase.table("oracle_actions")
+            .insert(
+                {
+                    "oracle_name": data.oracle_name,
+                    "action": data.action,
+                    "command": data.command,
+                    "metadata": data.metadata,
+                }
+            )
+            .execute()
+        )
+    except Exception as exc:  # pragma: no cover - defensive guard around client
+        logging.exception("[%s] Supabase insert raised an exception", APP_NAME)
+        raise HTTPException(status_code=500, detail="Failed to record oracle action") from exc
+
+    if response.error:
+        logging.error("[%s] Supabase insert failed: %s", APP_NAME, response.error)
+        raise HTTPException(status_code=500, detail="Failed to record oracle action")
+
+    rows = response.data or []
+    if not rows:
+        logging.error("[%s] Supabase insert returned no rows", APP_NAME)
+        raise HTTPException(status_code=500, detail="Failed to record oracle action")
+
+    return rows[0]

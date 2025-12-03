@@ -4,6 +4,7 @@ import logging
 import os
 from secrets import compare_digest
 from typing import Dict, Optional
+from uuid import UUID
 
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
@@ -33,8 +34,10 @@ app = FastAPI(title=APP_NAME)
 
 
 class OracleUpdate(BaseModel):
-    command: str
-    oracle_name: str
+    """Incoming webhook payload expected from the GPT agent."""
+
+    oracle_id: UUID
+    player_id: str
     action: str
     metadata: Dict[str, object] = Field(default_factory=dict)
 
@@ -65,13 +68,15 @@ async def update_oracle(data: OracleUpdate, authorization: Optional[str] = Heade
     _require_bearer(authorization)
 
     payload = data.model_dump()
-    logging.info("[%s] Received GPT update: %s", APP_NAME, payload)
+    logging.info(
+        "[%s] Received GPT update for oracle %s", APP_NAME, payload.get("oracle_id")
+    )
 
     record = _insert_oracle_action(data)
 
     return {
         "status": "success",
-        "message": f"{data.oracle_name} will be {data.action}",
+        "message": f"Oracle {data.oracle_id} will be {data.action}",
         "record": record,
     }
 
@@ -89,9 +94,9 @@ def _insert_oracle_action(data: OracleUpdate) -> Dict[str, object]:
             supabase.table("oracle_actions")
             .insert(
                 {
-                    "oracle_name": data.oracle_name,
+                    "oracle_id": str(data.oracle_id),
+                    "player_id": data.player_id,
                     "action": data.action,
-                    "command": data.command,
                     "metadata": data.metadata,
                 }
             )

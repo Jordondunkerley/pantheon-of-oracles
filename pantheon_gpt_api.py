@@ -21,6 +21,8 @@ def _require_env(name: str) -> str:
 API_SECRET = _require_env("PANTHEON_GPT_SECRET")
 APP_NAME = os.getenv("APP_NAME", "Pantheon GPT Webhook")
 
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+
 app = FastAPI(title=APP_NAME)
 
 
@@ -31,11 +33,22 @@ class OracleUpdate(BaseModel):
     metadata: Dict[str, object] = Field(default_factory=dict)
 
 
-def _require_bearer(authorization: Optional[str]) -> str:
-    if not authorization or not authorization.startswith("Bearer "):
+def _extract_bearer_token(authorization: Optional[str]) -> str:
+    """Validate and return a bearer token or raise an HTTP 403 error."""
+
+    if not authorization:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    token = authorization.split(" ", 1)[1]
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    return token
+
+
+def _require_bearer(authorization: Optional[str]) -> str:
+    token = _extract_bearer_token(authorization)
+
     if not compare_digest(token, API_SECRET):
         raise HTTPException(status_code=403, detail="Unauthorized")
     return token
@@ -46,7 +59,7 @@ async def update_oracle(data: OracleUpdate, authorization: Optional[str] = Heade
     _require_bearer(authorization)
 
     payload = data.model_dump()
-    logging.info("Received GPT update: %s", payload)
+    logging.info("[%s] Received GPT update: %s", APP_NAME, payload)
     return {"status": "success", "message": f"{data.oracle_name} will be {data.action}"}
 
 

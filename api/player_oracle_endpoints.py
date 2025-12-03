@@ -12,6 +12,7 @@ from jose import JWTError, jwt
 from supabase import Client
 
 from .config import get_settings, get_supabase_client
+from .security import normalize_email
 from .supabase_utils import run_supabase
 
 
@@ -35,7 +36,10 @@ def verify_token(authorization: Optional[str]) -> str:
     sub = payload.get("sub")
     if not sub:
         raise HTTPException(status_code=401, detail="Token payload missing subject")
-    return sub
+    try:
+        return normalize_email(sub)
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
 
 
 def get_user_id(email: str) -> str:

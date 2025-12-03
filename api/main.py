@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from supabase import Client
 
 try:
@@ -24,7 +24,7 @@ except Exception as exc:  # pragma: no cover - defensive startup guard
 # -------- env --------
 from .config import get_settings, get_supabase_client
 from .supabase_utils import run_supabase
-from .security import hash_password, validate_password_strength, verify_password
+from .security import hash_password, normalize_email, validate_password_strength, verify_password
 
 settings = get_settings()
 supabase: Client = get_supabase_client()
@@ -41,11 +41,11 @@ if player_oracle_router:
 
 # -------- models --------
 class RegisterRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str = Field(min_length=8)
 
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class UpdateOracleRequest(BaseModel):
@@ -74,7 +74,11 @@ def require_auth(authorization: Optional[str]) -> str:
     sub = payload.get("sub")
     if not sub:
         raise HTTPException(status_code=401, detail="Token payload missing subject")
-    return sub
+
+    try:
+        return normalize_email(sub)
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
 
 
 def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
@@ -109,25 +113,35 @@ def register(req: RegisterRequest):
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 
+    try:
+        email = normalize_email(req.email)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
     hashed = hash_password(req.password)
     res = run_supabase(
-        lambda: supabase.table("users").insert({"email": req.email, "password_hash": hashed}).execute(),
+        lambda: supabase.table("users").insert({"email": email, "password_hash": hashed}).execute(),
         "register user",
     )
     if not res.data:
         raise HTTPException(status_code=400, detail="Registration failed")
-    return {"ok": True, "token": create_access_token(sub=req.email)}
+    return {"ok": True, "token": create_access_token(sub=email)}
 
 @app.post("/auth/login")
 def login(req: LoginRequest):
+    try:
+        email = normalize_email(req.email)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
     res = run_supabase(
-        lambda: supabase.table("users").select("email,password_hash").eq("email", req.email).single().execute(),
+        lambda: supabase.table("users").select("email,password_hash").eq("email", email).single().execute(),
         "login lookup",
     )
     data = res.data or {}
     if not data or not verify_password(req.password, data.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"ok": True, "token": create_access_token(sub=req.email)}
+    return {"ok": True, "token": create_access_token(sub=email)}
 
 # -------- GPT actions --------
 @app.post("/gpt/update-oracle")

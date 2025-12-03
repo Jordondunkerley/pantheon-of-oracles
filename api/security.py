@@ -29,3 +29,12 @@ def validate_password_strength(password: str, *, min_length: int = 8) -> None:
 
     if len(password) < min_length:
         raise ValueError(f"Password must be at least {min_length} characters long")
+
+
+def normalize_email(email: str) -> str:
+    """Return a trimmed, lowercase email or raise ``ValueError`` if empty."""
+
+    normalized = email.strip().lower()
+    if not normalized:
+        raise ValueError("Email is required")
+    return normalized

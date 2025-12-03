@@ -7,7 +7,7 @@ Pantheon of Oracles – FastAPI service (JWT + Supabase; Render-friendly)
 """
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,6 +24,7 @@ except Exception as exc:  # pragma: no cover - defensive startup guard
 
 # -------- env --------
 from .config import get_settings, get_supabase_client
+from .supabase_utils import run_supabase
 
 settings = get_settings()
 supabase: Client = get_supabase_client()
@@ -80,26 +81,19 @@ def require_auth(authorization: Optional[str]) -> str:
 def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
     """Insert an oracle action into Supabase and return the stored row."""
 
-    try:
-        response = (
-            supabase.table("oracle_actions")
-            .insert(
-                {
-                    "oracle_id": payload.oracle_id,
-                    "player_id": payload.player_id,
-                    "action": payload.action,
-                    "metadata": payload.metadata,
-                }
-            )
-            .execute()
+    response = run_supabase(
+        lambda: supabase.table("oracle_actions")
+        .insert(
+            {
+                "oracle_id": payload.oracle_id,
+                "player_id": payload.player_id,
+                "action": payload.action,
+                "metadata": payload.metadata,
+            }
         )
-    except Exception as exc:  # pragma: no cover - defensive guard around client
-        logging.exception("Supabase insert raised an exception")
-        raise HTTPException(status_code=500, detail="Failed to record oracle action") from exc
-
-    if response.error:
-        logging.error("Supabase insert failed: %s", response.error)
-        raise HTTPException(status_code=500, detail="Failed to record oracle action")
+        .execute(),
+        "insert oracle action",
+    )
 
     rows = response.data or []
     if not rows:
@@ -112,14 +106,20 @@ def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
 @app.post("/auth/register")
 def register(req: RegisterRequest):
     hashed = pwd_context.hash(req.password)
-    res = supabase.table("users").insert({"email": req.email, "password_hash": hashed}).execute()
+    res = run_supabase(
+        lambda: supabase.table("users").insert({"email": req.email, "password_hash": hashed}).execute(),
+        "register user",
+    )
     if not res.data:
         raise HTTPException(status_code=400, detail="Registration failed")
     return {"ok": True, "token": create_access_token(sub=req.email)}
 
 @app.post("/auth/login")
 def login(req: LoginRequest):
-    res = supabase.table("users").select("email,password_hash").eq("email", req.email).single().execute()
+    res = run_supabase(
+        lambda: supabase.table("users").select("email,password_hash").eq("email", req.email).single().execute(),
+        "login lookup",
+    )
     data = res.data or {}
     if not data or not pwd_context.verify(req.password, data.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid credentials")

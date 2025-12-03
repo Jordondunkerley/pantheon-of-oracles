@@ -1,357 +1,223 @@
 diff --git a/api/main.py b/api/main.py
-index 9db4cfe..0094d76 100644
+index 0094d76..6389a36 100644
 --- a/api/main.py
 +++ b/api/main.py
-@@ -5,40 +5,39 @@ Pantheon of Oracles – FastAPI service (JWT + Supabase; Render-friendly)
- - Minimal REST: /auth/register, /auth/login, /gpt/update-oracle, /healthz
- - Supabase tables expected: users, oracles, oracle_actions
+@@ -7,7 +7,7 @@ Pantheon of Oracles – FastAPI service (JWT + Supabase; Render-friendly)
  """
-+import logging
-+from datetime import datetime, timedelta
-+from typing import Dict, Optional, Any
-+
+ import logging
+ from datetime import datetime, timedelta
+-from typing import Dict, Optional, Any
++from typing import Any, Dict, Optional
+ 
  from fastapi import FastAPI, HTTPException, Header
  from fastapi.middleware.cors import CORSMiddleware
--from pydantic import BaseModel
--from typing import Optional, Dict, Any
--from datetime import datetime, timedelta
--from jose import jwt, JWTError
-+from jose import JWTError, jwt
- from passlib.context import CryptContext
--from supabase import create_client, Client
--import os
-+from pydantic import BaseModel, Field
-+from supabase import Client
- 
--from .player_oracle_endpoints import router as player_oracle_router
-+try:
-+    from .player_oracle_endpoints import router as player_oracle_router
-+except Exception as exc:  # pragma: no cover - defensive startup guard
-+    logging.warning("player_oracle_endpoints could not be loaded: %s", exc)
-+    player_oracle_router = None
+@@ -24,6 +24,7 @@ except Exception as exc:  # pragma: no cover - defensive startup guard
  
  # -------- env --------
--APP_NAME = os.getenv("APP_NAME", "Pantheon of Oracles API")
--SUPABASE_URL = os.getenv("SUPABASE_URL")
--SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
--JWT_SECRET = os.getenv("JWT_SECRET", "please-change-me")
--JWT_ALG = "HS256"
--ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
-+from .config import get_settings, get_supabase_client
+ from .config import get_settings, get_supabase_client
++from .supabase_utils import run_supabase
  
--if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
--    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
+ settings = get_settings()
+ supabase: Client = get_supabase_client()
+@@ -80,26 +81,19 @@ def require_auth(authorization: Optional[str]) -> str:
+ def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
+     """Insert an oracle action into Supabase and return the stored row."""
+ 
+-    try:
+-        response = (
+-            supabase.table("oracle_actions")
+-            .insert(
+-                {
+-                    "oracle_id": payload.oracle_id,
+-                    "player_id": payload.player_id,
+-                    "action": payload.action,
+-                    "metadata": payload.metadata,
+-                }
+-            )
+-            .execute()
++    response = run_supabase(
++        lambda: supabase.table("oracle_actions")
++        .insert(
++            {
++                "oracle_id": payload.oracle_id,
++                "player_id": payload.player_id,
++                "action": payload.action,
++                "metadata": payload.metadata,
++            }
+         )
+-    except Exception as exc:  # pragma: no cover - defensive guard around client
+-        logging.exception("Supabase insert raised an exception")
+-        raise HTTPException(status_code=500, detail="Failed to record oracle action") from exc
 -
--supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-+settings = get_settings()
-+supabase: Client = get_supabase_client()
- pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+-    if response.error:
+-        logging.error("Supabase insert failed: %s", response.error)
+-        raise HTTPException(status_code=500, detail="Failed to record oracle action")
++        .execute(),
++        "insert oracle action",
++    )
  
- # -------- app --------
--app = FastAPI(title=APP_NAME)
-+app = FastAPI(title=settings.app_name)
- app.add_middleware(
-     CORSMiddleware,
-     allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
- )
- 
--app.include_router(player_oracle_router)
-+if player_oracle_router:
-+    app.include_router(player_oracle_router)
- 
- # -------- models --------
- class RegisterRequest(BaseModel):
-@@ -53,23 +52,62 @@ class UpdateOracleRequest(BaseModel):
-     oracle_id: str          # UUID from `oracles` table
-     player_id: str          # e.g., "jordondunkerley"
-     action: str             # e.g., "RITUAL_START"
--    metadata: Optional[Dict[str, Any]] = None
-+    metadata: Dict[str, Any] = Field(default_factory=dict)
- 
- # -------- utils --------
- def create_access_token(sub: str) -> str:
--    payload = {"sub": sub, "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)}
--    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
-+    payload = {
-+        "sub": sub,
-+        "exp": datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes),
-+    }
-+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_alg)
- 
- def require_auth(authorization: Optional[str]) -> str:
-     if not authorization or not authorization.lower().startswith("bearer "):
-         raise HTTPException(status_code=401, detail="Missing bearer token")
-     token = authorization.split(" ", 1)[1]
-     try:
--        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
--        return payload.get("sub")
-+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
-     except JWTError:
-         raise HTTPException(status_code=401, detail="Invalid or expired token")
- 
-+    sub = payload.get("sub")
-+    if not sub:
-+        raise HTTPException(status_code=401, detail="Token payload missing subject")
-+    return sub
-+
-+
-+def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
-+    """Insert an oracle action into Supabase and return the stored row."""
-+
-+    try:
-+        response = (
-+            supabase.table("oracle_actions")
-+            .insert(
-+                {
-+                    "oracle_id": payload.oracle_id,
-+                    "player_id": payload.player_id,
-+                    "action": payload.action,
-+                    "metadata": payload.metadata,
-+                }
-+            )
-+            .execute()
-+        )
-+    except Exception as exc:  # pragma: no cover - defensive guard around client
-+        logging.exception("Supabase insert raised an exception")
-+        raise HTTPException(status_code=500, detail="Failed to record oracle action") from exc
-+
-+    if response.error:
-+        logging.error("Supabase insert failed: %s", response.error)
-+        raise HTTPException(status_code=500, detail="Failed to record oracle action")
-+
-+    rows = response.data or []
-+    if not rows:
-+        logging.error("Supabase insert returned no rows")
-+        raise HTTPException(status_code=500, detail="Failed to record oracle action")
-+
-+    return rows[0]
-+
- # -------- auth --------
+     rows = response.data or []
+     if not rows:
+@@ -112,14 +106,20 @@ def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
  @app.post("/auth/register")
  def register(req: RegisterRequest):
-@@ -90,16 +128,14 @@ def login(req: LoginRequest):
- # -------- GPT actions --------
- @app.post("/gpt/update-oracle")
- def update_oracle(payload: UpdateOracleRequest, authorization: Optional[str] = Header(None)):
--    _ = require_auth(authorization)
--    ins = supabase.table("oracle_actions").insert({
--        "oracle_id": payload.oracle_id,
--        "player_id": payload.player_id,
--        "action": payload.action,
--        "metadata": payload.metadata
--    }).execute()
--    return {"ok": True, "inserted": ins.data}
-+    sub = require_auth(authorization)
-+    logging.info("Authenticated oracle action request from %s", sub)
-+
-+    record = _insert_oracle_action(payload)
-+
-+    return {"ok": True, "inserted": record}
+     hashed = pwd_context.hash(req.password)
+-    res = supabase.table("users").insert({"email": req.email, "password_hash": hashed}).execute()
++    res = run_supabase(
++        lambda: supabase.table("users").insert({"email": req.email, "password_hash": hashed}).execute(),
++        "register user",
++    )
+     if not res.data:
+         raise HTTPException(status_code=400, detail="Registration failed")
+     return {"ok": True, "token": create_access_token(sub=req.email)}
  
- @app.get("/healthz")
- def healthz():
--    return {"status": "ok", "service": APP_NAME}
-+    return {"status": "ok", "service": settings.app_name}
- 
+ @app.post("/auth/login")
+ def login(req: LoginRequest):
+-    res = supabase.table("users").select("email,password_hash").eq("email", req.email).single().execute()
++    res = run_supabase(
++        lambda: supabase.table("users").select("email,password_hash").eq("email", req.email).single().execute(),
++        "login lookup",
++    )
+     data = res.data or {}
+     if not data or not pwd_context.verify(req.password, data.get("password_hash", "")):
+         raise HTTPException(status_code=401, detail="Invalid credentials")
 diff --git a/api/player_oracle_endpoints.py b/api/player_oracle_endpoints.py
-index be6fa4a..136e8c3 100644
+index 136e8c3..e3dedcf 100644
 --- a/api/player_oracle_endpoints.py
 +++ b/api/player_oracle_endpoints.py
-@@ -1,117 +1,105 @@
-+"""FastAPI router for creating and retrieving player accounts and oracles.
-+
-+This module is the Pantheon GPT entry point for managing player account
-+profiles and oracle records. All endpoints require a JWT bearer token obtained
-+through ``/auth/register`` or ``/auth/login``.
-+"""
-+
-+from typing import Any, Dict, Optional
-+
- from fastapi import APIRouter, Header, HTTPException
--from typing import Optional, Dict, Any
--from jose import jwt, JWTError
--from supabase import create_client
--import os
--
--router = APIRouter()
--
--# Environment variables
--SUPABASE_URL = os.getenv("SUPABASE_URL")
--SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
--JWT_SECRET = os.getenv("JWT_SECRET", "please-change-me")
--JWT_ALG = "HS256"
--
--# Initialize Supabase client
--supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
--
--def require_auth(authorization: Optional[str]) -> str:
--    """
--    Validate bearer token and return the email (sub) from the JWT.
--    """
-+from jose import JWTError, jwt
-+from supabase import Client
-+
-+from .config import get_settings, get_supabase_client
-+
-+
-+settings = get_settings()
-+supabase: Client = get_supabase_client()
-+router = APIRouter(prefix="/gpt", tags=["GPT Player/Oracles"])
-+
-+
-+def verify_token(authorization: Optional[str]) -> str:
-+    """Validate a bearer token and return the email (``sub`` claim)."""
-+
-     if not authorization or not authorization.lower().startswith("bearer "):
-         raise HTTPException(status_code=401, detail="Missing bearer token")
-+
-     token = authorization.split(" ", 1)[1]
-     try:
--        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
--        sub = payload.get("sub")
--        if not sub:
--            raise HTTPException(status_code=401, detail="Invalid token payload")
--        return sub
-+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
-     except JWTError:
-         raise HTTPException(status_code=401, detail="Invalid or expired token")
+@@ -12,6 +12,7 @@ from jose import JWTError, jwt
+ from supabase import Client
  
--def get_user_id_by_email(email: str) -> Optional[str]:
--    """
--    Retrieve a user's ID from Supabase based on their email.
--    """
-+    sub = payload.get("sub")
-+    if not sub:
-+        raise HTTPException(status_code=401, detail="Token payload missing subject")
-+    return sub
-+
-+
-+def get_user_id(email: str) -> str:
-+    """Return the Supabase ``users.id`` for the given email or raise 404."""
-+
-     res = supabase.table("users").select("id").eq("email", email).single().execute()
--    data = res.data or {}
--    return data.get("id") if data else None
-+    data = res.data
-+    if not data:
-+        raise HTTPException(status_code=404, detail="User not found")
-+    return data["id"]
-+
+ from .config import get_settings, get_supabase_client
++from .supabase_utils import run_supabase
  
--@router.post("/gpt/create-player-account")
-+@router.post("/create-player-account")
- def create_player_account(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
--    """
--    Create or update a player account associated with the authenticated user.
--    """
--    user_email = require_auth(authorization)
--    user_id = get_user_id_by_email(user_email)
--    if not user_id:
--        raise HTTPException(status_code=404, detail="User not found")
--    insert_data = {"user_id": user_id, **payload}
--    res = supabase.table("player_accounts").upsert(insert_data, on_conflict="user_id").execute()
--    return {"ok": True, "account": res.data}
-+    """Create or update a player account for the authenticated user."""
-+
-+    email = verify_token(authorization)
-+    user_id = get_user_id(email)
-+    account_data = {"user_id": user_id, **payload}
-+    res = supabase.table("player_accounts").upsert(account_data, on_conflict="user_id").execute()
-+    return {"ok": True, "data": res.data}
  
--@router.get("/gpt/player-account")
-+
-+@router.get("/player-account")
- def get_player_account(authorization: Optional[str] = Header(None)):
--    """
--    Retrieve the player account for the authenticated user.
--    """
--    user_email = require_auth(authorization)
--    user_id = get_user_id_by_email(user_email)
--    if not user_id:
--        raise HTTPException(status_code=404, detail="User not found")
-+    """Retrieve the authenticated user's player account profile."""
-+
-+    email = verify_token(authorization)
-+    user_id = get_user_id(email)
-     res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
--    return {"ok": True, "account": res.data}
--
--@router.post("/gpt/create-oracle")
--def create_oracle(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
--    """
--    Create or update an oracle profile associated with the authenticated user.
--    """
--    user_email = require_auth(authorization)
--    user_id = get_user_id_by_email(user_email)
--    if not user_id:
--        raise HTTPException(status_code=404, detail="User not found")
--    insert_data = {"user_id": user_id, **payload}
--    res = supabase.table("oracle_profiles").upsert(insert_data, on_conflict="id").execute()
--    return {"ok": True, "oracle": res.data}
-+    return {"account": res.data}
-+
+ settings = get_settings()
+@@ -40,7 +41,10 @@ def verify_token(authorization: Optional[str]) -> str:
+ def get_user_id(email: str) -> str:
+     """Return the Supabase ``users.id`` for the given email or raise 404."""
  
--@router.get("/gpt/my-oracles")
-+@router.post("/create-oracle")
-+def create_oracle_profile(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
-+    """Create or update an oracle profile owned by the authenticated user."""
-+
-+    email = verify_token(authorization)
-+    user_id = get_user_id(email)
-+    profile_data = {"user_id": user_id, **payload}
-+    res = supabase.table("oracle_profiles").insert(profile_data).execute()
-+    return {"ok": True, "data": res.data}
-+
-+
-+@router.get("/my-oracles")
- def get_my_oracles(authorization: Optional[str] = Header(None)):
--    """
--    Retrieve all oracle profiles belonging to the authenticated user.
--    """
--    user_email = require_auth(authorization)
--    user_id = get_user_id_by_email(user_email)
--    if not user_id:
--        raise HTTPException(status_code=404, detail="User not found")
-+    """Return all oracle profiles belonging to the authenticated user."""
-+
-+    email = verify_token(authorization)
-+    user_id = get_user_id(email)
-     res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
+-    res = supabase.table("users").select("id").eq("email", email).single().execute()
++    res = run_supabase(
++        lambda: supabase.table("users").select("id").eq("email", email).single().execute(),
++        "lookup user id",
++    )
+     data = res.data
+     if not data:
+         raise HTTPException(status_code=404, detail="User not found")
+@@ -54,7 +58,10 @@ def create_player_account(payload: Dict[str, Any], authorization: Optional[str]
+     email = verify_token(authorization)
+     user_id = get_user_id(email)
+     account_data = {"user_id": user_id, **payload}
+-    res = supabase.table("player_accounts").upsert(account_data, on_conflict="user_id").execute()
++    res = run_supabase(
++        lambda: supabase.table("player_accounts").upsert(account_data, on_conflict="user_id").execute(),
++        "upsert player account",
++    )
+     return {"ok": True, "data": res.data}
+ 
+ 
+@@ -64,7 +71,10 @@ def get_player_account(authorization: Optional[str] = Header(None)):
+ 
+     email = verify_token(authorization)
+     user_id = get_user_id(email)
+-    res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
++    res = run_supabase(
++        lambda: supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute(),
++        "fetch player account",
++    )
+     return {"account": res.data}
+ 
+ 
+@@ -75,7 +85,10 @@ def create_oracle_profile(payload: Dict[str, Any], authorization: Optional[str]
+     email = verify_token(authorization)
+     user_id = get_user_id(email)
+     profile_data = {"user_id": user_id, **payload}
+-    res = supabase.table("oracle_profiles").insert(profile_data).execute()
++    res = run_supabase(
++        lambda: supabase.table("oracle_profiles").insert(profile_data).execute(),
++        "insert oracle profile",
++    )
+     return {"ok": True, "data": res.data}
+ 
+ 
+@@ -85,7 +98,10 @@ def get_my_oracles(authorization: Optional[str] = Header(None)):
+ 
+     email = verify_token(authorization)
+     user_id = get_user_id(email)
+-    res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
++    res = run_supabase(
++        lambda: supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute(),
++        "fetch oracle profiles",
++    )
      return {"ok": True, "oracles": res.data}
  
  
--@router.get("/gpt/sync")
-+@router.get("/sync")
- def sync_player_data(authorization: Optional[str] = Header(None)):
--    """
--    Return the authenticated user's player account and all oracle profiles.
--
--    This endpoint combines the logic of ``/gpt/player-account`` and ``/gpt/my-oracles``
--    into a single call. It verifies the JWT, resolves the user's ID, and then
--    retrieves both the player's account and list of oracles from Supabase. This
--    allows the Pantheon GPT router to fetch all relevant data in one request,
--    enabling continuous syncing across sessions without manual imports.
--    """
--    user_email = require_auth(authorization)
--    user_id = get_user_id_by_email(user_email)
--    if not user_id:
--        raise HTTPException(status_code=404, detail="User not found")
--    # Fetch player account (if any)
--    acc_res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
--    # Fetch all oracles owned by the user
--    orc_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
-+    """Return both the player's account record and all owned oracles."""
-+
-+    email = verify_token(authorization)
-+    user_id = get_user_id(email)
-+    account = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
-+    oracles = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
+@@ -95,8 +111,14 @@ def sync_player_data(authorization: Optional[str] = Header(None)):
+ 
+     email = verify_token(authorization)
+     user_id = get_user_id(email)
+-    account = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
+-    oracles = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
++    account = run_supabase(
++        lambda: supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute(),
++        "sync player account",
++    )
++    oracles = run_supabase(
++        lambda: supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute(),
++        "sync oracle profiles",
++    )
      return {
          "ok": True,
--        "account": acc_res.data,
--        "oracles": orc_res.data,
-+        "account": account.data,
-+        "oracles": oracles.data,
-     }
- 
+         "account": account.data,
+diff --git a/api/supabase_utils.py b/api/supabase_utils.py
+new file mode 100644
+index 0000000..f23cf44
+--- /dev/null
++++ b/api/supabase_utils.py
+@@ -0,0 +1,45 @@
++"""Shared Supabase helpers for Pantheon of Oracles APIs.
++
++These utilities centralize error handling for Supabase operations so routers
++can consistently surface HTTP errors and log failures without duplicating
++boilerplate around ``.execute()`` calls.
++"""
++
++from __future__ import annotations
++
++import logging
++from typing import Callable, TypeVar
++
++from fastapi import HTTPException
++
++
++T = TypeVar("T")
++
++
++def run_supabase(operation: Callable[[], T], context: str) -> T:
++    """Execute a Supabase call, logging and raising on failures.
++
++    Args:
++        operation: Callable that performs the Supabase request and returns a
++            response object with ``error`` and ``data`` attributes.
++        context: Human-readable description for logging.
++
++    Returns:
++        The Supabase response object.
++
++    Raises:
++        HTTPException: When the request raises an exception or returns an
++            error payload.
++    """
++
++    try:
++        response = operation()
++    except Exception as exc:  # pragma: no cover - defensive guard around client
++        logging.exception("[%s] Supabase operation raised an exception", context)
++        raise HTTPException(status_code=500, detail="Supabase request failed") from exc
++
++    if getattr(response, "error", None):
++        logging.error("[%s] Supabase error: %s", context, response.error)
++        raise HTTPException(status_code=500, detail="Supabase request failed")
++
++    return response

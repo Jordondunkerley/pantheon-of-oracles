@@ -12,6 +12,7 @@ from jose import JWTError, jwt
 from supabase import Client
 
 from .config import get_settings, get_supabase_client
+from .supabase_utils import run_supabase
 
 
 settings = get_settings()
@@ -40,7 +41,10 @@ def verify_token(authorization: Optional[str]) -> str:
 def get_user_id(email: str) -> str:
     """Return the Supabase ``users.id`` for the given email or raise 404."""
 
-    res = supabase.table("users").select("id").eq("email", email).single().execute()
+    res = run_supabase(
+        lambda: supabase.table("users").select("id").eq("email", email).single().execute(),
+        "lookup user id",
+    )
     data = res.data
     if not data:
         raise HTTPException(status_code=404, detail="User not found")
@@ -54,7 +58,10 @@ def create_player_account(payload: Dict[str, Any], authorization: Optional[str] 
     email = verify_token(authorization)
     user_id = get_user_id(email)
     account_data = {"user_id": user_id, **payload}
-    res = supabase.table("player_accounts").upsert(account_data, on_conflict="user_id").execute()
+    res = run_supabase(
+        lambda: supabase.table("player_accounts").upsert(account_data, on_conflict="user_id").execute(),
+        "upsert player account",
+    )
     return {"ok": True, "data": res.data}
 
 
@@ -64,7 +71,10 @@ def get_player_account(authorization: Optional[str] = Header(None)):
 
     email = verify_token(authorization)
     user_id = get_user_id(email)
-    res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
+    res = run_supabase(
+        lambda: supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute(),
+        "fetch player account",
+    )
     return {"account": res.data}
 
 
@@ -75,7 +85,10 @@ def create_oracle_profile(payload: Dict[str, Any], authorization: Optional[str] 
     email = verify_token(authorization)
     user_id = get_user_id(email)
     profile_data = {"user_id": user_id, **payload}
-    res = supabase.table("oracle_profiles").insert(profile_data).execute()
+    res = run_supabase(
+        lambda: supabase.table("oracle_profiles").insert(profile_data).execute(),
+        "insert oracle profile",
+    )
     return {"ok": True, "data": res.data}
 
 
@@ -85,7 +98,10 @@ def get_my_oracles(authorization: Optional[str] = Header(None)):
 
     email = verify_token(authorization)
     user_id = get_user_id(email)
-    res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
+    res = run_supabase(
+        lambda: supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute(),
+        "fetch oracle profiles",
+    )
     return {"ok": True, "oracles": res.data}
 
 
@@ -95,8 +111,14 @@ def sync_player_data(authorization: Optional[str] = Header(None)):
 
     email = verify_token(authorization)
     user_id = get_user_id(email)
-    account = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
-    oracles = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
+    account = run_supabase(
+        lambda: supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute(),
+        "sync player account",
+    )
+    oracles = run_supabase(
+        lambda: supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute(),
+        "sync oracle profiles",
+    )
     return {
         "ok": True,
         "account": account.data,

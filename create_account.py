@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from supabase import Client
 
 from api.config import get_supabase_client
-from api.security import hash_password
+from api.security import hash_password, validate_password_strength
 from api.supabase_utils import run_supabase
 
 
@@ -18,6 +18,11 @@ def create_user(username: str, first_name: str, last_name: str, password: str):
     Automatically assigns a unique user_id (UUIDv4).
     """
     user_id = str(uuid.uuid4())
+
+    try:
+        validate_password_strength(password)
+    except ValueError as exc:
+        return {"status": "error", "details": str(exc)}
 
     data = {
         "id": user_id,

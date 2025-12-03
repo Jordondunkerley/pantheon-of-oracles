@@ -12,7 +12,7 @@ from uuid import uuid4
 from supabase import Client
 
 from api.config import get_supabase_client
-from api.security import hash_password
+from api.security import hash_password, validate_password_strength
 from api.supabase_utils import run_supabase
 
 
@@ -23,6 +23,7 @@ supabase: Client = get_supabase_client()
 
 def create_user(username, first_name, last_name, password):
     user_id = str(uuid4())
+    validate_password_strength(password)
     data = {
         "id": user_id,
         "username": username,

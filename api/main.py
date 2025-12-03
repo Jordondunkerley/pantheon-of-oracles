@@ -24,7 +24,7 @@ except Exception as exc:  # pragma: no cover - defensive startup guard
 # -------- env --------
 from .config import get_settings, get_supabase_client
 from .supabase_utils import run_supabase
-from .security import hash_password, verify_password
+from .security import hash_password, validate_password_strength, verify_password
 
 settings = get_settings()
 supabase: Client = get_supabase_client()
@@ -42,7 +42,7 @@ if player_oracle_router:
 # -------- models --------
 class RegisterRequest(BaseModel):
     email: str
-    password: str
+    password: str = Field(min_length=8)
 
 class LoginRequest(BaseModel):
     email: str
@@ -104,6 +104,11 @@ def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
 # -------- auth --------
 @app.post("/auth/register")
 def register(req: RegisterRequest):
+    try:
+        validate_password_strength(req.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
     hashed = hash_password(req.password)
     res = run_supabase(
         lambda: supabase.table("users").insert({"email": req.email, "password_hash": hashed}).execute(),

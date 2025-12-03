@@ -1,108 +1,110 @@
 diff --git a/api/main.py b/api/main.py
-index 6389a36..fec3035 100644
+index fec3035..389b34c 100644
 --- a/api/main.py
 +++ b/api/main.py
-@@ -12,7 +12,6 @@ from typing import Any, Dict, Optional
- from fastapi import FastAPI, HTTPException, Header
- from fastapi.middleware.cors import CORSMiddleware
- from jose import JWTError, jwt
--from passlib.context import CryptContext
- from pydantic import BaseModel, Field
- from supabase import Client
- 
-@@ -25,10 +24,10 @@ except Exception as exc:  # pragma: no cover - defensive startup guard
+@@ -24,7 +24,7 @@ except Exception as exc:  # pragma: no cover - defensive startup guard
  # -------- env --------
  from .config import get_settings, get_supabase_client
  from .supabase_utils import run_supabase
-+from .security import hash_password, verify_password
+-from .security import hash_password, verify_password
++from .security import hash_password, validate_password_strength, verify_password
  
  settings = get_settings()
  supabase: Client = get_supabase_client()
--pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+@@ -42,7 +42,7 @@ if player_oracle_router:
+ # -------- models --------
+ class RegisterRequest(BaseModel):
+     email: str
+-    password: str
++    password: str = Field(min_length=8)
  
- # -------- app --------
- app = FastAPI(title=settings.app_name)
-@@ -105,7 +104,7 @@ def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
+ class LoginRequest(BaseModel):
+     email: str
+@@ -104,6 +104,11 @@ def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
  # -------- auth --------
  @app.post("/auth/register")
  def register(req: RegisterRequest):
--    hashed = pwd_context.hash(req.password)
-+    hashed = hash_password(req.password)
++    try:
++        validate_password_strength(req.password)
++    except ValueError as exc:
++        raise HTTPException(status_code=422, detail=str(exc))
++
+     hashed = hash_password(req.password)
      res = run_supabase(
          lambda: supabase.table("users").insert({"email": req.email, "password_hash": hashed}).execute(),
-         "register user",
-@@ -121,7 +120,7 @@ def login(req: LoginRequest):
-         "login lookup",
-     )
-     data = res.data or {}
--    if not data or not pwd_context.verify(req.password, data.get("password_hash", "")):
-+    if not data or not verify_password(req.password, data.get("password_hash", "")):
-         raise HTTPException(status_code=401, detail="Invalid credentials")
-     return {"ok": True, "token": create_access_token(sub=req.email)}
- 
 diff --git a/api/security.py b/api/security.py
-new file mode 100644
-index 0000000..1a138b1
---- /dev/null
+index 1a138b1..81b9eea 100644
+--- a/api/security.py
 +++ b/api/security.py
-@@ -0,0 +1,18 @@
-+"""Shared security utilities for Pantheon services."""
+@@ -1,6 +1,7 @@
+ """Shared security utilities for Pantheon services."""
+ 
+ from passlib.context import CryptContext
++from passlib.exc import InvalidHash
+ 
+ 
+ _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+@@ -15,4 +16,16 @@ def hash_password(password: str) -> str:
+ def verify_password(password: str, password_hash: str) -> bool:
+     """Validate that ``password`` matches the stored ``password_hash``."""
+ 
+-    return _pwd_context.verify(password, password_hash)
++    try:
++        return _pwd_context.verify(password, password_hash)
++    except (ValueError, InvalidHash):
++        # Treat malformed or missing hashes as invalid credentials rather than
++        # surfacing 500 errors during authentication flows.
++        return False
 +
-+from passlib.context import CryptContext
 +
++def validate_password_strength(password: str, *, min_length: int = 8) -> None:
++    """Raise ``ValueError`` if the password does not meet basic requirements."""
 +
-+_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-+
-+
-+def hash_password(password: str) -> str:
-+    """Return a bcrypt hash for the given plaintext password."""
-+
-+    return _pwd_context.hash(password)
-+
-+
-+def verify_password(password: str, password_hash: str) -> bool:
-+    """Validate that ``password`` matches the stored ``password_hash``."""
-+
-+    return _pwd_context.verify(password, password_hash)
++    if len(password) < min_length:
++        raise ValueError(f"Password must be at least {min_length} characters long")
 diff --git a/create_account.py b/create_account.py
-index 43207b1..754c296 100644
+index 754c296..b5e816e 100644
 --- a/create_account.py
 +++ b/create_account.py
-@@ -6,6 +6,7 @@ from fastapi import HTTPException
+@@ -6,7 +6,7 @@ from fastapi import HTTPException
  from supabase import Client
  
  from api.config import get_supabase_client
-+from api.security import hash_password
+-from api.security import hash_password
++from api.security import hash_password, validate_password_strength
  from api.supabase_utils import run_supabase
  
  
-@@ -23,7 +24,7 @@ def create_user(username: str, first_name: str, last_name: str, password: str):
-         "username": username,
-         "first_name": first_name,
-         "last_name": last_name,
--        "password": password  # ⛔ Future: hash this before saving
-+        "password_hash": hash_password(password),
-     }
+@@ -19,6 +19,11 @@ def create_user(username: str, first_name: str, last_name: str, password: str):
+     """
+     user_id = str(uuid.uuid4())
  
-     try:
++    try:
++        validate_password_strength(password)
++    except ValueError as exc:
++        return {"status": "error", "details": str(exc)}
++
+     data = {
+         "id": user_id,
+         "username": username,
 diff --git a/supabase_client.py b/supabase_client.py
-index fdc4723..2c80422 100644
+index 2c80422..d7ddff5 100644
 --- a/supabase_client.py
 +++ b/supabase_client.py
-@@ -12,6 +12,7 @@ from uuid import uuid4
+@@ -12,7 +12,7 @@ from uuid import uuid4
  from supabase import Client
  
  from api.config import get_supabase_client
-+from api.security import hash_password
+-from api.security import hash_password
++from api.security import hash_password, validate_password_strength
  from api.supabase_utils import run_supabase
  
  
-@@ -27,7 +28,7 @@ def create_user(username, first_name, last_name, password):
+@@ -23,6 +23,7 @@ supabase: Client = get_supabase_client()
+ 
+ def create_user(username, first_name, last_name, password):
+     user_id = str(uuid4())
++    validate_password_strength(password)
+     data = {
+         "id": user_id,
          "username": username,
-         "first_name": first_name,
-         "last_name": last_name,
--        "password": password
-+        "password_hash": hash_password(password),
-     }
-     return run_supabase(
-         lambda: supabase.table("users").insert(data).execute(),

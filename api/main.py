@@ -13,7 +13,7 @@ from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from supabase import Client
 
 try:
@@ -52,7 +52,7 @@ class UpdateOracleRequest(BaseModel):
     oracle_id: str          # UUID from `oracles` table
     player_id: str          # e.g., "jordondunkerley"
     action: str             # e.g., "RITUAL_START"
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 # -------- utils --------
 def create_access_token(sub: str) -> str:
@@ -76,6 +76,38 @@ def require_auth(authorization: Optional[str]) -> str:
         raise HTTPException(status_code=401, detail="Token payload missing subject")
     return sub
 
+
+def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
+    """Insert an oracle action into Supabase and return the stored row."""
+
+    try:
+        response = (
+            supabase.table("oracle_actions")
+            .insert(
+                {
+                    "oracle_id": payload.oracle_id,
+                    "player_id": payload.player_id,
+                    "action": payload.action,
+                    "metadata": payload.metadata,
+                }
+            )
+            .execute()
+        )
+    except Exception as exc:  # pragma: no cover - defensive guard around client
+        logging.exception("Supabase insert raised an exception")
+        raise HTTPException(status_code=500, detail="Failed to record oracle action") from exc
+
+    if response.error:
+        logging.error("Supabase insert failed: %s", response.error)
+        raise HTTPException(status_code=500, detail="Failed to record oracle action")
+
+    rows = response.data or []
+    if not rows:
+        logging.error("Supabase insert returned no rows")
+        raise HTTPException(status_code=500, detail="Failed to record oracle action")
+
+    return rows[0]
+
 # -------- auth --------
 @app.post("/auth/register")
 def register(req: RegisterRequest):
@@ -96,14 +128,12 @@ def login(req: LoginRequest):
 # -------- GPT actions --------
 @app.post("/gpt/update-oracle")
 def update_oracle(payload: UpdateOracleRequest, authorization: Optional[str] = Header(None)):
-    _ = require_auth(authorization)
-    ins = supabase.table("oracle_actions").insert({
-        "oracle_id": payload.oracle_id,
-        "player_id": payload.player_id,
-        "action": payload.action,
-        "metadata": payload.metadata
-    }).execute()
-    return {"ok": True, "inserted": ins.data}
+    sub = require_auth(authorization)
+    logging.info("Authenticated oracle action request from %s", sub)
+
+    record = _insert_oracle_action(payload)
+
+    return {"ok": True, "inserted": record}
 
 @app.get("/healthz")
 def healthz():

@@ -12,6 +12,7 @@ from uuid import uuid4
 from supabase import Client
 
 from api.config import get_supabase_client
+from api.supabase_utils import run_supabase
 
 
 # Reuse the shared Supabase client so all Pantheon utilities honor the same
@@ -28,7 +29,10 @@ def create_user(username, first_name, last_name, password):
         "last_name": last_name,
         "password": password
     }
-    return supabase.table("users").insert(data).execute()
+    return run_supabase(
+        lambda: supabase.table("users").insert(data).execute(),
+        "create legacy user",
+    )
 
 
 def save_astrology_profile(user_id, profile_json):
@@ -37,7 +41,10 @@ def save_astrology_profile(user_id, profile_json):
         "user_id": user_id,
         "profile_json": profile_json
     }
-    return supabase.table("astrology_profiles").insert(data).execute()
+    return run_supabase(
+        lambda: supabase.table("astrology_profiles").insert(data).execute(),
+        "save astrology profile",
+    )
 
 
 def save_oracle(user_id, oracle_type, oracle_data):
@@ -47,8 +54,14 @@ def save_oracle(user_id, oracle_type, oracle_data):
         "oracle_type": oracle_type,
         "oracle_data": oracle_data
     }
-    return supabase.table("oracles").insert(data).execute()
+    return run_supabase(
+        lambda: supabase.table("oracles").insert(data).execute(),
+        "save oracle",
+    )
 
 
 def get_user_oracles(user_id):
-    return supabase.table("oracles").select("*").eq("user_id", user_id).execute()
+    return run_supabase(
+        lambda: supabase.table("oracles").select("*").eq("user_id", user_id).execute(),
+        "fetch user oracles",
+    )

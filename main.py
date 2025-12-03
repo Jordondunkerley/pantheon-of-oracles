@@ -6,6 +6,7 @@ from datetime import datetime
 import pytz, os
 
 from api.config import get_supabase_client
+from api.supabase_utils import run_supabase
 
 # === CONFIG ===
 API_KEY = os.getenv("PANTHEON_API_KEY")
@@ -72,7 +73,10 @@ async def update_oracle_action(request: Request, oracle_command: OracleCommand, 
         "timestamp": oracle_command.metadata.timestamp
     }
 
-    result = supabase.table("oracle_actions").insert(payload).execute()
+    result = run_supabase(
+        lambda: supabase.table("oracle_actions").insert(payload).execute(),
+        "legacy oracle action insert",
+    )
     print(f"\n[ORACLE ACTION RECEIVED] {oracle_command.oracle_name} | {oracle_command.command} | {now_est}")
     print(f"[SUPABASE INSERT RESULT] {result}")
 

@@ -1,5 +1,5 @@
 diff --git a/api/main.py b/api/main.py
-index 9db4cfe..ffa66ef 100644
+index 9db4cfe..0094d76 100644
 --- a/api/main.py
 +++ b/api/main.py
 @@ -5,40 +5,39 @@ Pantheon of Oracles – FastAPI service (JWT + Supabase; Render-friendly)
@@ -20,7 +20,7 @@ index 9db4cfe..ffa66ef 100644
  from passlib.context import CryptContext
 -from supabase import create_client, Client
 -import os
-+from pydantic import BaseModel
++from pydantic import BaseModel, Field
 +from supabase import Client
  
 -from .player_oracle_endpoints import router as player_oracle_router
@@ -37,11 +37,11 @@ index 9db4cfe..ffa66ef 100644
 -JWT_SECRET = os.getenv("JWT_SECRET", "please-change-me")
 -JWT_ALG = "HS256"
 -ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
--
--if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
--    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
 +from .config import get_settings, get_supabase_client
  
+-if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+-    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
+-
 -supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 +settings = get_settings()
 +supabase: Client = get_supabase_client()
@@ -61,7 +61,12 @@ index 9db4cfe..ffa66ef 100644
  
  # -------- models --------
  class RegisterRequest(BaseModel):
-@@ -57,19 +56,26 @@ class UpdateOracleRequest(BaseModel):
+@@ -53,23 +52,62 @@ class UpdateOracleRequest(BaseModel):
+     oracle_id: str          # UUID from `oracles` table
+     player_id: str          # e.g., "jordondunkerley"
+     action: str             # e.g., "RITUAL_START"
+-    metadata: Optional[Dict[str, Any]] = None
++    metadata: Dict[str, Any] = Field(default_factory=dict)
  
  # -------- utils --------
  def create_access_token(sub: str) -> str:
@@ -89,10 +94,59 @@ index 9db4cfe..ffa66ef 100644
 +        raise HTTPException(status_code=401, detail="Token payload missing subject")
 +    return sub
 +
++
++def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
++    """Insert an oracle action into Supabase and return the stored row."""
++
++    try:
++        response = (
++            supabase.table("oracle_actions")
++            .insert(
++                {
++                    "oracle_id": payload.oracle_id,
++                    "player_id": payload.player_id,
++                    "action": payload.action,
++                    "metadata": payload.metadata,
++                }
++            )
++            .execute()
++        )
++    except Exception as exc:  # pragma: no cover - defensive guard around client
++        logging.exception("Supabase insert raised an exception")
++        raise HTTPException(status_code=500, detail="Failed to record oracle action") from exc
++
++    if response.error:
++        logging.error("Supabase insert failed: %s", response.error)
++        raise HTTPException(status_code=500, detail="Failed to record oracle action")
++
++    rows = response.data or []
++    if not rows:
++        logging.error("Supabase insert returned no rows")
++        raise HTTPException(status_code=500, detail="Failed to record oracle action")
++
++    return rows[0]
++
  # -------- auth --------
  @app.post("/auth/register")
  def register(req: RegisterRequest):
-@@ -101,5 +107,5 @@ def update_oracle(payload: UpdateOracleRequest, authorization: Optional[str] = H
+@@ -90,16 +128,14 @@ def login(req: LoginRequest):
+ # -------- GPT actions --------
+ @app.post("/gpt/update-oracle")
+ def update_oracle(payload: UpdateOracleRequest, authorization: Optional[str] = Header(None)):
+-    _ = require_auth(authorization)
+-    ins = supabase.table("oracle_actions").insert({
+-        "oracle_id": payload.oracle_id,
+-        "player_id": payload.player_id,
+-        "action": payload.action,
+-        "metadata": payload.metadata
+-    }).execute()
+-    return {"ok": True, "inserted": ins.data}
++    sub = require_auth(authorization)
++    logging.info("Authenticated oracle action request from %s", sub)
++
++    record = _insert_oracle_action(payload)
++
++    return {"ok": True, "inserted": record}
  
  @app.get("/healthz")
  def healthz():

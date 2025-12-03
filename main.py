@@ -7,9 +7,14 @@ import pytz, os
 from supabase import create_client
 
 # === CONFIG ===
-API_KEY = "J&h^fvAc*gH!aS#ba@PL#iuW&D11J"
-SUPABASE_URL = os.getenv("SUPABASE_URL") or "https://mammtgndjoydbeeuehiw.supabase.co"
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hbW10Z25kam95ZGJlZXVlaGl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NTM5MzQsImV4cCI6MjA1OTAyOTkzNH0.VPseSq4UpYA3NJfq6wmjVkqfmOpsIFyPM--4lmN8hx4"
+API_KEY = os.getenv("PANTHEON_API_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+
+if not API_KEY:
+    raise RuntimeError("PANTHEON_API_KEY must be set for gpt/update-oracle access")
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured for legacy endpoints")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 

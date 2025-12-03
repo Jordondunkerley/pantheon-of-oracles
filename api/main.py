@@ -5,40 +5,39 @@ Pantheon of Oracles – FastAPI service (JWT + Supabase; Render-friendly)
 - Minimal REST: /auth/register, /auth/login, /gpt/update-oracle, /healthz
 - Supabase tables expected: users, oracles, oracle_actions
 """
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, Optional, Any
+
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from passlib.context import CryptContext
-from supabase import create_client, Client
-import os
+from pydantic import BaseModel
+from supabase import Client
 
-from .player_oracle_endpoints import router as player_oracle_router
+try:
+    from .player_oracle_endpoints import router as player_oracle_router
+except Exception as exc:  # pragma: no cover - defensive startup guard
+    logging.warning("player_oracle_endpoints could not be loaded: %s", exc)
+    player_oracle_router = None
 
 # -------- env --------
-APP_NAME = os.getenv("APP_NAME", "Pantheon of Oracles API")
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-JWT_SECRET = os.getenv("JWT_SECRET", "please-change-me")
-JWT_ALG = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
+from .config import get_settings, get_supabase_client
 
-if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
-    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+settings = get_settings()
+supabase: Client = get_supabase_client()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # -------- app --------
-app = FastAPI(title=APP_NAME)
+app = FastAPI(title=settings.app_name)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
 
-app.include_router(player_oracle_router)
+if player_oracle_router:
+    app.include_router(player_oracle_router)
 
 # -------- models --------
 class RegisterRequest(BaseModel):
@@ -57,18 +56,25 @@ class UpdateOracleRequest(BaseModel):
 
 # -------- utils --------
 def create_access_token(sub: str) -> str:
-    payload = {"sub": sub, "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)}
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
+    payload = {
+        "sub": sub,
+        "exp": datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes),
+    }
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_alg)
 
 def require_auth(authorization: Optional[str]) -> str:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token")
     token = authorization.split(" ", 1)[1]
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
-        return payload.get("sub")
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    sub = payload.get("sub")
+    if not sub:
+        raise HTTPException(status_code=401, detail="Token payload missing subject")
+    return sub
 
 # -------- auth --------
 @app.post("/auth/register")
@@ -101,5 +107,5 @@ def update_oracle(payload: UpdateOracleRequest, authorization: Optional[str] = H
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok", "service": APP_NAME}
+    return {"status": "ok", "service": settings.app_name}
 

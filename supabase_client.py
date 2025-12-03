@@ -1,10 +1,22 @@
-from supabase import create_client, Client
+"""Supabase helpers for legacy Pantheon utilities.
+
+This module previously embedded a concrete Supabase URL and service key. Those
+credentials are now sourced from the environment to avoid shipping secrets in
+the repository and to keep behavior aligned with the primary FastAPI service
+configuration. The module reuses the shared API settings so any deployment only
+needs to export the expected environment variables once.
+"""
+
 from uuid import uuid4
 
-SUPABASE_URL = "https://mammtgndjoydbeeuehiw.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hbW10Z25kam95ZGJlZXVlaGl3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzQ1MzkzNCwiZXhwIjoyMDU5MDI5OTM0fQ.B6dgvr7DSFdjQvGAoTLLNXvLRBdd48aA0heg_aSdK2E"
+from supabase import Client
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+from api.config import get_supabase_client
+
+
+# Reuse the shared Supabase client so all Pantheon utilities honor the same
+# environment-driven configuration.
+supabase: Client = get_supabase_client()
 
 
 def create_user(username, first_name, last_name, password):

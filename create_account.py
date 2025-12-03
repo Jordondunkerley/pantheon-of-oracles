@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from supabase import Client
 
 from api.config import get_supabase_client
+from api.security import hash_password
 from api.supabase_utils import run_supabase
 
 
@@ -23,7 +24,7 @@ def create_user(username: str, first_name: str, last_name: str, password: str):
         "username": username,
         "first_name": first_name,
         "last_name": last_name,
-        "password": password  # ⛔ Future: hash this before saving
+        "password_hash": hash_password(password),
     }
 
     try:

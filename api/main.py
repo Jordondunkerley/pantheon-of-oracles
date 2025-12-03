@@ -12,7 +12,6 @@ from typing import Any, Dict, Optional
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 from supabase import Client
 
@@ -25,10 +24,10 @@ except Exception as exc:  # pragma: no cover - defensive startup guard
 # -------- env --------
 from .config import get_settings, get_supabase_client
 from .supabase_utils import run_supabase
+from .security import hash_password, verify_password
 
 settings = get_settings()
 supabase: Client = get_supabase_client()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # -------- app --------
 app = FastAPI(title=settings.app_name)
@@ -105,7 +104,7 @@ def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
 # -------- auth --------
 @app.post("/auth/register")
 def register(req: RegisterRequest):
-    hashed = pwd_context.hash(req.password)
+    hashed = hash_password(req.password)
     res = run_supabase(
         lambda: supabase.table("users").insert({"email": req.email, "password_hash": hashed}).execute(),
         "register user",
@@ -121,7 +120,7 @@ def login(req: LoginRequest):
         "login lookup",
     )
     data = res.data or {}
-    if not data or not pwd_context.verify(req.password, data.get("password_hash", "")):
+    if not data or not verify_password(req.password, data.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return {"ok": True, "token": create_access_token(sub=req.email)}
 

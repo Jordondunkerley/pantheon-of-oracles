@@ -12,6 +12,7 @@ from uuid import uuid4
 from supabase import Client
 
 from api.config import get_supabase_client
+from api.security import hash_password
 from api.supabase_utils import run_supabase
 
 
@@ -27,7 +28,7 @@ def create_user(username, first_name, last_name, password):
         "username": username,
         "first_name": first_name,
         "last_name": last_name,
-        "password": password
+        "password_hash": hash_password(password),
     }
     return run_supabase(
         lambda: supabase.table("users").insert(data).execute(),

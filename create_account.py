@@ -1,16 +1,13 @@
-# create_account.py
+"""Helper for creating Pantheon users via Supabase."""
 
-from supabase import create_client, Client
-import os
-from dotenv import load_dotenv
 import uuid
 
-load_dotenv()
+from supabase import Client
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+from api.config import get_supabase_client
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+supabase: Client = get_supabase_client()
 
 def create_user(username: str, first_name: str, last_name: str, password: str):
     """

@@ -7,6 +7,9 @@ from typing import Dict, Optional
 
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
+from supabase import Client
+
+from api.config import get_settings, get_supabase_client
 
 
 def _require_env(name: str) -> str:
@@ -20,6 +23,9 @@ def _require_env(name: str) -> str:
 
 API_SECRET = _require_env("PANTHEON_GPT_SECRET")
 APP_NAME = os.getenv("APP_NAME", "Pantheon GPT Webhook")
+
+settings = get_settings()
+supabase: Client = get_supabase_client()
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
@@ -60,7 +66,29 @@ async def update_oracle(data: OracleUpdate, authorization: Optional[str] = Heade
 
     payload = data.model_dump()
     logging.info("[%s] Received GPT update: %s", APP_NAME, payload)
-    return {"status": "success", "message": f"{data.oracle_name} will be {data.action}"}
+
+    res = (
+        supabase.table("oracle_actions")
+        .insert(
+            {
+                "oracle_name": data.oracle_name,
+                "action": data.action,
+                "command": data.command,
+                "metadata": data.metadata,
+            }
+        )
+        .execute()
+    )
+
+    if not res.data:
+        logging.error("[%s] Supabase insert failed: %s", APP_NAME, res.error)
+        raise HTTPException(status_code=500, detail="Failed to record oracle action")
+
+    return {
+        "status": "success",
+        "message": f"{data.oracle_name} will be {data.action}",
+        "record": res.data,
+    }
 
 
 @app.get("/healthz")

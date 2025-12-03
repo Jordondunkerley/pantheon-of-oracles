@@ -7,3 +7,5 @@ supabase
 python-jose[cryptography]
 passlib[bcrypt]
 pytz
+
+openai>=1.30.0

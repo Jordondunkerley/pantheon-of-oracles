@@ -1,0 +1,49 @@
+name: Pantheon Autonomous Builder
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore autonomous state cache
+        id: cache-autonomous-state
+        uses: actions/cache@v4
+        with:
+          path: autonomous/state.json
+          key: pantheon-autonomous-state-${{ github.ref_name }}
+          restore-keys: |
+            pantheon-autonomous-state-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate autonomous plan
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python scripts/autonomous_builder.py --workflow-mode --only-on-change --write-summary --write-outputs --validate-patches --require-patches
+
+      - name: Upload autonomous report
+        if: hashFiles('autonomous/outputs/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: pantheon-autonomous-report
+          path: autonomous/outputs

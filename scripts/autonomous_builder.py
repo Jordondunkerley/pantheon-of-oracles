@@ -22,6 +22,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import httpx
+
 _openai_spec = importlib.util.find_spec("openai")
 OpenAI = importlib.import_module("openai").OpenAI if _openai_spec else None  # type: ignore
 
@@ -234,6 +236,7 @@ def write_report(
     output_dir: Path,
     changes: List[str],
     supabase_log: Optional[List[str]] = None,
+    smoke_log: Optional[List[str]] = None,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
@@ -252,6 +255,9 @@ def write_report(
     if supabase_log:
         meta.append("\n## Supabase Sync")
         meta.extend(f"- {line}" for line in supabase_log)
+    if smoke_log:
+        meta.append("\n## Smoke Tests")
+        meta.extend(f"- {line}" for line in smoke_log)
     content = header + "\n".join(meta) + "\n\n## Plan\n\n" + body + "\n"
     report_path.write_text(content, encoding="utf-8")
     # Keep an easy-to-read latest report for operators.
@@ -265,6 +271,7 @@ def write_report(
         "patches": contexts,
         "changes": changes,
         "supabase_sync": supabase_log or [],
+        "smoke_tests": smoke_log or [],
         "plan_text": body,
         "tasks": parse_tasks(body),
         "report_path": str(report_path),
@@ -319,8 +326,32 @@ def main() -> None:
             "when SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set"
         ),
     )
+    parser.add_argument(
+        "--smoke-tests",
+        action="store_true",
+        help="Run lightweight FastAPI smoke checks against the configured base URL",
+    )
+    parser.add_argument(
+        "--smoke-base-url",
+        default=os.environ.get("SMOKE_BASE_URL", "http://localhost:8000"),
+        help="Base URL used for smoke tests (default: http://localhost:8000 or SMOKE_BASE_URL)",
+    )
     args = parser.parse_args()
     previous_state = load_state()
+
+    def run_smoke_tests(base_url: str) -> list[str]:
+        url = base_url.rstrip("/") + "/healthz"
+        try:
+            response = httpx.get(url, timeout=5)
+            summary = f"GET {url} -> {response.status_code}"
+            try:
+                payload = response.json()
+                details = f"status={payload.get('status')}, service={payload.get('service')}"
+            except (ValueError, TypeError):
+                details = "non-JSON response"
+            return [summary, details]
+        except Exception as exc:
+            return [f"Smoke test failed for {url}: {exc}"]
 
     def run_once(prior_state: Dict[str, str]) -> Dict[str, str]:
         contexts = gather_context(args.preview_limit, args.patch_glob)
@@ -334,15 +365,22 @@ def main() -> None:
             "autonomous/outputs" if args.workflow_mode else "autonomous/reports"
         )
         supabase_log = None
+        smoke_log = None
         if args.sync_supabase:
             supabase_log = sync_supabase_oracles([Path(ctx["path"]) for ctx in contexts])
-        report_path = write_report(plan, contexts, target_dir, changes, supabase_log)
+        if args.smoke_tests:
+            smoke_log = run_smoke_tests(args.smoke_base_url)
+        report_path = write_report(
+            plan, contexts, target_dir, changes, supabase_log, smoke_log
+        )
         save_state(new_state)
         print(f"Report written to {report_path}")
         if changes:
             print("Detected patch changes:\n" + "\n".join(changes))
         if supabase_log:
             print("Supabase sync:\n" + "\n".join(supabase_log))
+        if smoke_log:
+            print("Smoke tests:\n" + "\n".join(smoke_log))
         return new_state
 
     previous_state = run_once(previous_state)

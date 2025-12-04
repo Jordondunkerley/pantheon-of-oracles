@@ -9,3 +9,4 @@ passlib[bcrypt]
 pytz
 
 openai>=1.30.0
+httpx>=0.27.0

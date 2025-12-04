@@ -15,3 +15,4 @@ Usage examples:
 - Continuous monitor: `python scripts/autonomous_builder.py --watch --interval 600`
 - Override patch discovery (defaults to `Patches *.JSON`): `python scripts/autonomous_builder.py --patch-glob "Patches *.JSON"`
 - Sync oracle definitions into Supabase (requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`): `python scripts/autonomous_builder.py --sync-supabase`
+- Run FastAPI smoke tests to verify `/healthz` without manual prompts: `python scripts/autonomous_builder.py --smoke-tests --smoke-base-url http://localhost:8000`

@@ -402,7 +402,7 @@ def render_status_json(
     snapshot_dir: Path | None = None,
     report_path: Path | None = None,
     heartbeat_path: Path | None = None,
-) -> None:
+) -> Dict[str, object]:
     status_path.parent.mkdir(parents=True, exist_ok=True)
     payload = build_status_payload(
         run_timestamp,
@@ -423,6 +423,7 @@ def render_status_json(
         heartbeat_path,
     )
     status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return payload
 
 
 def render_failure_status(
@@ -437,12 +438,12 @@ def render_failure_status(
     snapshot_dir: Path,
     report_path: Path,
     heartbeat_path: Path,
-) -> None:
+) -> Dict[str, object]:
     """Persist a status file describing a failed agent iteration."""
 
     fallback_state = AgentState.load(state_path)
     now = time.time()
-    render_status_json(
+    return render_status_json(
         status_path,
         now,
         fallback_state.digests,
@@ -459,6 +460,72 @@ def render_failure_status(
         snapshot_dir=snapshot_dir,
         report_path=report_path,
         heartbeat_path=heartbeat_path,
+    )
+
+
+def write_github_outputs(payload: Dict[str, object]) -> None:
+    """Emit machine-readable outputs for GitHub Actions consumers."""
+
+    output_path = os.getenv("GITHUB_OUTPUT")
+    if not output_path:
+        logging.info("GITHUB_OUTPUT not set; skipping output emission.")
+        return
+
+    changed_files = payload.get("changed_files", []) or []
+    missing_files = payload.get("missing_files", []) or []
+    paths = payload.get("paths", {}) or {}
+    snapshot_path = payload.get("snapshot_path") or ""
+
+    try:
+        with open(output_path, "a", encoding="utf-8") as fp:
+            fp.write(f"pantheon_changed={str(bool(changed_files)).lower()}\n")
+            fp.write(f"pantheon_missing={str(bool(missing_files)).lower()}\n")
+            fp.write(f"pantheon_snapshot_path={snapshot_path}\n")
+            fp.write(f"pantheon_base_dir={paths.get('base_dir', '')}\n")
+            fp.write(f"pantheon_state_path={paths.get('state', '')}\n")
+            fp.write(f"pantheon_status_path={paths.get('status', '')}\n")
+            fp.write(f"pantheon_report_path={paths.get('report', '')}\n")
+            fp.write(f"pantheon_heartbeat_path={paths.get('heartbeat', '')}\n")
+            fp.write(f"pantheon_run_timestamp={payload.get('run_timestamp', '')}\n")
+            fp.write(f"pantheon_run_iso={payload.get('run_iso', '')}\n")
+
+            delimiter = "PANTHEONEOF"
+            fp.write(
+                f"pantheon_changed_files<<{delimiter}\n{json.dumps(changed_files)}\n{delimiter}\n"
+            )
+            fp.write(
+                f"pantheon_missing_files<<{delimiter}\n{json.dumps(missing_files)}\n{delimiter}\n"
+            )
+            fp.write(
+                f"pantheon_tracked_files<<{delimiter}\n{json.dumps(payload.get('tracked_files', []))}\n{delimiter}\n"
+            )
+            fp.write(
+                f"pantheon_status_payload<<{delimiter}\n{json.dumps(payload)}\n{delimiter}\n"
+            )
+    except OSError as exc:  # pragma: no cover - filesystem/environment specific
+        logging.error("Failed to write GitHub outputs: %s", exc)
+
+
+def build_payload_from_result(result: RunResult) -> Dict[str, object]:
+    """Build a status payload from a completed run result."""
+
+    return build_status_payload(
+        result.timestamp,
+        result.digests,
+        result.changed_files,
+        result.snapshot_path,
+        result.missing_files,
+        result.history,
+        None,
+        result.tracked_files,
+        result.resolved_patches,
+        result.patch_sources,
+        result.base_dir,
+        result.state_path,
+        result.snapshot_dir,
+        result.report_path,
+        result.status_path,
+        result.heartbeat_path,
     )
 
 
@@ -764,7 +831,7 @@ def main() -> None:
                 except Exception as exc:  # pragma: no cover - defensive loop guard
                     logging.exception("Persistent agent iteration failed: %s", exc)
                     write_heartbeat(heartbeat_path, success=False, message=str(exc))
-                    render_failure_status(
+                    failure_payload = render_failure_status(
                         state_path,
                         status_path,
                         patch_files,
@@ -776,11 +843,13 @@ def main() -> None:
                         report_path=report_path,
                         heartbeat_path=heartbeat_path,
                     )
+                    write_github_outputs(failure_payload)
                     time.sleep(max(args.backoff, 1))
                     continue
 
                 write_heartbeat(heartbeat_path, success=True, message="loop iteration")
                 write_github_summary(result)
+                write_github_outputs(build_payload_from_result(result))
                 if args.print_status:
                     logging.info(
                         "Ignoring --print-status while running in loop mode to avoid repeated output."
@@ -816,7 +885,7 @@ def main() -> None:
         except Exception as exc:  # pragma: no cover - defensive single-run guard
             logging.exception("Persistent agent run failed: %s", exc)
             write_heartbeat(heartbeat_path, success=False, message=str(exc))
-            render_failure_status(
+            failure_payload = render_failure_status(
                 state_path,
                 status_path,
                 patch_files,
@@ -828,9 +897,11 @@ def main() -> None:
                 report_path=report_path,
                 heartbeat_path=heartbeat_path,
             )
+            write_github_outputs(failure_payload)
             raise
         write_heartbeat(heartbeat_path, success=True, message="single run")
         write_github_summary(result)
+        write_github_outputs(build_payload_from_result(result))
         if args.print_status:
             payload = build_status_payload(
                 result.timestamp,

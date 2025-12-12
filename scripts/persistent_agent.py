@@ -76,6 +76,11 @@ HEARTBEAT_PATH = Path(
     os.getenv("PANTHEON_AGENT_HEARTBEAT_PATH", "state/persistent_agent_heartbeat.txt")
 )
 
+# The base directory used to resolve relative paths. Defaults to the current
+# working directory but can be overridden via environment variable or CLI
+# argument to support running the agent from alternate locations.
+BASE_DIR = Path(os.getenv("PANTHEON_AGENT_BASE_DIR", Path.cwd()))
+
 
 @dataclass
 class RunRecord:
@@ -164,6 +169,12 @@ def detect_changes(prev: AgentState, current: Dict[str, str]) -> List[str]:
         if prev.digests.get(name) != digest:
             updated.append(name)
     return updated
+
+
+def resolve_under_base(base_dir: Path, path: Path) -> Path:
+    """Resolve ``path`` relative to ``base_dir`` if it is not absolute."""
+
+    return path if path.is_absolute() else base_dir / path
 
 
 def snapshot_patches(
@@ -438,6 +449,15 @@ def write_heartbeat(path: Path, success: bool, message: str | None = None) -> No
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Pantheon persistent agent loop")
     parser.add_argument(
+        "--base-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Override the base directory used to resolve patch files and output paths. "
+            "Defaults to the current working directory or PANTHEON_AGENT_BASE_DIR."
+        ),
+    )
+    parser.add_argument(
         "--loop",
         action="store_true",
         help="Keep the agent running and checking for changes indefinitely.",
@@ -509,7 +529,12 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
     args = parse_args()
-    base_dir = Path.cwd()
+    base_dir = args.base_dir or BASE_DIR
+    state_path = resolve_under_base(base_dir, args.state)
+    snapshot_dir = resolve_under_base(base_dir, args.snapshots)
+    report_path = resolve_under_base(base_dir, args.report)
+    status_path = resolve_under_base(base_dir, args.status_json)
+    heartbeat_path = resolve_under_base(base_dir, args.heartbeat)
     env_patch_files = parse_env_patch_files(os.getenv("PANTHEON_PATCH_FILES"))
     cli_patch_files = args.patch_files or []
     patch_files = merge_patch_sources(PATCH_FILENAMES, env_patch_files, cli_patch_files)
@@ -520,11 +545,12 @@ def main() -> None:
         ", ".join(patch_files) if patch_files else "(none)",
     )
 
-    logging.info("State path: %s", args.state)
-    logging.info("Snapshot directory: %s", args.snapshots)
-    logging.info("Report path: %s", args.report)
-    logging.info("Status JSON path: %s", args.status_json)
-    logging.info("Heartbeat path: %s", args.heartbeat)
+    logging.info("Base directory: %s", base_dir)
+    logging.info("State path: %s", state_path)
+    logging.info("Snapshot directory: %s", snapshot_dir)
+    logging.info("Report path: %s", report_path)
+    logging.info("Status JSON path: %s", status_path)
+    logging.info("Heartbeat path: %s", heartbeat_path)
 
     if args.loop:
         logging.info(
@@ -539,22 +565,20 @@ def main() -> None:
                 try:
                     result = run_once(
                         base_dir,
-                        args.state,
-                        args.snapshots,
-                        args.report,
-                        args.status_json,
+                        state_path,
+                        snapshot_dir,
+                        report_path,
+                        status_path,
                         patch_files,
                     )
                 except Exception as exc:  # pragma: no cover - defensive loop guard
                     logging.exception("Persistent agent iteration failed: %s", exc)
-                    write_heartbeat(args.heartbeat, success=False, message=str(exc))
-                    render_failure_status(
-                        args.state, args.status_json, patch_files, error=str(exc)
-                    )
+                    write_heartbeat(heartbeat_path, success=False, message=str(exc))
+                    render_failure_status(state_path, status_path, patch_files, error=str(exc))
                     time.sleep(max(args.backoff, 1))
                     continue
 
-                write_heartbeat(args.heartbeat, success=True, message="loop iteration")
+                write_heartbeat(heartbeat_path, success=True, message="loop iteration")
                 write_github_summary(result)
                 if args.max_iterations and iteration >= args.max_iterations:
                     logging.info(
@@ -565,29 +589,25 @@ def main() -> None:
                 time.sleep(args.interval)
         except KeyboardInterrupt:
             logging.info("Received interrupt; writing heartbeat and exiting loop.")
-            write_heartbeat(
-                args.heartbeat, success=False, message="loop interrupted"
-            )
+            write_heartbeat(heartbeat_path, success=False, message="loop interrupted")
     elif args.max_iterations:
         logging.info("Ignoring --max-iterations because --loop was not provided.")
     else:
         try:
             result = run_once(
                 base_dir,
-                args.state,
-                args.snapshots,
-                args.report,
-                args.status_json,
+                state_path,
+                snapshot_dir,
+                report_path,
+                status_path,
                 patch_files,
             )
         except Exception as exc:  # pragma: no cover - defensive single-run guard
             logging.exception("Persistent agent run failed: %s", exc)
-            write_heartbeat(args.heartbeat, success=False, message=str(exc))
-            render_failure_status(
-                args.state, args.status_json, patch_files, error=str(exc)
-            )
+            write_heartbeat(heartbeat_path, success=False, message=str(exc))
+            render_failure_status(state_path, status_path, patch_files, error=str(exc))
             raise
-        write_heartbeat(args.heartbeat, success=True, message="single run")
+        write_heartbeat(heartbeat_path, success=True, message="single run")
         write_github_summary(result)
 
 

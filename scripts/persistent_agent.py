@@ -300,13 +300,15 @@ def render_status_json(
     status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def render_failure_status(state_path: Path, tracked_files: List[str], error: str) -> None:
+def render_failure_status(
+    state_path: Path, status_path: Path, tracked_files: List[str], error: str
+) -> None:
     """Persist a status file describing a failed agent iteration."""
 
     fallback_state = AgentState.load(state_path)
     now = time.time()
     render_status_json(
-        STATUS_JSON_PATH,
+        status_path,
         now,
         fallback_state.digests,
         [],
@@ -372,7 +374,12 @@ def write_github_summary(result: RunResult) -> None:
 
 
 def run_once(
-    base_dir: Path, state_path: Path, snapshot_dir: Path, patch_files: List[str]
+    base_dir: Path,
+    state_path: Path,
+    snapshot_dir: Path,
+    report_path: Path,
+    status_path: Path,
+    patch_files: List[str],
 ) -> RunResult:
     state = AgentState.load(state_path)
     current, missing = compute_patch_digests(base_dir, patch_files)
@@ -382,7 +389,7 @@ def run_once(
     state.record_run(changed)
     state.save(state_path)
     render_report(
-        REPORT_PATH,
+        report_path,
         state.history[-1].timestamp,
         current,
         changed,
@@ -391,7 +398,7 @@ def run_once(
         patch_files,
     )
     render_status_json(
-        STATUS_JSON_PATH,
+        status_path,
         state.history[-1].timestamp,
         current,
         changed,
@@ -473,6 +480,24 @@ def parse_args() -> argparse.Namespace:
         default=SNAPSHOT_DIR,
         help="Directory to store snapshots of changed patch files.",
     )
+    parser.add_argument(
+        "--report",
+        type=Path,
+        default=REPORT_PATH,
+        help="Path to write the human-readable agent report.",
+    )
+    parser.add_argument(
+        "--status-json",
+        type=Path,
+        default=STATUS_JSON_PATH,
+        help="Path to write the machine-readable status JSON file.",
+    )
+    parser.add_argument(
+        "--heartbeat",
+        type=Path,
+        default=HEARTBEAT_PATH,
+        help="Path to write the heartbeat status file.",
+    )
     return parser.parse_args()
 
 
@@ -502,16 +527,23 @@ def main() -> None:
                 iteration += 1
                 try:
                     result = run_once(
-                        base_dir, args.state, args.snapshots, patch_files
+                        base_dir,
+                        args.state,
+                        args.snapshots,
+                        args.report,
+                        args.status_json,
+                        patch_files,
                     )
                 except Exception as exc:  # pragma: no cover - defensive loop guard
                     logging.exception("Persistent agent iteration failed: %s", exc)
-                    write_heartbeat(HEARTBEAT_PATH, success=False, message=str(exc))
-                    render_failure_status(args.state, patch_files, error=str(exc))
+                    write_heartbeat(args.heartbeat, success=False, message=str(exc))
+                    render_failure_status(
+                        args.state, args.status_json, patch_files, error=str(exc)
+                    )
                     time.sleep(max(args.backoff, 1))
                     continue
 
-                write_heartbeat(HEARTBEAT_PATH, success=True, message="loop iteration")
+                write_heartbeat(args.heartbeat, success=True, message="loop iteration")
                 write_github_summary(result)
                 if args.max_iterations and iteration >= args.max_iterations:
                     logging.info(
@@ -522,18 +554,29 @@ def main() -> None:
                 time.sleep(args.interval)
         except KeyboardInterrupt:
             logging.info("Received interrupt; writing heartbeat and exiting loop.")
-            write_heartbeat(HEARTBEAT_PATH, success=False, message="loop interrupted")
+            write_heartbeat(
+                args.heartbeat, success=False, message="loop interrupted"
+            )
     elif args.max_iterations:
         logging.info("Ignoring --max-iterations because --loop was not provided.")
     else:
         try:
-            result = run_once(base_dir, args.state, args.snapshots, patch_files)
+            result = run_once(
+                base_dir,
+                args.state,
+                args.snapshots,
+                args.report,
+                args.status_json,
+                patch_files,
+            )
         except Exception as exc:  # pragma: no cover - defensive single-run guard
             logging.exception("Persistent agent run failed: %s", exc)
-            write_heartbeat(HEARTBEAT_PATH, success=False, message=str(exc))
-            render_failure_status(args.state, patch_files, error=str(exc))
+            write_heartbeat(args.heartbeat, success=False, message=str(exc))
+            render_failure_status(
+                args.state, args.status_json, patch_files, error=str(exc)
+            )
             raise
-        write_heartbeat(HEARTBEAT_PATH, success=True, message="single run")
+        write_heartbeat(args.heartbeat, success=True, message="single run")
         write_github_summary(result)
 
 

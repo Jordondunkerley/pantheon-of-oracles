@@ -159,6 +159,8 @@ class RunResult:
     base_dir: Path
     state_path: Path
     snapshot_dir: Path
+    snapshot_retention: int | None
+    snapshots_enabled: bool
     report_path: Path
     status_path: Path
     heartbeat_path: Path
@@ -338,6 +340,8 @@ def render_report(
     base_dir: Path,
     state_path: Path,
     snapshot_dir: Path,
+    snapshot_retention: int | None,
+    snapshots_enabled: bool,
     status_path: Path,
     heartbeat_path: Path,
 ) -> None:
@@ -360,8 +364,19 @@ def render_report(
         f"- Status JSON path: {status_path}",
         f"- Heartbeat path: {heartbeat_path}",
         "",
-        "## Detected changes",
+        "## Snapshot settings",
+        "",
+        f"- Snapshots enabled: {'yes' if snapshots_enabled else 'no'}",
     ]
+
+    if snapshot_retention is None:
+        lines.append("- Snapshot retention: unlimited")
+    else:
+        lines.append(f"- Snapshot retention: newest {snapshot_retention} snapshot(s)")
+
+    lines.append("")
+
+    lines.append("## Detected changes")
 
     if changed_files:
         lines.append("")
@@ -437,6 +452,8 @@ def build_status_payload(
     base_dir: Path | None = None,
     state_path: Path | None = None,
     snapshot_dir: Path | None = None,
+    snapshot_retention: int | None = None,
+    snapshots_enabled: bool | None = None,
     report_path: Path | None = None,
     status_path: Path | None = None,
     heartbeat_path: Path | None = None,
@@ -457,6 +474,10 @@ def build_status_payload(
             name: str(path) for name, path in (resolved_patches or {}).items()
         },
         "patch_sources": patch_sources or {},
+        "snapshot_settings": {
+            "enabled": snapshots_enabled,
+            "retention": snapshot_retention,
+        },
         "paths": {
             "base_dir": str(base_dir) if base_dir else None,
             "state": str(state_path) if state_path else None,
@@ -492,6 +513,8 @@ def render_status_json(
     base_dir: Path | None = None,
     state_path: Path | None = None,
     snapshot_dir: Path | None = None,
+    snapshot_retention: int | None = None,
+    snapshots_enabled: bool | None = None,
     report_path: Path | None = None,
     heartbeat_path: Path | None = None,
 ) -> Dict[str, object]:
@@ -511,6 +534,8 @@ def render_status_json(
         base_dir,
         state_path,
         snapshot_dir,
+        snapshot_retention,
+        snapshots_enabled,
         report_path,
         status_path,
         heartbeat_path,
@@ -529,6 +554,8 @@ def render_failure_status(
     *,
     base_dir: Path,
     snapshot_dir: Path,
+    snapshot_retention: int | None,
+    snapshots_enabled: bool,
     report_path: Path,
     heartbeat_path: Path,
 ) -> Dict[str, object]:
@@ -552,6 +579,8 @@ def render_failure_status(
         base_dir=base_dir,
         state_path=state_path,
         snapshot_dir=snapshot_dir,
+        snapshot_retention=snapshot_retention,
+        snapshots_enabled=snapshots_enabled,
         report_path=report_path,
         heartbeat_path=heartbeat_path,
     )
@@ -618,6 +647,8 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
         result.base_dir,
         result.state_path,
         result.snapshot_dir,
+        result.snapshot_retention,
+        result.snapshots_enabled,
         result.report_path,
         result.status_path,
         result.heartbeat_path,
@@ -646,8 +677,20 @@ def write_github_summary(result: RunResult) -> None:
         f"- Status JSON path: {result.status_path}",
         f"- Heartbeat path: {result.heartbeat_path}",
         "",
-        "## Detected changes",
+        "## Snapshot settings",
+        "",
+        f"- Snapshots enabled: {'yes' if result.snapshots_enabled else 'no'}",
     ]
+
+    if result.snapshot_retention is None:
+        lines.append("- Snapshot retention: unlimited")
+    else:
+        lines.append(f"- Snapshot retention: newest {result.snapshot_retention} snapshot(s)")
+
+    lines.extend([
+        "",
+        "## Detected changes",
+    ])
 
     if result.changed_files:
         lines.append("")
@@ -730,6 +773,8 @@ def run_once(
         base_dir,
         state_path,
         snapshot_dir,
+        snapshot_retention,
+        snapshots_enabled,
         status_path,
         heartbeat_path,
     )
@@ -749,6 +794,8 @@ def run_once(
         base_dir=base_dir,
         state_path=state_path,
         snapshot_dir=snapshot_dir,
+        snapshot_retention=snapshot_retention,
+        snapshots_enabled=snapshots_enabled,
         report_path=report_path,
         heartbeat_path=heartbeat_path,
     )
@@ -767,6 +814,8 @@ def run_once(
         base_dir=base_dir,
         state_path=state_path,
         snapshot_dir=snapshot_dir,
+        snapshot_retention=snapshot_retention,
+        snapshots_enabled=snapshots_enabled,
         report_path=report_path,
         status_path=status_path,
         heartbeat_path=heartbeat_path,
@@ -970,6 +1019,8 @@ def main() -> None:
                         error=str(exc),
                         base_dir=base_dir,
                         snapshot_dir=snapshot_dir,
+                        snapshot_retention=snapshot_retention,
+                        snapshots_enabled=snapshots_enabled,
                         report_path=report_path,
                         heartbeat_path=heartbeat_path,
                     )
@@ -1026,6 +1077,8 @@ def main() -> None:
                 error=str(exc),
                 base_dir=base_dir,
                 snapshot_dir=snapshot_dir,
+                snapshot_retention=snapshot_retention,
+                snapshots_enabled=snapshots_enabled,
                 report_path=report_path,
                 heartbeat_path=heartbeat_path,
             )
@@ -1050,6 +1103,8 @@ def main() -> None:
                 result.base_dir,
                 result.state_path,
                 result.snapshot_dir,
+                result.snapshot_retention,
+                result.snapshots_enabled,
                 result.report_path,
                 result.status_path,
                 result.heartbeat_path,

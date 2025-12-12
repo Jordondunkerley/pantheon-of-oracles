@@ -38,6 +38,7 @@ SNAPSHOT_DIR = Path("state/patch_snapshots")
 # current digests for downstream automation.
 REPORT_PATH = Path("state/persistent_agent_report.md")
 STATUS_JSON_PATH = Path("state/persistent_agent_status.json")
+HEARTBEAT_PATH = Path("state/persistent_agent_heartbeat.txt")
 
 
 @dataclass
@@ -231,6 +232,7 @@ def render_status_json(
     snapshot_path: Path | None,
     missing_files: List[str],
     history: List[RunRecord],
+    error: str | None = None,
 ) -> None:
     status_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -240,6 +242,7 @@ def render_status_json(
         "missing_files": missing_files,
         "snapshot_path": str(snapshot_path) if snapshot_path else None,
         "digests": digests,
+        "error": error,
         "history": [
             {
                 "timestamp": entry.timestamp,
@@ -322,6 +325,7 @@ def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> RunResult:
         snapshot_path,
         missing,
         state.history,
+        error=None,
     )
 
     return RunResult(
@@ -332,6 +336,16 @@ def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> RunResult:
         missing_files=missing,
         history=list(state.history),
     )
+
+
+def write_heartbeat(path: Path, success: bool, message: str | None = None) -> None:
+    """Record a lightweight heartbeat so automation can spot failures quickly."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    now = datetime.utcnow().isoformat()
+    status = "ok" if success else "error"
+    note = f" - {message}" if message else ""
+    path.write_text(f"{now} UTC | {status}{note}\n", encoding="utf-8")
 
 
 def parse_args() -> argparse.Namespace:
@@ -346,6 +360,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=int(os.getenv("PANTHEON_AGENT_INTERVAL", 300)),
         help="Polling interval in seconds when running in loop mode.",
+    )
+    parser.add_argument(
+        "--backoff",
+        type=int,
+        default=int(os.getenv("PANTHEON_AGENT_BACKOFF", 60)),
+        help="Backoff in seconds after a failed loop iteration.",
     )
     parser.add_argument(
         "--state",
@@ -368,13 +388,38 @@ def main() -> None:
     base_dir = Path.cwd()
 
     if args.loop:
-        logging.info("Starting persistent agent loop with %s-second interval", args.interval)
+        logging.info(
+            "Starting persistent agent loop with %s-second interval and %s-second backoff",
+            args.interval,
+            args.backoff,
+        )
         while True:
-            result = run_once(base_dir, args.state, args.snapshots)
+            try:
+                result = run_once(base_dir, args.state, args.snapshots)
+            except Exception as exc:  # pragma: no cover - defensive loop guard
+                logging.exception("Persistent agent iteration failed: %s", exc)
+                write_heartbeat(HEARTBEAT_PATH, success=False, message=str(exc))
+                fallback_state = AgentState.load(args.state)
+                now = time.time()
+                render_status_json(
+                    STATUS_JSON_PATH,
+                    now,
+                    fallback_state.digests,
+                    [],
+                    snapshot_path=None,
+                    missing_files=[],
+                    history=fallback_state.history,
+                    error=str(exc),
+                )
+                time.sleep(max(args.backoff, 1))
+                continue
+
+            write_heartbeat(HEARTBEAT_PATH, success=True, message="loop iteration")
             write_github_summary(result)
             time.sleep(args.interval)
     else:
         result = run_once(base_dir, args.state, args.snapshots)
+        write_heartbeat(HEARTBEAT_PATH, success=True, message="single run")
         write_github_summary(result)
 
 

@@ -60,16 +60,21 @@ def merge_patch_sources(
     return unique
 
 # Default location to store the digest of the last run so we can tell when the
-# patch files change.
-STATE_PATH = Path("state/persistent_agent_state.json")
+# patch files change. Paths can be overridden via environment variables to make
+# the agent configurable in CI without CLI arguments.
+STATE_PATH = Path(os.getenv("PANTHEON_AGENT_STATE_PATH", "state/persistent_agent_state.json"))
 # Directory where snapshots of changed patches will be persisted for auditing
 # and follow-up processing by future automation steps.
-SNAPSHOT_DIR = Path("state/patch_snapshots")
+SNAPSHOT_DIR = Path(os.getenv("PANTHEON_AGENT_SNAPSHOT_DIR", "state/patch_snapshots"))
 # Human-readable and machine-readable reports that summarize the latest run and
 # current digests for downstream automation.
-REPORT_PATH = Path("state/persistent_agent_report.md")
-STATUS_JSON_PATH = Path("state/persistent_agent_status.json")
-HEARTBEAT_PATH = Path("state/persistent_agent_heartbeat.txt")
+REPORT_PATH = Path(os.getenv("PANTHEON_AGENT_REPORT_PATH", "state/persistent_agent_report.md"))
+STATUS_JSON_PATH = Path(
+    os.getenv("PANTHEON_AGENT_STATUS_PATH", "state/persistent_agent_status.json")
+)
+HEARTBEAT_PATH = Path(
+    os.getenv("PANTHEON_AGENT_HEARTBEAT_PATH", "state/persistent_agent_heartbeat.txt")
+)
 
 
 @dataclass
@@ -514,6 +519,12 @@ def main() -> None:
         len(patch_files),
         ", ".join(patch_files) if patch_files else "(none)",
     )
+
+    logging.info("State path: %s", args.state)
+    logging.info("Snapshot directory: %s", args.snapshots)
+    logging.info("Report path: %s", args.report)
+    logging.info("Status JSON path: %s", args.status_json)
+    logging.info("Heartbeat path: %s", args.heartbeat)
 
     if args.loop:
         logging.info(

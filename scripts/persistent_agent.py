@@ -140,6 +140,7 @@ class RunRecord:
 
     timestamp: float
     changed_files: List[str]
+    duration_seconds: float | None = None
 
 
 @dataclass
@@ -153,6 +154,7 @@ class RunResult:
     pruned_snapshots: List[Path]
     missing_files: List[str]
     history: List[RunRecord]
+    run_duration: float | None
     tracked_files: List[str]
     resolved_patches: Dict[str, Path]
     patch_sources: Dict[str, str]
@@ -198,8 +200,14 @@ class AgentState:
         with path.open("w", encoding="utf-8") as fp:
             json.dump(payload, fp, indent=2)
 
-    def record_run(self, changed_files: List[str]) -> None:
-        self.history.append(RunRecord(timestamp=time.time(), changed_files=changed_files))
+    def record_run(self, changed_files: List[str], duration_seconds: float | None) -> None:
+        self.history.append(
+            RunRecord(
+                timestamp=time.time(),
+                changed_files=changed_files,
+                duration_seconds=duration_seconds,
+            )
+        )
 
 
 def hash_file(path: Path) -> str:
@@ -329,6 +337,7 @@ def apply_plan(
 def render_report(
     report_path: Path,
     run_timestamp: float,
+    run_duration: float | None,
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
@@ -349,11 +358,13 @@ def render_report(
 
     report_path.parent.mkdir(parents=True, exist_ok=True)
     readable_time = datetime.fromtimestamp(run_timestamp).isoformat()
+    duration_note = f"{run_duration:.3f} seconds" if run_duration is not None else "(unknown)"
 
     lines = [
         "# Pantheon Persistent Agent Report",
         "",
         f"Last run: {readable_time}",
+        f"Run duration: {duration_note}",
         "",
         "## Resolved paths",
         "",
@@ -439,6 +450,7 @@ def render_report(
 
 def build_status_payload(
     run_timestamp: float,
+    run_duration: float | None,
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
@@ -463,6 +475,7 @@ def build_status_payload(
     return {
         "run_timestamp": run_timestamp,
         "run_iso": datetime.fromtimestamp(run_timestamp).isoformat(),
+        "run_duration_seconds": run_duration,
         "changed_files": changed_files,
         "missing_files": missing_files,
         "snapshot_path": str(snapshot_path) if snapshot_path else None,
@@ -491,6 +504,7 @@ def build_status_payload(
                 "timestamp": entry.timestamp,
                 "iso": datetime.fromtimestamp(entry.timestamp).isoformat(),
                 "changed_files": entry.changed_files,
+                "duration_seconds": entry.duration_seconds,
             }
             for entry in history
         ],
@@ -500,6 +514,7 @@ def build_status_payload(
 def render_status_json(
     status_path: Path,
     run_timestamp: float,
+    run_duration: float | None,
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
@@ -521,6 +536,7 @@ def render_status_json(
     status_path.parent.mkdir(parents=True, exist_ok=True)
     payload = build_status_payload(
         run_timestamp,
+        run_duration,
         digests,
         changed_files,
         snapshot_path,
@@ -566,6 +582,7 @@ def render_failure_status(
     return render_status_json(
         status_path,
         now,
+        None,
         fallback_state.digests,
         [],
         [],
@@ -611,6 +628,9 @@ def write_github_outputs(payload: Dict[str, object]) -> None:
             fp.write(f"pantheon_heartbeat_path={paths.get('heartbeat', '')}\n")
             fp.write(f"pantheon_run_timestamp={payload.get('run_timestamp', '')}\n")
             fp.write(f"pantheon_run_iso={payload.get('run_iso', '')}\n")
+            fp.write(
+                f"pantheon_run_duration_seconds={payload.get('run_duration_seconds', '')}\n"
+            )
 
             delimiter = "PANTHEONEOF"
             fp.write(
@@ -634,6 +654,7 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
 
     return build_status_payload(
         result.timestamp,
+        result.run_duration,
         result.digests,
         result.changed_files,
         result.snapshot_path,
@@ -667,6 +688,7 @@ def write_github_summary(result: RunResult) -> None:
         "# Pantheon Persistent Agent",
         "",
         f"Last run: {datetime.fromtimestamp(result.timestamp).isoformat()}",
+        f"Run duration: {result.run_duration:.3f} seconds" if result.run_duration is not None else "Run duration: (unknown)",
         "",
         "## Resolved paths",
         "",
@@ -745,6 +767,7 @@ def run_once(
     patch_sources: Dict[str, str],
     heartbeat_path: Path,
 ) -> RunResult:
+    start_time = time.time()
     state = AgentState.load(state_path)
     resolved_patches = resolve_patch_paths(base_dir, patch_files)
     current, missing = compute_patch_digests(resolved_patches)
@@ -757,11 +780,13 @@ def run_once(
         snapshots_enabled=snapshots_enabled,
     )
     state.digests.update(current)
-    state.record_run(changed)
+    run_duration = time.time() - start_time
+    state.record_run(changed, run_duration)
     state.save(state_path)
     render_report(
         report_path,
         state.history[-1].timestamp,
+        run_duration,
         current,
         changed,
         snapshot_path,
@@ -781,6 +806,7 @@ def run_once(
     render_status_json(
         status_path,
         state.history[-1].timestamp,
+        run_duration,
         current,
         changed,
         snapshot_path,
@@ -808,6 +834,7 @@ def run_once(
         pruned_snapshots=pruned_snapshots,
         missing_files=missing,
         history=list(state.history),
+        run_duration=run_duration,
         tracked_files=patch_files,
         resolved_patches=resolved_patches,
         patch_sources=patch_sources,
@@ -1090,6 +1117,7 @@ def main() -> None:
         if args.print_status:
             payload = build_status_payload(
                 result.timestamp,
+                result.run_duration,
                 result.digests,
                 result.changed_files,
                 result.snapshot_path,

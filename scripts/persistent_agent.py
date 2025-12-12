@@ -1,0 +1,256 @@
+"""Continuous background agent scaffolding for Pantheon of Oracles.
+
+This module provides the first step toward a persistent, self-updating
+Pantheon of Oracles agent. It is designed to run inside GitHub Actions on a
+schedule, continuously hashing the backend patch files and recording whether
+anything has changed. Future iterations can hook into ``apply_plan`` to
+implement autonomous updates (for example, opening PRs based on new patch
+instructions).
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import logging
+import os
+import shutil
+import time
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Tuple
+
+# Patch files that describe the Pantheon of Oracles plan. We hash them on every
+# run so the automation can react immediately when new guidance is added.
+PATCH_FILENAMES: Tuple[str, ...] = (
+    "Patches 1-25 – Pantheon of Oracles GPT.JSON",
+    "Patches 26-41 – Pantheon of Oracles GPT.JSON",
+)
+
+# Default location to store the digest of the last run so we can tell when the
+# patch files change.
+STATE_PATH = Path("state/persistent_agent_state.json")
+# Directory where snapshots of changed patches will be persisted for auditing
+# and follow-up processing by future automation steps.
+SNAPSHOT_DIR = Path("state/patch_snapshots")
+# Human-readable report that summarizes the most recent run and current digests.
+REPORT_PATH = Path("state/persistent_agent_report.md")
+
+
+@dataclass
+class RunRecord:
+    """Represents a single execution of the agent."""
+
+    timestamp: float
+    changed_files: List[str]
+
+
+@dataclass
+class AgentState:
+    """Persisted digests and a small run history."""
+
+    digests: Dict[str, str] = field(default_factory=dict)
+    history: List[RunRecord] = field(default_factory=list)
+
+    @classmethod
+    def load(cls, path: Path) -> "AgentState":
+        if not path.exists():
+            return cls()
+
+        with path.open("r", encoding="utf-8") as fp:
+            data = json.load(fp)
+
+        # Backward-compatibility: the initial version stored a flat mapping of
+        # digests; migrate it forward automatically.
+        if isinstance(data, dict) and "digests" not in data:
+            return cls(digests=data)
+
+        history = [RunRecord(**entry) for entry in data.get("history", [])]
+        return cls(digests=data.get("digests", {}), history=history)
+
+    def save(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "digests": self.digests,
+            "history": [vars(entry) for entry in self.history[-20:]],
+        }
+        with path.open("w", encoding="utf-8") as fp:
+            json.dump(payload, fp, indent=2)
+
+    def record_run(self, changed_files: List[str]) -> None:
+        self.history.append(RunRecord(timestamp=time.time(), changed_files=changed_files))
+
+
+def hash_file(path: Path) -> str:
+    sha = hashlib.sha256()
+    with path.open("rb") as fp:
+        for chunk in iter(lambda: fp.read(8192), b""):
+            sha.update(chunk)
+    return sha.hexdigest()
+
+
+def compute_patch_digests(base_dir: Path) -> Dict[str, str]:
+    digests: Dict[str, str] = {}
+    for name in PATCH_FILENAMES:
+        path = base_dir / name
+        if not path.exists():
+            logging.warning("Patch file missing: %s", path)
+            continue
+        digests[name] = hash_file(path)
+    return digests
+
+
+def detect_changes(prev: AgentState, current: Dict[str, str]) -> List[str]:
+    updated: List[str] = []
+    for name, digest in current.items():
+        if prev.digests.get(name) != digest:
+            updated.append(name)
+    return updated
+
+
+def snapshot_patches(
+    base_dir: Path, snapshot_dir: Path, changed_files: List[str]
+) -> Path | None:
+    if not changed_files:
+        return None
+
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    destination = snapshot_dir / timestamp
+    destination.mkdir(parents=True, exist_ok=True)
+
+    for name in changed_files:
+        source = base_dir / name
+        if source.exists():
+            shutil.copy2(source, destination / name)
+
+    return destination
+
+
+def apply_plan(
+    base_dir: Path, snapshot_dir: Path, changed_files: List[str]
+) -> Path | None:
+    """Initial autonomous hook for responding to patch updates.
+
+    Right now we capture snapshots of the changed patch files to create a durable
+    audit trail that future automation can parse without relying on git history
+    or artifacts from a single run. This keeps the agent safe but establishes the
+    habit of recording every change for downstream processing.
+    """
+    if not changed_files:
+        logging.info("No patch changes detected; agent is idle.")
+        return None
+
+    logging.info("Detected patch updates in: %s", ", ".join(changed_files))
+    return snapshot_patches(base_dir, snapshot_dir, changed_files)
+
+
+def render_report(
+    report_path: Path,
+    run_timestamp: float,
+    digests: Dict[str, str],
+    changed_files: List[str],
+    snapshot_path: Path | None,
+) -> None:
+    """Write a human-readable summary of the latest agent execution."""
+
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    readable_time = datetime.fromtimestamp(run_timestamp).isoformat()
+
+    lines = [
+        "# Pantheon Persistent Agent Report",
+        "",
+        f"Last run: {readable_time}",
+        "",
+        "## Detected changes",
+    ]
+
+    if changed_files:
+        lines.append("")
+        lines.extend(f"- {name}" for name in changed_files)
+    else:
+        lines.append("- None")
+
+    lines.append("")
+
+    if snapshot_path:
+        lines.append(f"Snapshot directory: {snapshot_path}")
+    else:
+        lines.append("Snapshot directory: None (no changes detected)")
+
+    lines.extend(
+        [
+            "",
+            "## Patch digests",
+            "",
+            "| Patch file | SHA-256 |",
+            "| --- | --- |",
+        ]
+    )
+
+    if digests:
+        for name, digest in sorted(digests.items()):
+            lines.append(f"| {name} | `{digest}` |")
+    else:
+        lines.append("| _(none found)_ | - |")
+
+    lines.append("")
+
+    report_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> None:
+    state = AgentState.load(state_path)
+    current = compute_patch_digests(base_dir)
+    changed = detect_changes(state, current)
+    snapshot_path = apply_plan(base_dir, snapshot_dir, changed)
+    state.digests.update(current)
+    state.record_run(changed)
+    state.save(state_path)
+    render_report(REPORT_PATH, state.history[-1].timestamp, current, changed, snapshot_path)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Pantheon persistent agent loop")
+    parser.add_argument(
+        "--loop",
+        action="store_true",
+        help="Keep the agent running and checking for changes indefinitely.",
+    )
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=int(os.getenv("PANTHEON_AGENT_INTERVAL", 300)),
+        help="Polling interval in seconds when running in loop mode.",
+    )
+    parser.add_argument(
+        "--state",
+        type=Path,
+        default=STATE_PATH,
+        help="Path to the persistent state file.",
+    )
+    parser.add_argument(
+        "--snapshots",
+        type=Path,
+        default=SNAPSHOT_DIR,
+        help="Directory to store snapshots of changed patch files.",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+    args = parse_args()
+    base_dir = Path.cwd()
+
+    if args.loop:
+        logging.info("Starting persistent agent loop with %s-second interval", args.interval)
+        while True:
+            run_once(base_dir, args.state, args.snapshots)
+            time.sleep(args.interval)
+    else:
+        run_once(base_dir, args.state, args.snapshots)
+
+
+if __name__ == "__main__":
+    main()

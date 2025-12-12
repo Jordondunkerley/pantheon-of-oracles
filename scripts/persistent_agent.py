@@ -74,6 +74,21 @@ def merge_patch_sources(
     return combined, origins
 
 
+def parse_snapshot_retention(value: str | None) -> int | None:
+    """Parse snapshot retention values from environment variables."""
+
+    if value is None or value == "":
+        return None
+
+    try:
+        parsed = int(value)
+    except ValueError:
+        logging.warning("Ignoring invalid snapshot retention value: %s", value)
+        return None
+
+    return parsed
+
+
 def resolve_patch_paths(base_dir: Path, patch_files: List[str]) -> Dict[str, Path]:
     """Resolve configured patch files relative to the provided base directory."""
 
@@ -100,6 +115,19 @@ HEARTBEAT_PATH = Path(
     os.getenv("PANTHEON_AGENT_HEARTBEAT_PATH", "state/persistent_agent_heartbeat.txt")
 )
 
+# Snapshot behavior can be tuned via CLI flags or environment variables. Retention
+# defaults to unlimited (``None``) but can be limited to the newest ``N``
+# snapshots via ``PANTHEON_AGENT_SNAPSHOT_RETENTION``. Snapshots can also be
+# disabled entirely with ``PANTHEON_AGENT_DISABLE_SNAPSHOTS`` or
+# ``--disable-snapshots``.
+SNAPSHOT_RETENTION_ENV = os.getenv("PANTHEON_AGENT_SNAPSHOT_RETENTION")
+DISABLE_SNAPSHOTS_ENV = os.getenv("PANTHEON_AGENT_DISABLE_SNAPSHOTS", "").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+
 # The base directory used to resolve relative paths. Defaults to the current
 # working directory but can be overridden via environment variable or CLI
 # argument to support running the agent from alternate locations.
@@ -122,6 +150,7 @@ class RunResult:
     digests: Dict[str, str]
     changed_files: List[str]
     snapshot_path: Path | None
+    pruned_snapshots: List[Path]
     missing_files: List[str]
     history: List[RunRecord]
     tracked_files: List[str]
@@ -207,11 +236,42 @@ def resolve_under_base(base_dir: Path, path: Path) -> Path:
     return path if path.is_absolute() else base_dir / path
 
 
+def prune_snapshots(snapshot_dir: Path, retention: int | None) -> List[Path]:
+    """Delete old snapshot directories beyond the configured retention window."""
+
+    if retention is None or retention <= 0 or not snapshot_dir.exists():
+        return []
+
+    snapshots = sorted([path for path in snapshot_dir.iterdir() if path.is_dir()])
+    if len(snapshots) <= retention:
+        return []
+
+    to_remove = snapshots[: -retention]
+    for path in to_remove:
+        shutil.rmtree(path, ignore_errors=True)
+    return to_remove
+
+
 def snapshot_patches(
-    resolved_patches: Dict[str, Path], snapshot_dir: Path, changed_files: List[str]
-) -> Path | None:
+    resolved_patches: Dict[str, Path],
+    snapshot_dir: Path,
+    changed_files: List[str],
+    *,
+    retention: int | None,
+    enabled: bool,
+) -> Tuple[Path | None, List[Path]]:
+    if not enabled:
+        logging.info("Snapshotting disabled; skipping snapshot creation.")
+        removed = prune_snapshots(snapshot_dir, retention)
+        if removed:
+            logging.info("Pruned %s snapshot(s) despite snapshotting being disabled.", len(removed))
+        return None, removed
+
     if not changed_files:
-        return None
+        removed = prune_snapshots(snapshot_dir, retention)
+        if removed:
+            logging.info("Pruned %s snapshot(s) during idle run.", len(removed))
+        return None, removed
 
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     destination = snapshot_dir / timestamp
@@ -222,12 +282,21 @@ def snapshot_patches(
         if source and source.exists():
             shutil.copy2(source, destination / name)
 
-    return destination
+    pruned = prune_snapshots(snapshot_dir, retention)
+    if pruned:
+        logging.info("Pruned %s old snapshot(s) after creating %s.", len(pruned), destination)
+
+    return destination, pruned
 
 
 def apply_plan(
-    resolved_patches: Dict[str, Path], snapshot_dir: Path, changed_files: List[str]
-) -> Path | None:
+    resolved_patches: Dict[str, Path],
+    snapshot_dir: Path,
+    changed_files: List[str],
+    *,
+    retention: int | None,
+    snapshots_enabled: bool,
+) -> Tuple[Path | None, List[Path]]:
     """Initial autonomous hook for responding to patch updates.
 
     Right now we capture snapshots of the changed patch files to create a durable
@@ -237,10 +306,22 @@ def apply_plan(
     """
     if not changed_files:
         logging.info("No patch changes detected; agent is idle.")
-        return None
+        return snapshot_patches(
+            resolved_patches,
+            snapshot_dir,
+            changed_files,
+            retention=retention,
+            enabled=snapshots_enabled,
+        )
 
     logging.info("Detected patch updates in: %s", ", ".join(changed_files))
-    return snapshot_patches(resolved_patches, snapshot_dir, changed_files)
+    return snapshot_patches(
+        resolved_patches,
+        snapshot_dir,
+        changed_files,
+        retention=retention,
+        enabled=snapshots_enabled,
+    )
 
 
 def render_report(
@@ -249,6 +330,7 @@ def render_report(
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
+    pruned_snapshots: List[Path],
     missing_files: List[str],
     tracked_files: List[str],
     resolved_patches: Dict[str, Path],
@@ -294,6 +376,13 @@ def render_report(
     else:
         lines.append("Snapshot directory: None (no changes detected)")
 
+    lines.extend(["", "## Pruned snapshots"])
+    if pruned_snapshots:
+        lines.append("")
+        lines.extend(f"- {path}" for path in pruned_snapshots)
+    else:
+        lines.append("- None removed")
+
     lines.extend(["", "## Missing patch files"])
     if missing_files:
         lines.append("")
@@ -338,6 +427,7 @@ def build_status_payload(
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
+    pruned_snapshots: List[Path],
     missing_files: List[str],
     history: List[RunRecord],
     error: str | None = None,
@@ -359,6 +449,7 @@ def build_status_payload(
         "changed_files": changed_files,
         "missing_files": missing_files,
         "snapshot_path": str(snapshot_path) if snapshot_path else None,
+        "pruned_snapshots": [str(path) for path in pruned_snapshots],
         "digests": digests,
         "error": error,
         "tracked_files": tracked_files or [],
@@ -391,6 +482,7 @@ def render_status_json(
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
+    pruned_snapshots: List[Path],
     missing_files: List[str],
     history: List[RunRecord],
     error: str | None = None,
@@ -409,6 +501,7 @@ def render_status_json(
         digests,
         changed_files,
         snapshot_path,
+        pruned_snapshots,
         missing_files,
         history,
         error,
@@ -447,6 +540,7 @@ def render_failure_status(
         status_path,
         now,
         fallback_state.digests,
+        [],
         [],
         snapshot_path=None,
         missing_files=[],
@@ -514,6 +608,7 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
         result.digests,
         result.changed_files,
         result.snapshot_path,
+        result.pruned_snapshots,
         result.missing_files,
         result.history,
         None,
@@ -599,6 +694,8 @@ def run_once(
     base_dir: Path,
     state_path: Path,
     snapshot_dir: Path,
+    snapshot_retention: int | None,
+    snapshots_enabled: bool,
     report_path: Path,
     status_path: Path,
     patch_files: List[str],
@@ -609,7 +706,13 @@ def run_once(
     resolved_patches = resolve_patch_paths(base_dir, patch_files)
     current, missing = compute_patch_digests(resolved_patches)
     changed = detect_changes(state, current)
-    snapshot_path = apply_plan(resolved_patches, snapshot_dir, changed)
+    snapshot_path, pruned_snapshots = apply_plan(
+        resolved_patches,
+        snapshot_dir,
+        changed,
+        retention=snapshot_retention,
+        snapshots_enabled=snapshots_enabled,
+    )
     state.digests.update(current)
     state.record_run(changed)
     state.save(state_path)
@@ -619,6 +722,7 @@ def run_once(
         current,
         changed,
         snapshot_path,
+        pruned_snapshots,
         missing,
         patch_files,
         resolved_patches,
@@ -635,6 +739,7 @@ def run_once(
         current,
         changed,
         snapshot_path,
+        pruned_snapshots,
         missing,
         state.history,
         error=None,
@@ -653,6 +758,7 @@ def run_once(
         digests=current,
         changed_files=changed,
         snapshot_path=snapshot_path,
+        pruned_snapshots=pruned_snapshots,
         missing_files=missing,
         history=list(state.history),
         tracked_files=patch_files,
@@ -755,6 +861,21 @@ def parse_args() -> argparse.Namespace:
         help="Path to write the heartbeat status file.",
     )
     parser.add_argument(
+        "--snapshot-retention",
+        type=int,
+        default=parse_snapshot_retention(SNAPSHOT_RETENTION_ENV),
+        help=(
+            "Limit snapshot directories to the newest N entries. "
+            "Defaults to unlimited; set to 0 or a negative number to disable pruning."
+        ),
+    )
+    parser.add_argument(
+        "--disable-snapshots",
+        action="store_true",
+        default=DISABLE_SNAPSHOTS_ENV,
+        help="Skip creating snapshots of changed patch files while still pruning old ones if retention is set.",
+    )
+    parser.add_argument(
         "--print-status",
         action="store_true",
         help="Emit the status JSON payload to stdout after a single run.",
@@ -778,6 +899,8 @@ def main() -> None:
     base_dir = args.base_dir or BASE_DIR
     state_path = resolve_under_base(base_dir, args.state)
     snapshot_dir = resolve_under_base(base_dir, args.snapshots)
+    snapshot_retention = args.snapshot_retention
+    snapshots_enabled = not args.disable_snapshots
     report_path = resolve_under_base(base_dir, args.report)
     status_path = resolve_under_base(base_dir, args.status_json)
     heartbeat_path = resolve_under_base(base_dir, args.heartbeat)
@@ -797,6 +920,11 @@ def main() -> None:
     logging.info("Base directory: %s", base_dir)
     logging.info("State path: %s", state_path)
     logging.info("Snapshot directory: %s", snapshot_dir)
+    if snapshot_retention is None:
+        logging.info("Snapshot retention: unlimited")
+    else:
+        logging.info("Snapshot retention: newest %s snapshot(s)", snapshot_retention)
+    logging.info("Snapshots enabled: %s", "yes" if snapshots_enabled else "no")
     logging.info("Report path: %s", report_path)
     logging.info("Status JSON path: %s", status_path)
     logging.info("Heartbeat path: %s", heartbeat_path)
@@ -822,6 +950,8 @@ def main() -> None:
                         base_dir,
                         state_path,
                         snapshot_dir,
+                        snapshot_retention,
+                        snapshots_enabled,
                         report_path,
                         status_path,
                         patch_files,
@@ -876,6 +1006,8 @@ def main() -> None:
                 base_dir,
                 state_path,
                 snapshot_dir,
+                snapshot_retention,
+                snapshots_enabled,
                 report_path,
                 status_path,
                 patch_files,
@@ -908,6 +1040,7 @@ def main() -> None:
                 result.digests,
                 result.changed_files,
                 result.snapshot_path,
+                result.pruned_snapshots,
                 result.missing_files,
                 result.history,
                 None,

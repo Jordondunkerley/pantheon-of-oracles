@@ -49,6 +49,18 @@ class RunRecord:
 
 
 @dataclass
+class RunResult:
+    """Aggregate information from the most recent agent execution."""
+
+    timestamp: float
+    digests: Dict[str, str]
+    changed_files: List[str]
+    snapshot_path: Path | None
+    missing_files: List[str]
+    history: List[RunRecord]
+
+
+@dataclass
 class AgentState:
     """Persisted digests and a small run history."""
 
@@ -240,7 +252,53 @@ def render_status_json(
     status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> None:
+def write_github_summary(result: RunResult) -> None:
+    """Emit a concise summary to the GitHub Actions step summary if available."""
+
+    summary_path = os.getenv("GITHUB_STEP_SUMMARY")
+    if not summary_path:
+        logging.info("GITHUB_STEP_SUMMARY not set; skipping GitHub summary output.")
+        return
+
+    lines = [
+        "# Pantheon Persistent Agent",
+        "",
+        f"Last run: {datetime.fromtimestamp(result.timestamp).isoformat()}",
+        "",
+        "## Detected changes",
+    ]
+
+    if result.changed_files:
+        lines.append("")
+        lines.extend(f"- {name}" for name in result.changed_files)
+    else:
+        lines.append("- None")
+
+    lines.extend(["", "## Missing patch files"])
+    if result.missing_files:
+        lines.append("")
+        lines.extend(f"- {name}" for name in result.missing_files)
+    else:
+        lines.append("- None detected")
+
+    snapshot_note = (
+        f"Snapshot directory: {result.snapshot_path}" if result.snapshot_path else "Snapshot directory: None"
+    )
+    lines.extend(["", snapshot_note, "", "## Patch digests", "", "| Patch file | SHA-256 |", "| --- | --- |"])
+
+    if result.digests:
+        lines.extend(
+            f"| {name} | `{digest}` |" for name, digest in sorted(result.digests.items())
+        )
+    else:
+        lines.append("| _(none found)_ | - |")
+
+    with open(summary_path, "a", encoding="utf-8") as fp:
+        fp.write("\n".join(lines))
+        fp.write("\n")
+
+
+def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> RunResult:
     state = AgentState.load(state_path)
     current, missing = compute_patch_digests(base_dir)
     changed = detect_changes(state, current)
@@ -264,6 +322,15 @@ def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> None:
         snapshot_path,
         missing,
         state.history,
+    )
+
+    return RunResult(
+        timestamp=state.history[-1].timestamp,
+        digests=current,
+        changed_files=changed,
+        snapshot_path=snapshot_path,
+        missing_files=missing,
+        history=list(state.history),
     )
 
 
@@ -303,10 +370,12 @@ def main() -> None:
     if args.loop:
         logging.info("Starting persistent agent loop with %s-second interval", args.interval)
         while True:
-            run_once(base_dir, args.state, args.snapshots)
+            result = run_once(base_dir, args.state, args.snapshots)
+            write_github_summary(result)
             time.sleep(args.interval)
     else:
-        run_once(base_dir, args.state, args.snapshots)
+        result = run_once(base_dir, args.state, args.snapshots)
+        write_github_summary(result)
 
 
 if __name__ == "__main__":

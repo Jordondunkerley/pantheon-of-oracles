@@ -59,6 +59,16 @@ def merge_patch_sources(
             seen.add(name)
     return unique
 
+
+def resolve_patch_paths(base_dir: Path, patch_files: List[str]) -> Dict[str, Path]:
+    """Resolve configured patch files relative to the provided base directory."""
+
+    resolved: Dict[str, Path] = {}
+    for name in patch_files:
+        path = Path(name)
+        resolved[name] = path if path.is_absolute() else base_dir / path
+    return resolved
+
 # Default location to store the digest of the last run so we can tell when the
 # patch files change. Paths can be overridden via environment variables to make
 # the agent configurable in CI without CLI arguments.
@@ -101,6 +111,7 @@ class RunResult:
     missing_files: List[str]
     history: List[RunRecord]
     tracked_files: List[str]
+    resolved_patches: Dict[str, Path]
     base_dir: Path
     state_path: Path
     snapshot_dir: Path
@@ -154,13 +165,11 @@ def hash_file(path: Path) -> str:
 
 
 def compute_patch_digests(
-    base_dir: Path, patch_files: List[str]
+    resolved_patches: Dict[str, Path]
 ) -> Tuple[Dict[str, str], List[str]]:
     digests: Dict[str, str] = {}
     missing: List[str] = []
-    for name in patch_files:
-        path = Path(name)
-        resolved = path if path.is_absolute() else base_dir / path
+    for name, resolved in resolved_patches.items():
         if not resolved.exists():
             logging.warning("Patch file missing: %s", resolved)
             missing.append(name)
@@ -184,7 +193,7 @@ def resolve_under_base(base_dir: Path, path: Path) -> Path:
 
 
 def snapshot_patches(
-    base_dir: Path, snapshot_dir: Path, changed_files: List[str]
+    resolved_patches: Dict[str, Path], snapshot_dir: Path, changed_files: List[str]
 ) -> Path | None:
     if not changed_files:
         return None
@@ -194,15 +203,15 @@ def snapshot_patches(
     destination.mkdir(parents=True, exist_ok=True)
 
     for name in changed_files:
-        source = base_dir / name
-        if source.exists():
+        source = resolved_patches.get(name)
+        if source and source.exists():
             shutil.copy2(source, destination / name)
 
     return destination
 
 
 def apply_plan(
-    base_dir: Path, snapshot_dir: Path, changed_files: List[str]
+    resolved_patches: Dict[str, Path], snapshot_dir: Path, changed_files: List[str]
 ) -> Path | None:
     """Initial autonomous hook for responding to patch updates.
 
@@ -216,7 +225,7 @@ def apply_plan(
         return None
 
     logging.info("Detected patch updates in: %s", ", ".join(changed_files))
-    return snapshot_patches(base_dir, snapshot_dir, changed_files)
+    return snapshot_patches(resolved_patches, snapshot_dir, changed_files)
 
 
 def render_report(
@@ -227,6 +236,7 @@ def render_report(
     snapshot_path: Path | None,
     missing_files: List[str],
     tracked_files: List[str],
+    resolved_patches: Dict[str, Path],
     base_dir: Path,
     state_path: Path,
     snapshot_dir: Path,
@@ -278,7 +288,10 @@ def render_report(
     lines.extend(["", "## Tracked patch files"])
     if tracked_files:
         lines.append("")
-        lines.extend(f"- {name}" for name in tracked_files)
+        for name in tracked_files:
+            resolved = resolved_patches.get(name)
+            suffix = f" -> {resolved}" if resolved is not None else ""
+            lines.append(f"- {name}{suffix}")
     else:
         lines.append("- _(none configured)_")
 
@@ -313,6 +326,7 @@ def render_status_json(
     history: List[RunRecord],
     error: str | None = None,
     tracked_files: List[str] | None = None,
+    resolved_patches: Dict[str, Path] | None = None,
     base_dir: Path | None = None,
     state_path: Path | None = None,
     snapshot_dir: Path | None = None,
@@ -329,6 +343,9 @@ def render_status_json(
         "digests": digests,
         "error": error,
         "tracked_files": tracked_files or [],
+        "resolved_patches": {
+            name: str(path) for name, path in (resolved_patches or {}).items()
+        },
         "paths": {
             "base_dir": str(base_dir) if base_dir else None,
             "state": str(state_path) if state_path else None,
@@ -353,6 +370,7 @@ def render_failure_status(
     state_path: Path,
     status_path: Path,
     tracked_files: List[str],
+    resolved_patches: Dict[str, Path],
     error: str,
     *,
     base_dir: Path,
@@ -374,6 +392,7 @@ def render_failure_status(
         history=fallback_state.history,
         error=error,
         tracked_files=tracked_files,
+        resolved_patches=resolved_patches,
         base_dir=base_dir,
         state_path=state_path,
         snapshot_dir=snapshot_dir,
@@ -423,7 +442,10 @@ def write_github_summary(result: RunResult) -> None:
     lines.extend(["", "## Tracked patch files"])
     if result.tracked_files:
         lines.append("")
-        lines.extend(f"- {name}" for name in result.tracked_files)
+        for name in result.tracked_files:
+            resolved = result.resolved_patches.get(name)
+            suffix = f" -> {resolved}" if resolved is not None else ""
+            lines.append(f"- {name}{suffix}")
     else:
         lines.append("- _(none configured)_")
 
@@ -454,9 +476,10 @@ def run_once(
     heartbeat_path: Path,
 ) -> RunResult:
     state = AgentState.load(state_path)
-    current, missing = compute_patch_digests(base_dir, patch_files)
+    resolved_patches = resolve_patch_paths(base_dir, patch_files)
+    current, missing = compute_patch_digests(resolved_patches)
     changed = detect_changes(state, current)
-    snapshot_path = apply_plan(base_dir, snapshot_dir, changed)
+    snapshot_path = apply_plan(resolved_patches, snapshot_dir, changed)
     state.digests.update(current)
     state.record_run(changed)
     state.save(state_path)
@@ -468,6 +491,7 @@ def run_once(
         snapshot_path,
         missing,
         patch_files,
+        resolved_patches,
         base_dir,
         state_path,
         snapshot_dir,
@@ -484,6 +508,7 @@ def run_once(
         state.history,
         error=None,
         tracked_files=patch_files,
+        resolved_patches=resolved_patches,
         base_dir=base_dir,
         state_path=state_path,
         snapshot_dir=snapshot_dir,
@@ -499,6 +524,7 @@ def run_once(
         missing_files=missing,
         history=list(state.history),
         tracked_files=patch_files,
+        resolved_patches=resolved_patches,
         base_dir=base_dir,
         state_path=state_path,
         snapshot_dir=snapshot_dir,
@@ -610,6 +636,7 @@ def main() -> None:
     env_patch_files = parse_env_patch_files(os.getenv("PANTHEON_PATCH_FILES"))
     cli_patch_files = args.patch_files or []
     patch_files = merge_patch_sources(PATCH_FILENAMES, env_patch_files, cli_patch_files)
+    resolved_patch_paths = resolve_patch_paths(base_dir, patch_files)
 
     logging.info(
         "Tracking %s patch file(s): %s",
@@ -623,6 +650,10 @@ def main() -> None:
     logging.info("Report path: %s", report_path)
     logging.info("Status JSON path: %s", status_path)
     logging.info("Heartbeat path: %s", heartbeat_path)
+    if patch_files:
+        logging.info("Resolved patch locations:")
+        for name, path in resolved_patch_paths.items():
+            logging.info("- %s -> %s", name, path)
 
     if args.loop:
         logging.info(
@@ -651,6 +682,7 @@ def main() -> None:
                         state_path,
                         status_path,
                         patch_files,
+                        resolve_patch_paths(base_dir, patch_files),
                         error=str(exc),
                         base_dir=base_dir,
                         snapshot_dir=snapshot_dir,
@@ -692,6 +724,7 @@ def main() -> None:
                 state_path,
                 status_path,
                 patch_files,
+                resolve_patch_paths(base_dir, patch_files),
                 error=str(exc),
                 base_dir=base_dir,
                 snapshot_dir=snapshot_dir,

@@ -333,6 +333,58 @@ def render_report(
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def build_status_payload(
+    run_timestamp: float,
+    digests: Dict[str, str],
+    changed_files: List[str],
+    snapshot_path: Path | None,
+    missing_files: List[str],
+    history: List[RunRecord],
+    error: str | None = None,
+    tracked_files: List[str] | None = None,
+    resolved_patches: Dict[str, Path] | None = None,
+    patch_sources: Dict[str, str] | None = None,
+    base_dir: Path | None = None,
+    state_path: Path | None = None,
+    snapshot_dir: Path | None = None,
+    report_path: Path | None = None,
+    status_path: Path | None = None,
+    heartbeat_path: Path | None = None,
+) -> Dict[str, object]:
+    """Build a machine-readable payload describing the latest agent run."""
+
+    return {
+        "run_timestamp": run_timestamp,
+        "run_iso": datetime.fromtimestamp(run_timestamp).isoformat(),
+        "changed_files": changed_files,
+        "missing_files": missing_files,
+        "snapshot_path": str(snapshot_path) if snapshot_path else None,
+        "digests": digests,
+        "error": error,
+        "tracked_files": tracked_files or [],
+        "resolved_patches": {
+            name: str(path) for name, path in (resolved_patches or {}).items()
+        },
+        "patch_sources": patch_sources or {},
+        "paths": {
+            "base_dir": str(base_dir) if base_dir else None,
+            "state": str(state_path) if state_path else None,
+            "snapshots": str(snapshot_dir) if snapshot_dir else None,
+            "report": str(report_path) if report_path else None,
+            "status": str(status_path) if status_path else None,
+            "heartbeat": str(heartbeat_path) if heartbeat_path else None,
+        },
+        "history": [
+            {
+                "timestamp": entry.timestamp,
+                "iso": datetime.fromtimestamp(entry.timestamp).isoformat(),
+                "changed_files": entry.changed_files,
+            }
+            for entry in history
+        ],
+    }
+
+
 def render_status_json(
     status_path: Path,
     run_timestamp: float,
@@ -352,36 +404,24 @@ def render_status_json(
     heartbeat_path: Path | None = None,
 ) -> None:
     status_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "run_timestamp": run_timestamp,
-        "run_iso": datetime.fromtimestamp(run_timestamp).isoformat(),
-        "changed_files": changed_files,
-        "missing_files": missing_files,
-        "snapshot_path": str(snapshot_path) if snapshot_path else None,
-        "digests": digests,
-        "error": error,
-        "tracked_files": tracked_files or [],
-        "resolved_patches": {
-            name: str(path) for name, path in (resolved_patches or {}).items()
-        },
-        "patch_sources": patch_sources or {},
-        "paths": {
-            "base_dir": str(base_dir) if base_dir else None,
-            "state": str(state_path) if state_path else None,
-            "snapshots": str(snapshot_dir) if snapshot_dir else None,
-            "report": str(report_path) if report_path else None,
-            "status": str(status_path),
-            "heartbeat": str(heartbeat_path) if heartbeat_path else None,
-        },
-        "history": [
-            {
-                "timestamp": entry.timestamp,
-                "iso": datetime.fromtimestamp(entry.timestamp).isoformat(),
-                "changed_files": entry.changed_files,
-            }
-            for entry in history
-        ],
-    }
+    payload = build_status_payload(
+        run_timestamp,
+        digests,
+        changed_files,
+        snapshot_path,
+        missing_files,
+        history,
+        error,
+        tracked_files,
+        resolved_patches,
+        patch_sources,
+        base_dir,
+        state_path,
+        snapshot_dir,
+        report_path,
+        status_path,
+        heartbeat_path,
+    )
     status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
@@ -647,6 +687,21 @@ def parse_args() -> argparse.Namespace:
         default=HEARTBEAT_PATH,
         help="Path to write the heartbeat status file.",
     )
+    parser.add_argument(
+        "--print-status",
+        action="store_true",
+        help="Emit the status JSON payload to stdout after a single run.",
+    )
+    parser.add_argument(
+        "--exit-on-change",
+        action="store_true",
+        help="Exit with status 1 if any tracked patch files changed during a single run.",
+    )
+    parser.add_argument(
+        "--exit-on-missing",
+        action="store_true",
+        help="Exit with status 1 if any tracked patch files are missing during a single run.",
+    )
     return parser.parse_args()
 
 
@@ -726,6 +781,14 @@ def main() -> None:
 
                 write_heartbeat(heartbeat_path, success=True, message="loop iteration")
                 write_github_summary(result)
+                if args.print_status:
+                    logging.info(
+                        "Ignoring --print-status while running in loop mode to avoid repeated output."
+                    )
+                if args.exit_on_change or args.exit_on_missing:
+                    logging.info(
+                        "Ignoring exit-on-change/missing flags while running in loop mode."
+                    )
                 if args.max_iterations and iteration >= args.max_iterations:
                     logging.info(
                         "Reached maximum iterations (%s); exiting loop gracefully.",
@@ -768,6 +831,33 @@ def main() -> None:
             raise
         write_heartbeat(heartbeat_path, success=True, message="single run")
         write_github_summary(result)
+        if args.print_status:
+            payload = build_status_payload(
+                result.timestamp,
+                result.digests,
+                result.changed_files,
+                result.snapshot_path,
+                result.missing_files,
+                result.history,
+                None,
+                result.tracked_files,
+                result.resolved_patches,
+                result.patch_sources,
+                result.base_dir,
+                result.state_path,
+                result.snapshot_dir,
+                result.report_path,
+                result.status_path,
+                result.heartbeat_path,
+            )
+            print(json.dumps(payload, indent=2))
+
+        exit_due_to_changes = args.exit_on_change and bool(result.changed_files)
+        exit_due_to_missing = args.exit_on_missing and bool(result.missing_files)
+        if exit_due_to_changes or exit_due_to_missing:
+            reason = "change" if exit_due_to_changes else "missing patch"
+            logging.info("Exiting with non-zero status due to %s condition.", reason)
+            raise SystemExit(1)
 
 
 if __name__ == "__main__":

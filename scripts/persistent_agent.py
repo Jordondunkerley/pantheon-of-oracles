@@ -174,6 +174,10 @@ class RunResult:
     log_level: int
     log_level_name: str
     log_path: Path | None
+    loop_enabled: bool
+    loop_interval: int | None
+    loop_backoff: int | None
+    max_iterations: int | None
     digests: Dict[str, str]
     changed_files: List[str]
     snapshot_path: Path | None
@@ -367,6 +371,10 @@ def render_report(
     log_level_name: str,
     log_level_numeric: int,
     log_path: Path | None,
+    loop_enabled: bool,
+    loop_interval: int | None,
+    loop_backoff: int | None,
+    max_iterations: int | None,
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
@@ -408,6 +416,17 @@ def render_report(
         "",
         f"- Log level: {log_level_name} ({log_level_numeric})",
         f"- Log file: {log_path}" if log_path else "- Log file: (none configured)",
+        "",
+        "## Loop configuration",
+        "",
+        f"- Loop mode: {'enabled' if loop_enabled else 'disabled'}",
+        f"- Loop interval: {loop_interval} second(s)" if loop_interval is not None else "- Loop interval: (not set)",
+        f"- Loop backoff: {loop_backoff} second(s)" if loop_backoff is not None else "- Loop backoff: (not set)",
+        (
+            f"- Max iterations: {max_iterations}"
+            if max_iterations is not None
+            else "- Max iterations: unlimited"
+        ),
         "",
         "## Snapshot settings",
         "",
@@ -506,6 +525,11 @@ def build_status_payload(
     report_path: Path | None = None,
     status_path: Path | None = None,
     heartbeat_path: Path | None = None,
+    *,
+    loop_enabled: bool | None = None,
+    loop_interval_seconds: int | None = None,
+    loop_backoff_seconds: int | None = None,
+    max_iterations: int | None = None,
 ) -> Dict[str, object]:
     """Build a machine-readable payload describing the latest agent run."""
 
@@ -532,6 +556,12 @@ def build_status_payload(
         "snapshot_settings": {
             "enabled": snapshots_enabled,
             "retention": snapshot_retention,
+        },
+        "loop": {
+            "enabled": loop_enabled,
+            "interval_seconds": loop_interval_seconds,
+            "backoff_seconds": loop_backoff_seconds,
+            "max_iterations": max_iterations,
         },
         "paths": {
             "base_dir": str(base_dir) if base_dir else None,
@@ -578,6 +608,11 @@ def render_status_json(
     snapshots_enabled: bool | None = None,
     report_path: Path | None = None,
     heartbeat_path: Path | None = None,
+    *,
+    loop_enabled: bool | None = None,
+    loop_interval_seconds: int | None = None,
+    loop_backoff_seconds: int | None = None,
+    max_iterations: int | None = None,
 ) -> Dict[str, object]:
     status_path.parent.mkdir(parents=True, exist_ok=True)
     payload = build_status_payload(
@@ -604,6 +639,10 @@ def render_status_json(
         report_path,
         status_path,
         heartbeat_path,
+        loop_enabled=loop_enabled,
+        loop_interval_seconds=loop_interval_seconds,
+        loop_backoff_seconds=loop_backoff_seconds,
+        max_iterations=max_iterations,
     )
     status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return payload
@@ -626,6 +665,10 @@ def render_failure_status(
     snapshots_enabled: bool,
     report_path: Path,
     heartbeat_path: Path,
+    loop_enabled: bool | None = None,
+    loop_interval_seconds: int | None = None,
+    loop_backoff_seconds: int | None = None,
+    max_iterations: int | None = None,
 ) -> Dict[str, object]:
     """Persist a status file describing a failed agent iteration."""
 
@@ -656,6 +699,10 @@ def render_failure_status(
         report_path=report_path,
         heartbeat_path=heartbeat_path,
         log_path=log_path,
+        loop_enabled=loop_enabled,
+        loop_interval_seconds=loop_interval_seconds,
+        loop_backoff_seconds=loop_backoff_seconds,
+        max_iterations=max_iterations,
     )
 
 
@@ -694,6 +741,15 @@ def write_github_outputs(payload: Dict[str, object]) -> None:
             fp.write(
                 f"pantheon_log_level_numeric={logging_info.get('level_numeric', '')}\n"
             )
+            loop_info = payload.get("loop", {}) or {}
+            fp.write(f"pantheon_loop_enabled={loop_info.get('enabled', '')}\n")
+            fp.write(
+                f"pantheon_loop_interval_seconds={loop_info.get('interval_seconds', '')}\n"
+            )
+            fp.write(
+                f"pantheon_loop_backoff_seconds={loop_info.get('backoff_seconds', '')}\n"
+            )
+            fp.write(f"pantheon_loop_max_iterations={loop_info.get('max_iterations', '')}\n")
 
             delimiter = "PANTHEONEOF"
             fp.write(
@@ -739,6 +795,10 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
         result.report_path,
         result.status_path,
         result.heartbeat_path,
+        loop_enabled=result.loop_enabled,
+        loop_interval_seconds=result.loop_interval,
+        loop_backoff_seconds=result.loop_backoff,
+        max_iterations=result.max_iterations,
     )
 
 
@@ -769,6 +829,17 @@ def write_github_summary(result: RunResult) -> None:
         "",
         f"- Log level: {result.log_level_name} ({result.log_level})",
         f"- Log file: {result.log_path}" if result.log_path else "- Log file: (none configured)",
+        "",
+        "## Loop configuration",
+        "",
+        f"- Loop mode: {'enabled' if result.loop_enabled else 'disabled'}",
+        f"- Loop interval: {result.loop_interval} second(s)" if result.loop_interval is not None else "- Loop interval: (not set)",
+        f"- Loop backoff: {result.loop_backoff} second(s)" if result.loop_backoff is not None else "- Loop backoff: (not set)",
+        (
+            f"- Max iterations: {result.max_iterations}"
+            if result.max_iterations is not None
+            else "- Max iterations: unlimited"
+        ),
         "",
         "## Snapshot settings",
         "",
@@ -840,6 +911,10 @@ def run_once(
     log_level: int,
     log_level_name: str,
     log_path: Path | None,
+    loop_enabled: bool,
+    loop_interval: int | None,
+    loop_backoff: int | None,
+    max_iterations: int | None,
 ) -> RunResult:
     start_time = time.time()
     state = AgentState.load(state_path)
@@ -864,6 +939,10 @@ def run_once(
         log_level_name,
         log_level,
         log_path,
+        loop_enabled,
+        loop_interval,
+        loop_backoff,
+        max_iterations,
         current,
         changed,
         snapshot_path,
@@ -905,6 +984,10 @@ def run_once(
         report_path=report_path,
         heartbeat_path=heartbeat_path,
         log_path=log_path,
+        loop_enabled=loop_enabled,
+        loop_interval_seconds=loop_interval,
+        loop_backoff_seconds=loop_backoff,
+        max_iterations=max_iterations,
     )
 
     return RunResult(
@@ -919,6 +1002,10 @@ def run_once(
         log_level=log_level,
         log_level_name=log_level_name,
         log_path=log_path,
+        loop_enabled=loop_enabled,
+        loop_interval=loop_interval,
+        loop_backoff=loop_backoff,
+        max_iterations=max_iterations,
         tracked_files=patch_files,
         resolved_patches=resolved_patches,
         patch_sources=patch_sources,
@@ -1155,6 +1242,10 @@ def main() -> None:
                         configured_log_level,
                         resolved_log_level_name,
                         log_path,
+                        True,
+                        args.interval,
+                        args.backoff,
+                        args.max_iterations,
                     )
                 except Exception as exc:  # pragma: no cover - defensive loop guard
                     logging.exception("Persistent agent iteration failed: %s", exc)
@@ -1175,6 +1266,10 @@ def main() -> None:
                         snapshots_enabled=snapshots_enabled,
                         report_path=report_path,
                         heartbeat_path=heartbeat_path,
+                        loop_enabled=True,
+                        loop_interval_seconds=args.interval,
+                        loop_backoff_seconds=args.backoff,
+                        max_iterations=args.max_iterations,
                     )
                     write_github_outputs(failure_payload)
                     time.sleep(max(args.backoff, 1))
@@ -1219,6 +1314,10 @@ def main() -> None:
                 configured_log_level,
                 resolved_log_level_name,
                 log_path,
+                False,
+                args.interval,
+                args.backoff,
+                args.max_iterations,
             )
         except Exception as exc:  # pragma: no cover - defensive single-run guard
             logging.exception("Persistent agent run failed: %s", exc)
@@ -1239,6 +1338,10 @@ def main() -> None:
                 snapshots_enabled=snapshots_enabled,
                 report_path=report_path,
                 heartbeat_path=heartbeat_path,
+                loop_enabled=False,
+                loop_interval_seconds=args.interval,
+                loop_backoff_seconds=args.backoff,
+                max_iterations=args.max_iterations,
             )
             write_github_outputs(failure_payload)
             raise
@@ -1270,6 +1373,10 @@ def main() -> None:
                 result.report_path,
                 result.status_path,
                 result.heartbeat_path,
+                loop_enabled=result.loop_enabled,
+                loop_interval_seconds=result.loop_interval,
+                loop_backoff_seconds=result.loop_backoff,
+                max_iterations=result.max_iterations,
             )
             print(json.dumps(payload, indent=2))
 

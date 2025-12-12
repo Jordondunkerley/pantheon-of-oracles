@@ -22,11 +22,42 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 # Patch files that describe the Pantheon of Oracles plan. We hash them on every
-# run so the automation can react immediately when new guidance is added.
+# run so the automation can react immediately when new guidance is added. The
+# list can be extended through the PANTHEON_PATCH_FILES environment variable or
+# the --patch flag when invoking the agent.
 PATCH_FILENAMES: Tuple[str, ...] = (
     "Patches 1-25 – Pantheon of Oracles GPT.JSON",
     "Patches 26-41 – Pantheon of Oracles GPT.JSON",
 )
+
+
+def parse_env_patch_files(env_value: str | None) -> List[str]:
+    """Return any patch files defined in the PANTHEON_PATCH_FILES env var."""
+
+    if not env_value:
+        return []
+
+    files = []
+    for entry in env_value.split(","):
+        trimmed = entry.strip()
+        if trimmed:
+            files.append(trimmed)
+    return files
+
+
+def merge_patch_sources(
+    defaults: Tuple[str, ...], env_files: List[str], cli_files: List[str]
+) -> List[str]:
+    """Combine patch file sources while preserving order and dropping duplicates."""
+
+    combined: List[str] = list(defaults) + env_files + cli_files
+    unique: List[str] = []
+    seen = set()
+    for name in combined:
+        if name not in seen:
+            unique.append(name)
+            seen.add(name)
+    return unique
 
 # Default location to store the digest of the last run so we can tell when the
 # patch files change.
@@ -59,6 +90,7 @@ class RunResult:
     snapshot_path: Path | None
     missing_files: List[str]
     history: List[RunRecord]
+    tracked_files: List[str]
 
 
 @dataclass
@@ -105,16 +137,19 @@ def hash_file(path: Path) -> str:
     return sha.hexdigest()
 
 
-def compute_patch_digests(base_dir: Path) -> Tuple[Dict[str, str], List[str]]:
+def compute_patch_digests(
+    base_dir: Path, patch_files: List[str]
+) -> Tuple[Dict[str, str], List[str]]:
     digests: Dict[str, str] = {}
     missing: List[str] = []
-    for name in PATCH_FILENAMES:
-        path = base_dir / name
-        if not path.exists():
-            logging.warning("Patch file missing: %s", path)
+    for name in patch_files:
+        path = Path(name)
+        resolved = path if path.is_absolute() else base_dir / path
+        if not resolved.exists():
+            logging.warning("Patch file missing: %s", resolved)
             missing.append(name)
             continue
-        digests[name] = hash_file(path)
+        digests[name] = hash_file(resolved)
     return digests, missing
 
 
@@ -169,6 +204,7 @@ def render_report(
     changed_files: List[str],
     snapshot_path: Path | None,
     missing_files: List[str],
+    tracked_files: List[str],
 ) -> None:
     """Write a human-readable summary of the latest agent execution."""
 
@@ -203,6 +239,13 @@ def render_report(
     else:
         lines.append("- None detected")
 
+    lines.extend(["", "## Tracked patch files"])
+    if tracked_files:
+        lines.append("")
+        lines.extend(f"- {name}" for name in tracked_files)
+    else:
+        lines.append("- _(none configured)_")
+
     lines.extend(
         [
             "",
@@ -233,6 +276,7 @@ def render_status_json(
     missing_files: List[str],
     history: List[RunRecord],
     error: str | None = None,
+    tracked_files: List[str] | None = None,
 ) -> None:
     status_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -243,6 +287,7 @@ def render_status_json(
         "snapshot_path": str(snapshot_path) if snapshot_path else None,
         "digests": digests,
         "error": error,
+        "tracked_files": tracked_files or [],
         "history": [
             {
                 "timestamp": entry.timestamp,
@@ -255,7 +300,7 @@ def render_status_json(
     status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def render_failure_status(state_path: Path, error: str) -> None:
+def render_failure_status(state_path: Path, tracked_files: List[str], error: str) -> None:
     """Persist a status file describing a failed agent iteration."""
 
     fallback_state = AgentState.load(state_path)
@@ -269,6 +314,7 @@ def render_failure_status(state_path: Path, error: str) -> None:
         missing_files=[],
         history=fallback_state.history,
         error=error,
+        tracked_files=tracked_files,
     )
 
 
@@ -301,6 +347,13 @@ def write_github_summary(result: RunResult) -> None:
     else:
         lines.append("- None detected")
 
+    lines.extend(["", "## Tracked patch files"])
+    if result.tracked_files:
+        lines.append("")
+        lines.extend(f"- {name}" for name in result.tracked_files)
+    else:
+        lines.append("- _(none configured)_")
+
     snapshot_note = (
         f"Snapshot directory: {result.snapshot_path}" if result.snapshot_path else "Snapshot directory: None"
     )
@@ -318,9 +371,11 @@ def write_github_summary(result: RunResult) -> None:
         fp.write("\n")
 
 
-def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> RunResult:
+def run_once(
+    base_dir: Path, state_path: Path, snapshot_dir: Path, patch_files: List[str]
+) -> RunResult:
     state = AgentState.load(state_path)
-    current, missing = compute_patch_digests(base_dir)
+    current, missing = compute_patch_digests(base_dir, patch_files)
     changed = detect_changes(state, current)
     snapshot_path = apply_plan(base_dir, snapshot_dir, changed)
     state.digests.update(current)
@@ -333,6 +388,7 @@ def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> RunResult:
         changed,
         snapshot_path,
         missing,
+        patch_files,
     )
     render_status_json(
         STATUS_JSON_PATH,
@@ -343,6 +399,7 @@ def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> RunResult:
         missing,
         state.history,
         error=None,
+        tracked_files=patch_files,
     )
 
     return RunResult(
@@ -352,6 +409,7 @@ def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> RunResult:
         snapshot_path=snapshot_path,
         missing_files=missing,
         history=list(state.history),
+        tracked_files=patch_files,
     )
 
 
@@ -385,6 +443,16 @@ def parse_args() -> argparse.Namespace:
         help="Backoff in seconds after a failed loop iteration.",
     )
     parser.add_argument(
+        "--patch",
+        dest="patch_files",
+        action="append",
+        default=None,
+        help=(
+            "Additional patch files to hash (relative paths). "
+            "May be supplied multiple times."
+        ),
+    )
+    parser.add_argument(
         "--max-iterations",
         type=int,
         default=None,
@@ -412,6 +480,15 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
     args = parse_args()
     base_dir = Path.cwd()
+    env_patch_files = parse_env_patch_files(os.getenv("PANTHEON_PATCH_FILES"))
+    cli_patch_files = args.patch_files or []
+    patch_files = merge_patch_sources(PATCH_FILENAMES, env_patch_files, cli_patch_files)
+
+    logging.info(
+        "Tracking %s patch file(s): %s",
+        len(patch_files),
+        ", ".join(patch_files) if patch_files else "(none)",
+    )
 
     if args.loop:
         logging.info(
@@ -424,11 +501,13 @@ def main() -> None:
             while True:
                 iteration += 1
                 try:
-                    result = run_once(base_dir, args.state, args.snapshots)
+                    result = run_once(
+                        base_dir, args.state, args.snapshots, patch_files
+                    )
                 except Exception as exc:  # pragma: no cover - defensive loop guard
                     logging.exception("Persistent agent iteration failed: %s", exc)
                     write_heartbeat(HEARTBEAT_PATH, success=False, message=str(exc))
-                    render_failure_status(args.state, error=str(exc))
+                    render_failure_status(args.state, patch_files, error=str(exc))
                     time.sleep(max(args.backoff, 1))
                     continue
 
@@ -448,11 +527,11 @@ def main() -> None:
         logging.info("Ignoring --max-iterations because --loop was not provided.")
     else:
         try:
-            result = run_once(base_dir, args.state, args.snapshots)
+            result = run_once(base_dir, args.state, args.snapshots, patch_files)
         except Exception as exc:  # pragma: no cover - defensive single-run guard
             logging.exception("Persistent agent run failed: %s", exc)
             write_heartbeat(HEARTBEAT_PATH, success=False, message=str(exc))
-            render_failure_status(args.state, error=str(exc))
+            render_failure_status(args.state, patch_files, error=str(exc))
             raise
         write_heartbeat(HEARTBEAT_PATH, success=True, message="single run")
         write_github_summary(result)

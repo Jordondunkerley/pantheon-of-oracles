@@ -34,8 +34,10 @@ STATE_PATH = Path("state/persistent_agent_state.json")
 # Directory where snapshots of changed patches will be persisted for auditing
 # and follow-up processing by future automation steps.
 SNAPSHOT_DIR = Path("state/patch_snapshots")
-# Human-readable report that summarizes the most recent run and current digests.
+# Human-readable and machine-readable reports that summarize the latest run and
+# current digests for downstream automation.
 REPORT_PATH = Path("state/persistent_agent_report.md")
+STATUS_JSON_PATH = Path("state/persistent_agent_status.json")
 
 
 @dataclass
@@ -90,15 +92,17 @@ def hash_file(path: Path) -> str:
     return sha.hexdigest()
 
 
-def compute_patch_digests(base_dir: Path) -> Dict[str, str]:
+def compute_patch_digests(base_dir: Path) -> Tuple[Dict[str, str], List[str]]:
     digests: Dict[str, str] = {}
+    missing: List[str] = []
     for name in PATCH_FILENAMES:
         path = base_dir / name
         if not path.exists():
             logging.warning("Patch file missing: %s", path)
+            missing.append(name)
             continue
         digests[name] = hash_file(path)
-    return digests
+    return digests, missing
 
 
 def detect_changes(prev: AgentState, current: Dict[str, str]) -> List[str]:
@@ -151,6 +155,7 @@ def render_report(
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
+    missing_files: List[str],
 ) -> None:
     """Write a human-readable summary of the latest agent execution."""
 
@@ -178,6 +183,13 @@ def render_report(
     else:
         lines.append("Snapshot directory: None (no changes detected)")
 
+    lines.extend(["", "## Missing patch files"])
+    if missing_files:
+        lines.append("")
+        lines.extend(f"- {name}" for name in missing_files)
+    else:
+        lines.append("- None detected")
+
     lines.extend(
         [
             "",
@@ -199,15 +211,60 @@ def render_report(
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def render_status_json(
+    status_path: Path,
+    run_timestamp: float,
+    digests: Dict[str, str],
+    changed_files: List[str],
+    snapshot_path: Path | None,
+    missing_files: List[str],
+    history: List[RunRecord],
+) -> None:
+    status_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "run_timestamp": run_timestamp,
+        "run_iso": datetime.fromtimestamp(run_timestamp).isoformat(),
+        "changed_files": changed_files,
+        "missing_files": missing_files,
+        "snapshot_path": str(snapshot_path) if snapshot_path else None,
+        "digests": digests,
+        "history": [
+            {
+                "timestamp": entry.timestamp,
+                "iso": datetime.fromtimestamp(entry.timestamp).isoformat(),
+                "changed_files": entry.changed_files,
+            }
+            for entry in history
+        ],
+    }
+    status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
 def run_once(base_dir: Path, state_path: Path, snapshot_dir: Path) -> None:
     state = AgentState.load(state_path)
-    current = compute_patch_digests(base_dir)
+    current, missing = compute_patch_digests(base_dir)
     changed = detect_changes(state, current)
     snapshot_path = apply_plan(base_dir, snapshot_dir, changed)
     state.digests.update(current)
     state.record_run(changed)
     state.save(state_path)
-    render_report(REPORT_PATH, state.history[-1].timestamp, current, changed, snapshot_path)
+    render_report(
+        REPORT_PATH,
+        state.history[-1].timestamp,
+        current,
+        changed,
+        snapshot_path,
+        missing,
+    )
+    render_status_json(
+        STATUS_JSON_PATH,
+        state.history[-1].timestamp,
+        current,
+        changed,
+        snapshot_path,
+        missing,
+        state.history,
+    )
 
 
 def parse_args() -> argparse.Namespace:

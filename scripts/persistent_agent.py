@@ -101,6 +101,12 @@ class RunResult:
     missing_files: List[str]
     history: List[RunRecord]
     tracked_files: List[str]
+    base_dir: Path
+    state_path: Path
+    snapshot_dir: Path
+    report_path: Path
+    status_path: Path
+    heartbeat_path: Path
 
 
 @dataclass
@@ -221,6 +227,11 @@ def render_report(
     snapshot_path: Path | None,
     missing_files: List[str],
     tracked_files: List[str],
+    base_dir: Path,
+    state_path: Path,
+    snapshot_dir: Path,
+    status_path: Path,
+    heartbeat_path: Path,
 ) -> None:
     """Write a human-readable summary of the latest agent execution."""
 
@@ -231,6 +242,15 @@ def render_report(
         "# Pantheon Persistent Agent Report",
         "",
         f"Last run: {readable_time}",
+        "",
+        "## Resolved paths",
+        "",
+        f"- Base directory: {base_dir}",
+        f"- State file: {state_path}",
+        f"- Snapshot directory: {snapshot_dir}",
+        f"- Report path: {report_path}",
+        f"- Status JSON path: {status_path}",
+        f"- Heartbeat path: {heartbeat_path}",
         "",
         "## Detected changes",
     ]
@@ -293,6 +313,11 @@ def render_status_json(
     history: List[RunRecord],
     error: str | None = None,
     tracked_files: List[str] | None = None,
+    base_dir: Path | None = None,
+    state_path: Path | None = None,
+    snapshot_dir: Path | None = None,
+    report_path: Path | None = None,
+    heartbeat_path: Path | None = None,
 ) -> None:
     status_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -304,6 +329,14 @@ def render_status_json(
         "digests": digests,
         "error": error,
         "tracked_files": tracked_files or [],
+        "paths": {
+            "base_dir": str(base_dir) if base_dir else None,
+            "state": str(state_path) if state_path else None,
+            "snapshots": str(snapshot_dir) if snapshot_dir else None,
+            "report": str(report_path) if report_path else None,
+            "status": str(status_path),
+            "heartbeat": str(heartbeat_path) if heartbeat_path else None,
+        },
         "history": [
             {
                 "timestamp": entry.timestamp,
@@ -317,7 +350,15 @@ def render_status_json(
 
 
 def render_failure_status(
-    state_path: Path, status_path: Path, tracked_files: List[str], error: str
+    state_path: Path,
+    status_path: Path,
+    tracked_files: List[str],
+    error: str,
+    *,
+    base_dir: Path,
+    snapshot_dir: Path,
+    report_path: Path,
+    heartbeat_path: Path,
 ) -> None:
     """Persist a status file describing a failed agent iteration."""
 
@@ -333,6 +374,11 @@ def render_failure_status(
         history=fallback_state.history,
         error=error,
         tracked_files=tracked_files,
+        base_dir=base_dir,
+        state_path=state_path,
+        snapshot_dir=snapshot_dir,
+        report_path=report_path,
+        heartbeat_path=heartbeat_path,
     )
 
 
@@ -348,6 +394,15 @@ def write_github_summary(result: RunResult) -> None:
         "# Pantheon Persistent Agent",
         "",
         f"Last run: {datetime.fromtimestamp(result.timestamp).isoformat()}",
+        "",
+        "## Resolved paths",
+        "",
+        f"- Base directory: {result.base_dir}",
+        f"- State file: {result.state_path}",
+        f"- Snapshot directory: {result.snapshot_dir}",
+        f"- Report path: {result.report_path}",
+        f"- Status JSON path: {result.status_path}",
+        f"- Heartbeat path: {result.heartbeat_path}",
         "",
         "## Detected changes",
     ]
@@ -396,6 +451,7 @@ def run_once(
     report_path: Path,
     status_path: Path,
     patch_files: List[str],
+    heartbeat_path: Path,
 ) -> RunResult:
     state = AgentState.load(state_path)
     current, missing = compute_patch_digests(base_dir, patch_files)
@@ -412,6 +468,11 @@ def run_once(
         snapshot_path,
         missing,
         patch_files,
+        base_dir,
+        state_path,
+        snapshot_dir,
+        status_path,
+        heartbeat_path,
     )
     render_status_json(
         status_path,
@@ -423,6 +484,11 @@ def run_once(
         state.history,
         error=None,
         tracked_files=patch_files,
+        base_dir=base_dir,
+        state_path=state_path,
+        snapshot_dir=snapshot_dir,
+        report_path=report_path,
+        heartbeat_path=heartbeat_path,
     )
 
     return RunResult(
@@ -433,6 +499,12 @@ def run_once(
         missing_files=missing,
         history=list(state.history),
         tracked_files=patch_files,
+        base_dir=base_dir,
+        state_path=state_path,
+        snapshot_dir=snapshot_dir,
+        report_path=report_path,
+        status_path=status_path,
+        heartbeat_path=heartbeat_path,
     )
 
 
@@ -570,11 +642,21 @@ def main() -> None:
                         report_path,
                         status_path,
                         patch_files,
+                        heartbeat_path,
                     )
                 except Exception as exc:  # pragma: no cover - defensive loop guard
                     logging.exception("Persistent agent iteration failed: %s", exc)
                     write_heartbeat(heartbeat_path, success=False, message=str(exc))
-                    render_failure_status(state_path, status_path, patch_files, error=str(exc))
+                    render_failure_status(
+                        state_path,
+                        status_path,
+                        patch_files,
+                        error=str(exc),
+                        base_dir=base_dir,
+                        snapshot_dir=snapshot_dir,
+                        report_path=report_path,
+                        heartbeat_path=heartbeat_path,
+                    )
                     time.sleep(max(args.backoff, 1))
                     continue
 
@@ -601,11 +683,21 @@ def main() -> None:
                 report_path,
                 status_path,
                 patch_files,
+                heartbeat_path,
             )
         except Exception as exc:  # pragma: no cover - defensive single-run guard
             logging.exception("Persistent agent run failed: %s", exc)
             write_heartbeat(heartbeat_path, success=False, message=str(exc))
-            render_failure_status(state_path, status_path, patch_files, error=str(exc))
+            render_failure_status(
+                state_path,
+                status_path,
+                patch_files,
+                error=str(exc),
+                base_dir=base_dir,
+                snapshot_dir=snapshot_dir,
+                report_path=report_path,
+                heartbeat_path=heartbeat_path,
+            )
             raise
         write_heartbeat(heartbeat_path, success=True, message="single run")
         write_github_summary(result)

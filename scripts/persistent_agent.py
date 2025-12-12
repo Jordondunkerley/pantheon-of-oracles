@@ -47,17 +47,31 @@ def parse_env_patch_files(env_value: str | None) -> List[str]:
 
 def merge_patch_sources(
     defaults: Tuple[str, ...], env_files: List[str], cli_files: List[str]
-) -> List[str]:
-    """Combine patch file sources while preserving order and dropping duplicates."""
+) -> Tuple[List[str], Dict[str, str]]:
+    """Combine patch file sources while preserving order and dropping duplicates.
 
-    combined: List[str] = list(defaults) + env_files + cli_files
-    unique: List[str] = []
-    seen = set()
-    for name in combined:
-        if name not in seen:
-            unique.append(name)
-            seen.add(name)
-    return unique
+    Returns both the merged list of patch files and a mapping of each patch to the
+    source that introduced it (``default``, ``env``, or ``cli``) so reporting can
+    surface how configuration was derived.
+    """
+
+    combined: List[str] = []
+    origins: Dict[str, str] = {}
+
+    def append_unique(name: str, source: str) -> None:
+        if name in origins:
+            return
+        combined.append(name)
+        origins[name] = source
+
+    for name in defaults:
+        append_unique(name, "default")
+    for name in env_files:
+        append_unique(name, "env")
+    for name in cli_files:
+        append_unique(name, "cli")
+
+    return combined, origins
 
 
 def resolve_patch_paths(base_dir: Path, patch_files: List[str]) -> Dict[str, Path]:
@@ -112,6 +126,7 @@ class RunResult:
     history: List[RunRecord]
     tracked_files: List[str]
     resolved_patches: Dict[str, Path]
+    patch_sources: Dict[str, str]
     base_dir: Path
     state_path: Path
     snapshot_dir: Path
@@ -237,6 +252,7 @@ def render_report(
     missing_files: List[str],
     tracked_files: List[str],
     resolved_patches: Dict[str, Path],
+    patch_sources: Dict[str, str],
     base_dir: Path,
     state_path: Path,
     snapshot_dir: Path,
@@ -291,7 +307,8 @@ def render_report(
         for name in tracked_files:
             resolved = resolved_patches.get(name)
             suffix = f" -> {resolved}" if resolved is not None else ""
-            lines.append(f"- {name}{suffix}")
+            origin = patch_sources.get(name, "unknown")
+            lines.append(f"- {name} ({origin}){suffix}")
     else:
         lines.append("- _(none configured)_")
 
@@ -327,6 +344,7 @@ def render_status_json(
     error: str | None = None,
     tracked_files: List[str] | None = None,
     resolved_patches: Dict[str, Path] | None = None,
+    patch_sources: Dict[str, str] | None = None,
     base_dir: Path | None = None,
     state_path: Path | None = None,
     snapshot_dir: Path | None = None,
@@ -346,6 +364,7 @@ def render_status_json(
         "resolved_patches": {
             name: str(path) for name, path in (resolved_patches or {}).items()
         },
+        "patch_sources": patch_sources or {},
         "paths": {
             "base_dir": str(base_dir) if base_dir else None,
             "state": str(state_path) if state_path else None,
@@ -371,6 +390,7 @@ def render_failure_status(
     status_path: Path,
     tracked_files: List[str],
     resolved_patches: Dict[str, Path],
+    patch_sources: Dict[str, str],
     error: str,
     *,
     base_dir: Path,
@@ -393,6 +413,7 @@ def render_failure_status(
         error=error,
         tracked_files=tracked_files,
         resolved_patches=resolved_patches,
+        patch_sources=patch_sources,
         base_dir=base_dir,
         state_path=state_path,
         snapshot_dir=snapshot_dir,
@@ -445,7 +466,8 @@ def write_github_summary(result: RunResult) -> None:
         for name in result.tracked_files:
             resolved = result.resolved_patches.get(name)
             suffix = f" -> {resolved}" if resolved is not None else ""
-            lines.append(f"- {name}{suffix}")
+            origin = result.patch_sources.get(name, "unknown")
+            lines.append(f"- {name} ({origin}){suffix}")
     else:
         lines.append("- _(none configured)_")
 
@@ -473,6 +495,7 @@ def run_once(
     report_path: Path,
     status_path: Path,
     patch_files: List[str],
+    patch_sources: Dict[str, str],
     heartbeat_path: Path,
 ) -> RunResult:
     state = AgentState.load(state_path)
@@ -492,6 +515,7 @@ def run_once(
         missing,
         patch_files,
         resolved_patches,
+        patch_sources,
         base_dir,
         state_path,
         snapshot_dir,
@@ -509,6 +533,7 @@ def run_once(
         error=None,
         tracked_files=patch_files,
         resolved_patches=resolved_patches,
+        patch_sources=patch_sources,
         base_dir=base_dir,
         state_path=state_path,
         snapshot_dir=snapshot_dir,
@@ -525,6 +550,7 @@ def run_once(
         history=list(state.history),
         tracked_files=patch_files,
         resolved_patches=resolved_patches,
+        patch_sources=patch_sources,
         base_dir=base_dir,
         state_path=state_path,
         snapshot_dir=snapshot_dir,
@@ -635,7 +661,9 @@ def main() -> None:
     heartbeat_path = resolve_under_base(base_dir, args.heartbeat)
     env_patch_files = parse_env_patch_files(os.getenv("PANTHEON_PATCH_FILES"))
     cli_patch_files = args.patch_files or []
-    patch_files = merge_patch_sources(PATCH_FILENAMES, env_patch_files, cli_patch_files)
+    patch_files, patch_sources = merge_patch_sources(
+        PATCH_FILENAMES, env_patch_files, cli_patch_files
+    )
     resolved_patch_paths = resolve_patch_paths(base_dir, patch_files)
 
     logging.info(
@@ -654,6 +682,8 @@ def main() -> None:
         logging.info("Resolved patch locations:")
         for name, path in resolved_patch_paths.items():
             logging.info("- %s -> %s", name, path)
+            origin = patch_sources.get(name, "unknown")
+            logging.info("  source: %s", origin)
 
     if args.loop:
         logging.info(
@@ -673,6 +703,7 @@ def main() -> None:
                         report_path,
                         status_path,
                         patch_files,
+                        patch_sources,
                         heartbeat_path,
                     )
                 except Exception as exc:  # pragma: no cover - defensive loop guard
@@ -683,6 +714,7 @@ def main() -> None:
                         status_path,
                         patch_files,
                         resolve_patch_paths(base_dir, patch_files),
+                        patch_sources,
                         error=str(exc),
                         base_dir=base_dir,
                         snapshot_dir=snapshot_dir,
@@ -715,6 +747,7 @@ def main() -> None:
                 report_path,
                 status_path,
                 patch_files,
+                patch_sources,
                 heartbeat_path,
             )
         except Exception as exc:  # pragma: no cover - defensive single-run guard
@@ -725,6 +758,7 @@ def main() -> None:
                 status_path,
                 patch_files,
                 resolve_patch_paths(base_dir, patch_files),
+                patch_sources,
                 error=str(exc),
                 base_dir=base_dir,
                 snapshot_dir=snapshot_dir,

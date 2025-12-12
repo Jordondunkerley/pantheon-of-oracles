@@ -255,6 +255,23 @@ def render_status_json(
     status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
+def render_failure_status(state_path: Path, error: str) -> None:
+    """Persist a status file describing a failed agent iteration."""
+
+    fallback_state = AgentState.load(state_path)
+    now = time.time()
+    render_status_json(
+        STATUS_JSON_PATH,
+        now,
+        fallback_state.digests,
+        [],
+        snapshot_path=None,
+        missing_files=[],
+        history=fallback_state.history,
+        error=error,
+    )
+
+
 def write_github_summary(result: RunResult) -> None:
     """Emit a concise summary to the GitHub Actions step summary if available."""
 
@@ -411,18 +428,7 @@ def main() -> None:
                 except Exception as exc:  # pragma: no cover - defensive loop guard
                     logging.exception("Persistent agent iteration failed: %s", exc)
                     write_heartbeat(HEARTBEAT_PATH, success=False, message=str(exc))
-                    fallback_state = AgentState.load(args.state)
-                    now = time.time()
-                    render_status_json(
-                        STATUS_JSON_PATH,
-                        now,
-                        fallback_state.digests,
-                        [],
-                        snapshot_path=None,
-                        missing_files=[],
-                        history=fallback_state.history,
-                        error=str(exc),
-                    )
+                    render_failure_status(args.state, error=str(exc))
                     time.sleep(max(args.backoff, 1))
                     continue
 
@@ -441,7 +447,13 @@ def main() -> None:
     elif args.max_iterations:
         logging.info("Ignoring --max-iterations because --loop was not provided.")
     else:
-        result = run_once(base_dir, args.state, args.snapshots)
+        try:
+            result = run_once(base_dir, args.state, args.snapshots)
+        except Exception as exc:  # pragma: no cover - defensive single-run guard
+            logging.exception("Persistent agent run failed: %s", exc)
+            write_heartbeat(HEARTBEAT_PATH, success=False, message=str(exc))
+            render_failure_status(args.state, error=str(exc))
+            raise
         write_heartbeat(HEARTBEAT_PATH, success=True, message="single run")
         write_github_summary(result)
 

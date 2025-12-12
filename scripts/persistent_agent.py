@@ -368,6 +368,15 @@ def parse_args() -> argparse.Namespace:
         help="Backoff in seconds after a failed loop iteration.",
     )
     parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=None,
+        help=(
+            "Limit loop executions for local testing or CI smoke runs. "
+            "If omitted, the loop runs indefinitely."
+        ),
+    )
+    parser.add_argument(
         "--state",
         type=Path,
         default=STATE_PATH,
@@ -393,30 +402,44 @@ def main() -> None:
             args.interval,
             args.backoff,
         )
-        while True:
-            try:
-                result = run_once(base_dir, args.state, args.snapshots)
-            except Exception as exc:  # pragma: no cover - defensive loop guard
-                logging.exception("Persistent agent iteration failed: %s", exc)
-                write_heartbeat(HEARTBEAT_PATH, success=False, message=str(exc))
-                fallback_state = AgentState.load(args.state)
-                now = time.time()
-                render_status_json(
-                    STATUS_JSON_PATH,
-                    now,
-                    fallback_state.digests,
-                    [],
-                    snapshot_path=None,
-                    missing_files=[],
-                    history=fallback_state.history,
-                    error=str(exc),
-                )
-                time.sleep(max(args.backoff, 1))
-                continue
+        iteration = 0
+        try:
+            while True:
+                iteration += 1
+                try:
+                    result = run_once(base_dir, args.state, args.snapshots)
+                except Exception as exc:  # pragma: no cover - defensive loop guard
+                    logging.exception("Persistent agent iteration failed: %s", exc)
+                    write_heartbeat(HEARTBEAT_PATH, success=False, message=str(exc))
+                    fallback_state = AgentState.load(args.state)
+                    now = time.time()
+                    render_status_json(
+                        STATUS_JSON_PATH,
+                        now,
+                        fallback_state.digests,
+                        [],
+                        snapshot_path=None,
+                        missing_files=[],
+                        history=fallback_state.history,
+                        error=str(exc),
+                    )
+                    time.sleep(max(args.backoff, 1))
+                    continue
 
-            write_heartbeat(HEARTBEAT_PATH, success=True, message="loop iteration")
-            write_github_summary(result)
-            time.sleep(args.interval)
+                write_heartbeat(HEARTBEAT_PATH, success=True, message="loop iteration")
+                write_github_summary(result)
+                if args.max_iterations and iteration >= args.max_iterations:
+                    logging.info(
+                        "Reached maximum iterations (%s); exiting loop gracefully.",
+                        args.max_iterations,
+                    )
+                    break
+                time.sleep(args.interval)
+        except KeyboardInterrupt:
+            logging.info("Received interrupt; writing heartbeat and exiting loop.")
+            write_heartbeat(HEARTBEAT_PATH, success=False, message="loop interrupted")
+    elif args.max_iterations:
+        logging.info("Ignoring --max-iterations because --loop was not provided.")
     else:
         result = run_once(base_dir, args.state, args.snapshots)
         write_heartbeat(HEARTBEAT_PATH, success=True, message="single run")

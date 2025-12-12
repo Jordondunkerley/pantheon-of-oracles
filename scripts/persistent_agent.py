@@ -45,6 +45,28 @@ def parse_env_patch_files(env_value: str | None) -> List[str]:
     return files
 
 
+def parse_log_level(value: str | None, default: int = logging.INFO) -> int:
+    """Convert a string log level into a logging constant.
+
+    Falls back to ``default`` when the input is empty or unrecognized. Values are
+    case-insensitive and may be provided as either names (``info``, ``DEBUG``)
+    or integers.
+    """
+
+    if not value:
+        return default
+
+    if value.isdigit():
+        return int(value)
+
+    level = logging.getLevelName(value.upper())
+    if isinstance(level, int):
+        return level
+
+    logging.warning("Invalid log level %s; defaulting to %s", value, default)
+    return default
+
+
 def merge_patch_sources(
     defaults: Tuple[str, ...], env_files: List[str], cli_files: List[str]
 ) -> Tuple[List[str], Dict[str, str]]:
@@ -966,12 +988,22 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Exit with status 1 if any tracked patch files are missing during a single run.",
     )
+    parser.add_argument(
+        "--log-level",
+        default=os.getenv("PANTHEON_AGENT_LOG_LEVEL"),
+        help=(
+            "Logging verbosity (e.g., DEBUG, INFO, WARNING). Defaults to INFO unless "
+            "PANTHEON_AGENT_LOG_LEVEL is set."
+        ),
+    )
     return parser.parse_args()
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
     args = parse_args()
+    env_log_level = parse_log_level(os.getenv("PANTHEON_AGENT_LOG_LEVEL"))
+    configured_log_level = parse_log_level(args.log_level, default=env_log_level)
+    logging.basicConfig(level=configured_log_level, format="[%(levelname)s] %(message)s")
     base_dir = args.base_dir or BASE_DIR
     state_path = resolve_under_base(base_dir, args.state)
     snapshot_dir = resolve_under_base(base_dir, args.snapshots)
@@ -987,6 +1019,7 @@ def main() -> None:
     )
     resolved_patch_paths = resolve_patch_paths(base_dir, patch_files)
 
+    logging.info("Log level: %s", logging.getLevelName(configured_log_level))
     logging.info(
         "Tracking %s patch file(s): %s",
         len(patch_files),

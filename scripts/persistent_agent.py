@@ -170,6 +170,8 @@ class RunResult:
     """Aggregate information from the most recent agent execution."""
 
     timestamp: float
+    log_level: int
+    log_level_name: str
     digests: Dict[str, str]
     changed_files: List[str]
     snapshot_path: Path | None
@@ -360,6 +362,8 @@ def render_report(
     report_path: Path,
     run_timestamp: float,
     run_duration: float | None,
+    log_level_name: str,
+    log_level_numeric: int,
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
@@ -396,6 +400,10 @@ def render_report(
         f"- Report path: {report_path}",
         f"- Status JSON path: {status_path}",
         f"- Heartbeat path: {heartbeat_path}",
+        "",
+        "## Logging",
+        "",
+        f"- Log level: {log_level_name} ({log_level_numeric})",
         "",
         "## Snapshot settings",
         "",
@@ -473,6 +481,8 @@ def render_report(
 def build_status_payload(
     run_timestamp: float,
     run_duration: float | None,
+    log_level: int | None,
+    log_level_name: str | None,
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
@@ -498,6 +508,10 @@ def build_status_payload(
         "run_timestamp": run_timestamp,
         "run_iso": datetime.fromtimestamp(run_timestamp).isoformat(),
         "run_duration_seconds": run_duration,
+        "logging": {
+            "level": log_level_name,
+            "level_numeric": log_level,
+        },
         "changed_files": changed_files,
         "missing_files": missing_files,
         "snapshot_path": str(snapshot_path) if snapshot_path else None,
@@ -537,6 +551,8 @@ def render_status_json(
     status_path: Path,
     run_timestamp: float,
     run_duration: float | None,
+    log_level: int | None,
+    log_level_name: str | None,
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
@@ -559,6 +575,8 @@ def render_status_json(
     payload = build_status_payload(
         run_timestamp,
         run_duration,
+        log_level,
+        log_level_name,
         digests,
         changed_files,
         snapshot_path,
@@ -589,6 +607,8 @@ def render_failure_status(
     resolved_patches: Dict[str, Path],
     patch_sources: Dict[str, str],
     error: str,
+    log_level: int,
+    log_level_name: str,
     *,
     base_dir: Path,
     snapshot_dir: Path,
@@ -605,6 +625,8 @@ def render_failure_status(
         status_path,
         now,
         None,
+        log_level,
+        log_level_name,
         fallback_state.digests,
         [],
         [],
@@ -653,6 +675,13 @@ def write_github_outputs(payload: Dict[str, object]) -> None:
             fp.write(
                 f"pantheon_run_duration_seconds={payload.get('run_duration_seconds', '')}\n"
             )
+            logging_info = payload.get("logging", {}) or {}
+            fp.write(
+                f"pantheon_log_level={logging_info.get('level', '')}\n"
+            )
+            fp.write(
+                f"pantheon_log_level_numeric={logging_info.get('level_numeric', '')}\n"
+            )
 
             delimiter = "PANTHEONEOF"
             fp.write(
@@ -677,6 +706,8 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
     return build_status_payload(
         result.timestamp,
         result.run_duration,
+        result.log_level,
+        result.log_level_name,
         result.digests,
         result.changed_files,
         result.snapshot_path,
@@ -711,7 +742,7 @@ def write_github_summary(result: RunResult) -> None:
         "",
         f"Last run: {datetime.fromtimestamp(result.timestamp).isoformat()}",
         f"Run duration: {result.run_duration:.3f} seconds" if result.run_duration is not None else "Run duration: (unknown)",
-        "",
+        "", 
         "## Resolved paths",
         "",
         f"- Base directory: {result.base_dir}",
@@ -720,6 +751,10 @@ def write_github_summary(result: RunResult) -> None:
         f"- Report path: {result.report_path}",
         f"- Status JSON path: {result.status_path}",
         f"- Heartbeat path: {result.heartbeat_path}",
+        "",
+        "## Logging",
+        "",
+        f"- Log level: {result.log_level_name} ({result.log_level})",
         "",
         "## Snapshot settings",
         "",
@@ -788,6 +823,8 @@ def run_once(
     patch_files: List[str],
     patch_sources: Dict[str, str],
     heartbeat_path: Path,
+    log_level: int,
+    log_level_name: str,
 ) -> RunResult:
     start_time = time.time()
     state = AgentState.load(state_path)
@@ -809,6 +846,8 @@ def run_once(
         report_path,
         state.history[-1].timestamp,
         run_duration,
+        log_level_name,
+        log_level,
         current,
         changed,
         snapshot_path,
@@ -829,6 +868,8 @@ def run_once(
         status_path,
         state.history[-1].timestamp,
         run_duration,
+        log_level,
+        log_level_name,
         current,
         changed,
         snapshot_path,
@@ -857,6 +898,8 @@ def run_once(
         missing_files=missing,
         history=list(state.history),
         run_duration=run_duration,
+        log_level=log_level,
+        log_level_name=log_level_name,
         tracked_files=patch_files,
         resolved_patches=resolved_patches,
         patch_sources=patch_sources,
@@ -1003,6 +1046,7 @@ def main() -> None:
     args = parse_args()
     env_log_level = parse_log_level(os.getenv("PANTHEON_AGENT_LOG_LEVEL"))
     configured_log_level = parse_log_level(args.log_level, default=env_log_level)
+    resolved_log_level_name = logging.getLevelName(configured_log_level)
     logging.basicConfig(level=configured_log_level, format="[%(levelname)s] %(message)s")
     base_dir = args.base_dir or BASE_DIR
     state_path = resolve_under_base(base_dir, args.state)
@@ -1019,7 +1063,7 @@ def main() -> None:
     )
     resolved_patch_paths = resolve_patch_paths(base_dir, patch_files)
 
-    logging.info("Log level: %s", logging.getLevelName(configured_log_level))
+    logging.info("Log level: %s", resolved_log_level_name)
     logging.info(
         "Tracking %s patch file(s): %s",
         len(patch_files),
@@ -1066,6 +1110,8 @@ def main() -> None:
                         patch_files,
                         patch_sources,
                         heartbeat_path,
+                        configured_log_level,
+                        resolved_log_level_name,
                     )
                 except Exception as exc:  # pragma: no cover - defensive loop guard
                     logging.exception("Persistent agent iteration failed: %s", exc)
@@ -1077,6 +1123,8 @@ def main() -> None:
                         resolve_patch_paths(base_dir, patch_files),
                         patch_sources,
                         error=str(exc),
+                        log_level=configured_log_level,
+                        log_level_name=resolved_log_level_name,
                         base_dir=base_dir,
                         snapshot_dir=snapshot_dir,
                         snapshot_retention=snapshot_retention,
@@ -1124,6 +1172,8 @@ def main() -> None:
                 patch_files,
                 patch_sources,
                 heartbeat_path,
+                configured_log_level,
+                resolved_log_level_name,
             )
         except Exception as exc:  # pragma: no cover - defensive single-run guard
             logging.exception("Persistent agent run failed: %s", exc)
@@ -1135,6 +1185,8 @@ def main() -> None:
                 resolve_patch_paths(base_dir, patch_files),
                 patch_sources,
                 error=str(exc),
+                log_level=configured_log_level,
+                log_level_name=resolved_log_level_name,
                 base_dir=base_dir,
                 snapshot_dir=snapshot_dir,
                 snapshot_retention=snapshot_retention,
@@ -1151,6 +1203,8 @@ def main() -> None:
             payload = build_status_payload(
                 result.timestamp,
                 result.run_duration,
+                result.log_level,
+                result.log_level_name,
                 result.digests,
                 result.changed_files,
                 result.snapshot_path,

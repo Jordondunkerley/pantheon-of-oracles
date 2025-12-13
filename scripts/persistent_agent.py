@@ -34,7 +34,7 @@ PATCH_FILENAMES: Tuple[str, ...] = (
 # Simple semantic marker to stamp artifacts and status payloads with the agent
 # revision. Update whenever the automation gains new capabilities so downstream
 # consumers can reason about the data shape they receive.
-AGENT_VERSION = "0.0.6"
+AGENT_VERSION = "0.0.7"
 
 
 DEFAULT_HISTORY_LIMIT = 20
@@ -193,7 +193,14 @@ STATUS_JSON_PATH = Path(
 HEARTBEAT_PATH = Path(
     os.getenv("PANTHEON_AGENT_HEARTBEAT_PATH", "state/persistent_agent_heartbeat.txt")
 )
-LOG_PATH = Path(os.getenv("PANTHEON_AGENT_LOG_PATH", "state/persistent_agent.log"))
+LOG_PATH_ENV = os.getenv("PANTHEON_AGENT_LOG_PATH")
+LOG_PATH = Path(LOG_PATH_ENV) if LOG_PATH_ENV else Path("state/persistent_agent.log")
+DISABLE_LOG_FILE_ENV = os.getenv("PANTHEON_AGENT_DISABLE_LOG_FILE", "").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 
 # History retention can be tuned via environment variable or CLI flag. Defaults
 # to keeping the latest 20 runs; set to 0 or a negative number for unlimited
@@ -239,6 +246,7 @@ class RunResult:
     log_level: int
     log_level_name: str
     log_path: Path | None
+    log_file_enabled: bool
     loop_enabled: bool
     loop_interval: int | None
     loop_backoff: int | None
@@ -487,6 +495,7 @@ def render_report(
     log_level_name: str,
     log_level_numeric: int,
     log_path: Path | None,
+    log_file_enabled: bool,
     agent_version: str,
     runtime_info: Dict[str, str],
     loop_enabled: bool,
@@ -550,10 +559,16 @@ def render_report(
             f"- Status JSON path: {status_path}",
             f"- Heartbeat path: {heartbeat_path}",
             "",
-            "## Logging",
-            "",
-            f"- Log level: {log_level_name} ({log_level_numeric})",
-            f"- Log file: {log_path}" if log_path else "- Log file: (none configured)",
+        "## Logging",
+        "",
+        f"- Log level: {log_level_name} ({log_level_numeric})",
+        (
+            f"- Log file: {log_path}"
+            if log_path and log_file_enabled
+            else "- Log file: (disabled)"
+            if not log_file_enabled
+            else "- Log file: (none configured)"
+        ),
             "",
             "## State history",
             "",
@@ -678,6 +693,7 @@ def build_status_payload(
     log_level: int | None,
     log_level_name: str | None,
     log_path: Path | None,
+    log_file_enabled: bool | None,
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
@@ -717,6 +733,7 @@ def build_status_payload(
         "logging": {
             "level": log_level_name,
             "level_numeric": log_level,
+            "log_file_enabled": log_file_enabled,
             "log_path": str(log_path) if log_path else None,
         },
         "changed_files": changed_files,
@@ -780,6 +797,7 @@ def render_status_json(
     log_level: int | None,
     log_level_name: str | None,
     log_path: Path | None,
+    log_file_enabled: bool | None,
     digests: Dict[str, str],
     changed_files: List[str],
     snapshot_path: Path | None,
@@ -816,6 +834,7 @@ def render_status_json(
         log_level,
         log_level_name,
         log_path,
+        log_file_enabled,
         digests,
         changed_files,
         snapshot_path,
@@ -857,6 +876,7 @@ def render_failure_status(
     log_level: int,
     log_level_name: str,
     log_path: Path | None,
+    log_file_enabled: bool | None,
     *,
     state: AgentState | None = None,
     failure_run_id: int | None = None,
@@ -891,6 +911,7 @@ def render_failure_status(
         log_level,
         log_level_name,
         log_path,
+        log_file_enabled,
         fallback_state.digests,
         [],
         [],
@@ -909,7 +930,6 @@ def render_failure_status(
         snapshots_enabled=snapshots_enabled,
         report_path=report_path,
         heartbeat_path=heartbeat_path,
-        log_path=log_path,
         loop_enabled=loop_enabled,
         loop_interval_seconds=loop_interval_seconds,
         loop_backoff_seconds=loop_backoff_seconds,
@@ -1000,6 +1020,7 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
         result.log_level,
         result.log_level_name,
         result.log_path,
+        result.log_file_enabled,
         result.digests,
         result.changed_files,
         result.snapshot_path,
@@ -1076,7 +1097,13 @@ def write_github_summary(result: RunResult) -> None:
             "## Logging",
             "",
             f"- Log level: {result.log_level_name} ({result.log_level})",
-            f"- Log file: {result.log_path}" if result.log_path else "- Log file: (none configured)",
+            (
+                f"- Log file: {result.log_path}"
+                if result.log_path and result.log_file_enabled
+                else "- Log file: (disabled)"
+                if not result.log_file_enabled
+                else "- Log file: (none configured)"
+            ),
             "",
             "## State history",
             "",
@@ -1190,6 +1217,7 @@ def run_once(
     log_level: int,
     log_level_name: str,
     log_path: Path | None,
+    log_file_enabled: bool,
     agent_version: str,
     runtime_info: Dict[str, str],
     ci_metadata: Dict[str, str],
@@ -1227,6 +1255,7 @@ def run_once(
         log_level_name,
         log_level,
         log_path,
+        log_file_enabled,
         agent_version,
         runtime_info,
         history_limit,
@@ -1260,6 +1289,7 @@ def run_once(
         log_level,
         log_level_name,
         log_path,
+        log_file_enabled,
         current,
         changed,
         snapshot_path,
@@ -1302,6 +1332,7 @@ def run_once(
         log_level=log_level,
         log_level_name=log_level_name,
         log_path=log_path,
+        log_file_enabled=log_file_enabled,
         loop_enabled=loop_enabled,
         loop_interval=loop_interval,
         loop_backoff=loop_backoff,
@@ -1339,6 +1370,7 @@ def build_heartbeat_metadata(result: RunResult) -> Dict[str, object]:
         "agent_version": result.agent_version,
         "log_level": result.log_level_name,
         "log_level_numeric": result.log_level,
+        "log_file_enabled": result.log_file_enabled,
         "log_path": result.log_path,
         "base_dir": result.base_dir,
         "state_path": result.state_path,
@@ -1368,6 +1400,7 @@ def build_failure_heartbeat_metadata(
     log_level: int | None,
     log_level_name: str | None,
     log_path: Path | None,
+    log_file_enabled: bool | None,
     base_dir: Path,
     state_path: Path,
     snapshot_dir: Path,
@@ -1390,6 +1423,7 @@ def build_failure_heartbeat_metadata(
         "error": error,
         "log_level": log_level_name,
         "log_level_numeric": log_level,
+        "log_file_enabled": log_file_enabled,
         "log_path": log_path,
         "base_dir": base_dir,
         "state_path": state_path,
@@ -1517,6 +1551,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--disable-log-file",
+        action="store_true",
+        default=DISABLE_LOG_FILE_ENV,
+        help=(
+            "Disable file logging even if a log path is configured via environment "
+            "variables or defaults."
+        ),
+    )
+    parser.add_argument(
         "--snapshot-retention",
         type=int,
         default=parse_snapshot_retention(SNAPSHOT_RETENTION_ENV),
@@ -1572,7 +1615,11 @@ def main() -> None:
     configured_log_level = parse_log_level(args.log_level, default=env_log_level)
     resolved_log_level_name = logging.getLevelName(configured_log_level)
     base_dir = args.base_dir or BASE_DIR
-    log_path = resolve_under_base(base_dir, args.log_file) if args.log_file else None
+    log_file_enabled = False
+    log_path = None
+    if not args.disable_log_file:
+        log_path = resolve_under_base(base_dir, args.log_file) if args.log_file else None
+        log_file_enabled = log_path is not None
     handlers: List[logging.Handler] = [logging.StreamHandler()]
     if log_path:
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1604,6 +1651,12 @@ def main() -> None:
 
     logging.info("Agent version: %s", AGENT_VERSION)
     logging.info("Log level: %s", resolved_log_level_name)
+    if args.disable_log_file:
+        logging.info("Log file: (disabled)")
+    elif log_path:
+        logging.info("Log file: %s", log_path)
+    else:
+        logging.info("Log file: (none configured)")
     if history_limit is None:
         logging.info("History retention: unlimited")
     else:
@@ -1636,7 +1689,9 @@ def main() -> None:
     logging.info("Report path: %s", report_path)
     logging.info("Status JSON path: %s", status_path)
     logging.info("Heartbeat path: %s", heartbeat_path)
-    if log_path:
+    if args.disable_log_file:
+        logging.info("Log file: (disabled)")
+    elif log_path:
         logging.info("Log file: %s", log_path)
     else:
         logging.info("Log file: (none configured)")
@@ -1704,6 +1759,7 @@ def main() -> None:
                             log_level=configured_log_level,
                             log_level_name=resolved_log_level_name,
                             log_path=log_path,
+                            log_file_enabled=log_file_enabled,
                             base_dir=base_dir,
                             state_path=state_path,
                             snapshot_dir=snapshot_dir,
@@ -1786,6 +1842,7 @@ def main() -> None:
                     log_level=configured_log_level,
                     log_level_name=resolved_log_level_name,
                     log_path=log_path,
+                    log_file_enabled=log_file_enabled,
                     base_dir=base_dir,
                     state_path=state_path,
                     snapshot_dir=snapshot_dir,
@@ -1818,6 +1875,7 @@ def main() -> None:
                 configured_log_level,
                 resolved_log_level_name,
                 log_path,
+                log_file_enabled,
                 AGENT_VERSION,
                 runtime_info,
                 ci_metadata,
@@ -1850,6 +1908,7 @@ def main() -> None:
                     log_level=configured_log_level,
                     log_level_name=resolved_log_level_name,
                     log_path=log_path,
+                    log_file_enabled=log_file_enabled,
                     base_dir=base_dir,
                     state_path=state_path,
                     snapshot_dir=snapshot_dir,
@@ -1874,6 +1933,7 @@ def main() -> None:
                 log_level=configured_log_level,
                 log_level_name=resolved_log_level_name,
                 log_path=log_path,
+                log_file_enabled=log_file_enabled,
                 base_dir=base_dir,
                 snapshot_dir=snapshot_dir,
                 snapshot_retention=snapshot_retention,
@@ -1910,6 +1970,7 @@ def main() -> None:
                 result.log_level,
                 result.log_level_name,
                 result.log_path,
+                result.log_file_enabled,
                 result.digests,
                 result.changed_files,
                 result.snapshot_path,

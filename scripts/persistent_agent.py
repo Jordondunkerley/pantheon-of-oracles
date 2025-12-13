@@ -34,7 +34,7 @@ PATCH_FILENAMES: Tuple[str, ...] = (
 # Simple semantic marker to stamp artifacts and status payloads with the agent
 # revision. Update whenever the automation gains new capabilities so downstream
 # consumers can reason about the data shape they receive.
-AGENT_VERSION = "0.0.5"
+AGENT_VERSION = "0.0.6"
 
 
 DEFAULT_HISTORY_LIMIT = 20
@@ -1337,13 +1337,73 @@ def build_heartbeat_metadata(result: RunResult) -> Dict[str, object]:
         "run_iso": run_iso,
         "run_duration_seconds": result.run_duration,
         "agent_version": result.agent_version,
+        "log_level": result.log_level_name,
+        "log_level_numeric": result.log_level,
+        "log_path": result.log_path,
+        "base_dir": result.base_dir,
+        "state_path": result.state_path,
+        "snapshot_dir": result.snapshot_dir,
+        "snapshot_retention": result.snapshot_retention,
+        "snapshots_enabled": result.snapshots_enabled,
+        "report_path": result.report_path,
+        "status_path": result.status_path,
+        "heartbeat_path": result.heartbeat_path,
+        "loop_enabled": result.loop_enabled,
+        "loop_interval_seconds": result.loop_interval,
+        "loop_backoff_seconds": result.loop_backoff,
+        "max_iterations": result.max_iterations,
         "changes_detected": bool(result.changed_files),
         "missing_patches": bool(result.missing_files),
         "missing_files": result.missing_files,
         "snapshot_path": result.snapshot_path,
-        "status_path": result.status_path,
-        "report_path": result.report_path,
-        "log_path": result.log_path,
+    }
+
+
+def build_failure_heartbeat_metadata(
+    *,
+    run_id: int | None,
+    next_run_id: int | None,
+    agent_version: str,
+    error: str | None,
+    log_level: int | None,
+    log_level_name: str | None,
+    log_path: Path | None,
+    base_dir: Path,
+    state_path: Path,
+    snapshot_dir: Path,
+    snapshot_retention: int | None,
+    snapshots_enabled: bool,
+    report_path: Path,
+    status_path: Path,
+    heartbeat_path: Path,
+    loop_enabled: bool,
+    loop_interval_seconds: int | None,
+    loop_backoff_seconds: int | None,
+    max_iterations: int | None,
+) -> Dict[str, object]:
+    """Consistent heartbeat metadata for failure cases."""
+
+    return {
+        "run_id": run_id,
+        "next_run_id": next_run_id,
+        "agent_version": agent_version,
+        "error": error,
+        "log_level": log_level_name,
+        "log_level_numeric": log_level,
+        "log_path": log_path,
+        "base_dir": base_dir,
+        "state_path": state_path,
+        "snapshot_dir": snapshot_dir,
+        "snapshot_retention": snapshot_retention,
+        "snapshots_enabled": snapshots_enabled,
+        "report_path": report_path,
+        "status_path": status_path,
+        "heartbeat_path": heartbeat_path,
+        "loop_enabled": loop_enabled,
+        "loop_interval_seconds": loop_interval_seconds,
+        "loop_backoff_seconds": loop_backoff_seconds,
+        "max_iterations": max_iterations,
+        "recorded_at": datetime.utcnow().isoformat(),
     }
 
 
@@ -1632,17 +1692,31 @@ def main() -> None:
                         error=str(exc),
                     )
                     failure_state.save(state_path, history_limit=history_limit)
-                    failure_metadata = {
-                        "run_id": failure_run_id,
-                        "next_run_id": failure_state.next_run_id,
-                        "agent_version": AGENT_VERSION,
-                        "error": str(exc),
-                    }
                     write_heartbeat(
                         heartbeat_path,
                         success=False,
                         message=str(exc),
-                        metadata=failure_metadata,
+                        metadata=build_failure_heartbeat_metadata(
+                            run_id=failure_run_id,
+                            next_run_id=failure_state.next_run_id,
+                            agent_version=AGENT_VERSION,
+                            error=str(exc),
+                            log_level=configured_log_level,
+                            log_level_name=resolved_log_level_name,
+                            log_path=log_path,
+                            base_dir=base_dir,
+                            state_path=state_path,
+                            snapshot_dir=snapshot_dir,
+                            snapshot_retention=snapshot_retention,
+                            snapshots_enabled=snapshots_enabled,
+                            report_path=report_path,
+                            status_path=status_path,
+                            heartbeat_path=heartbeat_path,
+                            loop_enabled=True,
+                            loop_interval_seconds=args.interval,
+                            loop_backoff_seconds=args.backoff,
+                            max_iterations=args.max_iterations,
+                        ),
                     )
                     failure_payload = render_failure_status(
                         state_path,
@@ -1700,7 +1774,32 @@ def main() -> None:
                 time.sleep(args.interval)
         except KeyboardInterrupt:
             logging.info("Received interrupt; writing heartbeat and exiting loop.")
-            write_heartbeat(heartbeat_path, success=False, message="loop interrupted")
+            write_heartbeat(
+                heartbeat_path,
+                success=False,
+                message="loop interrupted",
+                metadata=build_failure_heartbeat_metadata(
+                    run_id=None,
+                    next_run_id=None,
+                    agent_version=AGENT_VERSION,
+                    error="KeyboardInterrupt",
+                    log_level=configured_log_level,
+                    log_level_name=resolved_log_level_name,
+                    log_path=log_path,
+                    base_dir=base_dir,
+                    state_path=state_path,
+                    snapshot_dir=snapshot_dir,
+                    snapshot_retention=snapshot_retention,
+                    snapshots_enabled=snapshots_enabled,
+                    report_path=report_path,
+                    status_path=status_path,
+                    heartbeat_path=heartbeat_path,
+                    loop_enabled=True,
+                    loop_interval_seconds=args.interval,
+                    loop_backoff_seconds=args.backoff,
+                    max_iterations=args.max_iterations,
+                ),
+            )
     elif args.max_iterations:
         logging.info("Ignoring --max-iterations because --loop was not provided.")
     else:
@@ -1739,17 +1838,31 @@ def main() -> None:
                 error=str(exc),
             )
             failure_state.save(state_path, history_limit=history_limit)
-            failure_metadata = {
-                "run_id": failure_run_id,
-                "next_run_id": failure_state.next_run_id,
-                "agent_version": AGENT_VERSION,
-                "error": str(exc),
-            }
             write_heartbeat(
                 heartbeat_path,
                 success=False,
                 message=str(exc),
-                metadata=failure_metadata,
+                metadata=build_failure_heartbeat_metadata(
+                    run_id=failure_run_id,
+                    next_run_id=failure_state.next_run_id,
+                    agent_version=AGENT_VERSION,
+                    error=str(exc),
+                    log_level=configured_log_level,
+                    log_level_name=resolved_log_level_name,
+                    log_path=log_path,
+                    base_dir=base_dir,
+                    state_path=state_path,
+                    snapshot_dir=snapshot_dir,
+                    snapshot_retention=snapshot_retention,
+                    snapshots_enabled=snapshots_enabled,
+                    report_path=report_path,
+                    status_path=status_path,
+                    heartbeat_path=heartbeat_path,
+                    loop_enabled=False,
+                    loop_interval_seconds=args.interval,
+                    loop_backoff_seconds=args.backoff,
+                    max_iterations=args.max_iterations,
+                ),
             )
             failure_payload = render_failure_status(
                 state_path,

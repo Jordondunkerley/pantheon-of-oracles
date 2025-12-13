@@ -34,7 +34,7 @@ PATCH_FILENAMES: Tuple[str, ...] = (
 # Simple semantic marker to stamp artifacts and status payloads with the agent
 # revision. Update whenever the automation gains new capabilities so downstream
 # consumers can reason about the data shape they receive.
-AGENT_VERSION = "0.0.2"
+AGENT_VERSION = "0.0.3"
 
 
 DEFAULT_HISTORY_LIMIT = 20
@@ -226,6 +226,7 @@ class RunRecord:
     timestamp: float
     changed_files: List[str]
     duration_seconds: float | None = None
+    run_id: int | None = None
 
 
 @dataclass
@@ -247,6 +248,8 @@ class RunResult:
     missing_files: List[str]
     history: List[RunRecord]
     run_duration: float | None
+    run_id: int | None
+    next_run_id: int | None
     tracked_files: List[str]
     resolved_patches: Dict[str, Path]
     patch_sources: Dict[str, str]
@@ -270,6 +273,7 @@ class AgentState:
 
     digests: Dict[str, str] = field(default_factory=dict)
     history: List[RunRecord] = field(default_factory=list)
+    next_run_id: int = 1
 
     @classmethod
     def load(cls, path: Path) -> "AgentState":
@@ -284,8 +288,26 @@ class AgentState:
         if isinstance(data, dict) and "digests" not in data:
             return cls(digests=data)
 
-        history = [RunRecord(**entry) for entry in data.get("history", [])]
-        return cls(digests=data.get("digests", {}), history=history)
+        raw_history = data.get("history", [])
+        history: List[RunRecord] = []
+        for index, entry in enumerate(raw_history, start=1):
+            history.append(
+                RunRecord(
+                    timestamp=entry.get("timestamp", 0.0),
+                    changed_files=entry.get("changed_files", []),
+                    duration_seconds=entry.get("duration_seconds"),
+                    run_id=entry.get("run_id") or entry.get("id"),
+                )
+            )
+
+        max_run_id = 0
+        for index, record in enumerate(history, start=1):
+            if record.run_id is None or record.run_id <= 0:
+                record.run_id = index
+            max_run_id = max(max_run_id, record.run_id)
+
+        next_run_id = data.get("next_run_id") or max_run_id + 1
+        return cls(digests=data.get("digests", {}), history=history, next_run_id=next_run_id)
 
     def save(self, path: Path, *, history_limit: int | None = DEFAULT_HISTORY_LIMIT) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -295,6 +317,7 @@ class AgentState:
         payload = {
             "digests": self.digests,
             "history": [vars(entry) for entry in history],
+            "next_run_id": self.next_run_id,
         }
         with path.open("w", encoding="utf-8") as fp:
             json.dump(payload, fp, indent=2)
@@ -308,11 +331,13 @@ class AgentState:
     ) -> None:
         self.history.append(
             RunRecord(
+                run_id=self.next_run_id,
                 timestamp=time.time(),
                 changed_files=changed_files,
                 duration_seconds=duration_seconds,
             )
         )
+        self.next_run_id += 1
 
         if history_limit is not None and len(self.history) > history_limit:
             self.history = self.history[-history_limit:]
@@ -446,6 +471,8 @@ def render_report(
     report_path: Path,
     run_timestamp: float,
     run_duration: float | None,
+    run_id: int | None,
+    next_run_id: int | None,
     log_level_name: str,
     log_level_numeric: int,
     log_path: Path | None,
@@ -483,6 +510,8 @@ def render_report(
         "",
         f"Last run: {readable_time}",
         f"Run duration: {duration_note}",
+        f"Run ID: {run_id}" if run_id is not None else "Run ID: (unknown)",
+        f"Next run ID: {next_run_id}" if next_run_id is not None else "Next run ID: (unknown)",
         "",
         "## Agent",
         "",
@@ -616,6 +645,8 @@ def render_report(
 def build_status_payload(
     run_timestamp: float,
     run_duration: float | None,
+    run_id: int | None,
+    next_run_id: int | None,
     log_level: int | None,
     log_level_name: str | None,
     log_path: Path | None,
@@ -650,6 +681,8 @@ def build_status_payload(
     """Build a machine-readable payload describing the latest agent run."""
 
     return {
+        "run_id": run_id,
+        "next_run_id": next_run_id,
         "run_timestamp": run_timestamp,
         "run_iso": datetime.fromtimestamp(run_timestamp).isoformat(),
         "run_duration_seconds": run_duration,
@@ -697,6 +730,7 @@ def build_status_payload(
         "history_limit": history_limit,
         "history": [
             {
+                "run_id": entry.run_id,
                 "timestamp": entry.timestamp,
                 "iso": datetime.fromtimestamp(entry.timestamp).isoformat(),
                 "changed_files": entry.changed_files,
@@ -711,6 +745,8 @@ def render_status_json(
     status_path: Path,
     run_timestamp: float,
     run_duration: float | None,
+    run_id: int | None,
+    next_run_id: int | None,
     log_level: int | None,
     log_level_name: str | None,
     log_path: Path | None,
@@ -745,6 +781,8 @@ def render_status_json(
     payload = build_status_payload(
         run_timestamp,
         run_duration,
+        run_id,
+        next_run_id,
         log_level,
         log_level_name,
         log_path,
@@ -813,6 +851,8 @@ def render_failure_status(
         status_path,
         now,
         None,
+        None,
+        fallback_state.next_run_id,
         log_level,
         log_level_name,
         log_path,
@@ -870,6 +910,8 @@ def write_github_outputs(payload: Dict[str, object]) -> None:
             fp.write(f"pantheon_report_path={paths.get('report', '')}\n")
             fp.write(f"pantheon_heartbeat_path={paths.get('heartbeat', '')}\n")
             fp.write(f"pantheon_history_limit={payload.get('history_limit', '')}\n")
+            fp.write(f"pantheon_run_id={payload.get('run_id', '')}\n")
+            fp.write(f"pantheon_next_run_id={payload.get('next_run_id', '')}\n")
             fp.write(f"pantheon_run_timestamp={payload.get('run_timestamp', '')}\n")
             fp.write(f"pantheon_run_iso={payload.get('run_iso', '')}\n")
             fp.write(
@@ -918,6 +960,8 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
     return build_status_payload(
         result.timestamp,
         result.run_duration,
+        result.run_id,
+        result.next_run_id,
         result.log_level,
         result.log_level_name,
         result.log_path,
@@ -963,6 +1007,8 @@ def write_github_summary(result: RunResult) -> None:
         "",
         f"Last run: {datetime.fromtimestamp(result.timestamp).isoformat()}",
         f"Run duration: {result.run_duration:.3f} seconds" if result.run_duration is not None else "Run duration: (unknown)",
+        f"Run ID: {result.run_id}" if result.run_id is not None else "Run ID: (unknown)",
+        f"Next run ID: {result.next_run_id}" if result.next_run_id is not None else "Next run ID: (unknown)",
         "",
         "## Agent",
         "",
@@ -1117,10 +1163,14 @@ def run_once(
     run_duration = time.time() - start_time
     state.record_run(changed, run_duration, history_limit=history_limit)
     state.save(state_path, history_limit=history_limit)
+    current_run_id = state.history[-1].run_id
+    next_run_id = state.next_run_id
     render_report(
         report_path,
         state.history[-1].timestamp,
         run_duration,
+        current_run_id,
+        next_run_id,
         log_level_name,
         log_level,
         log_path,
@@ -1152,6 +1202,8 @@ def run_once(
         status_path,
         state.history[-1].timestamp,
         run_duration,
+        current_run_id,
+        next_run_id,
         log_level,
         log_level_name,
         log_path,
@@ -1192,6 +1244,8 @@ def run_once(
         missing_files=missing,
         history=list(state.history),
         run_duration=run_duration,
+        run_id=current_run_id,
+        next_run_id=next_run_id,
         log_level=log_level,
         log_level_name=log_level_name,
         log_path=log_path,
@@ -1595,6 +1649,8 @@ def main() -> None:
             payload = build_status_payload(
                 result.timestamp,
                 result.run_duration,
+                result.run_id,
+                result.next_run_id,
                 result.log_level,
                 result.log_level_name,
                 result.log_path,

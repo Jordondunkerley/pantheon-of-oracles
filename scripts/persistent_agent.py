@@ -34,7 +34,7 @@ PATCH_FILENAMES: Tuple[str, ...] = (
 # Simple semantic marker to stamp artifacts and status payloads with the agent
 # revision. Update whenever the automation gains new capabilities so downstream
 # consumers can reason about the data shape they receive.
-AGENT_VERSION = "0.0.8"
+AGENT_VERSION = "0.0.9"
 
 
 DEFAULT_HISTORY_LIMIT = 20
@@ -236,6 +236,7 @@ class RunRecord:
     run_id: int | None = None
     missing_files: List[str] = field(default_factory=list)
     error: str | None = None
+    change_details: Dict[str, Dict[str, str | None]] = field(default_factory=dict)
 
 
 @dataclass
@@ -256,6 +257,7 @@ class RunResult:
     snapshot_path: Path | None
     pruned_snapshots: List[Path]
     missing_files: List[str]
+    change_details: Dict[str, Dict[str, str | None]]
     history: List[RunRecord]
     run_duration: float | None
     run_id: int | None
@@ -309,6 +311,7 @@ class AgentState:
                     run_id=entry.get("run_id") or entry.get("id"),
                     missing_files=entry.get("missing_files", []),
                     error=entry.get("error"),
+                    change_details=entry.get("change_details", {}),
                 )
             )
 
@@ -342,6 +345,7 @@ class AgentState:
         *,
         history_limit: int | None = DEFAULT_HISTORY_LIMIT,
         error: str | None = None,
+        change_details: Dict[str, Dict[str, str | None]] | None = None,
     ) -> int:
         run_id = self.next_run_id
         self.history.append(
@@ -352,6 +356,7 @@ class AgentState:
                 duration_seconds=duration_seconds,
                 missing_files=missing_files,
                 error=error,
+                change_details=change_details or {},
             )
         )
         self.next_run_id += 1
@@ -384,17 +389,37 @@ def compute_patch_digests(
     return digests, missing
 
 
-def detect_changes(prev: AgentState, current: Dict[str, str]) -> List[str]:
+def detect_changes(
+    prev: AgentState, current: Dict[str, str], missing: List[str] | None = None
+) -> Tuple[List[str], Dict[str, Dict[str, str | None]]]:
     updated: List[str] = []
-    for name, digest in current.items():
-        if prev.digests.get(name) != digest:
-            updated.append(name)
+    details: Dict[str, Dict[str, str | None]] = {}
+    missing_set = set(missing or [])
+    names = set(prev.digests) | set(current) | missing_set
 
-    for name in prev.digests:
-        if name not in current:
-            updated.append(name)
+    for name in names:
+        previous_digest = prev.digests.get(name)
+        current_digest = current.get(name)
+        if previous_digest == current_digest and name not in missing_set:
+            continue
 
-    return updated
+        if name in missing_set:
+            status = "missing"
+        elif previous_digest is None:
+            status = "added"
+        elif current_digest is None:
+            status = "removed"
+        else:
+            status = "modified"
+
+        updated.append(name)
+        details[name] = {
+            "previous_digest": previous_digest,
+            "current_digest": current_digest,
+            "status": status,
+        }
+
+    return updated, details
 
 
 def resolve_under_base(base_dir: Path, path: Path) -> Path:
@@ -512,6 +537,7 @@ def render_report(
     snapshot_path: Path | None,
     pruned_snapshots: List[Path],
     missing_files: List[str],
+    change_details: Dict[str, Dict[str, str | None]],
     tracked_files: List[str],
     resolved_patches: Dict[str, Path],
     patch_sources: Dict[str, str],
@@ -637,6 +663,26 @@ def render_report(
     else:
         lines.append("- None")
 
+    if change_details:
+        lines.extend(
+            [
+                "",
+                "### Change details",
+                "",
+                "| Patch file | Status | Previous digest | Current digest |",
+                "| --- | --- | --- | --- |",
+            ]
+        )
+        for name, meta in sorted(change_details.items()):
+            lines.append(
+                "| {name} | {status} | `{prev}` | `{current}` |".format(
+                    name=name,
+                    status=meta.get("status", "unknown"),
+                    prev=meta.get("previous_digest") or "-",
+                    current=meta.get("current_digest") or "-",
+                )
+            )
+
     lines.append("")
 
     if snapshot_path:
@@ -701,6 +747,7 @@ def build_status_payload(
     log_file_enabled: bool | None,
     digests: Dict[str, str],
     changed_files: List[str],
+    change_details: Dict[str, Dict[str, str | None]],
     snapshot_path: Path | None,
     pruned_snapshots: List[Path],
     missing_files: List[str],
@@ -742,6 +789,7 @@ def build_status_payload(
             "log_path": str(log_path) if log_path else None,
         },
         "changed_files": changed_files,
+        "change_details": change_details,
         "missing_files": missing_files,
         "snapshot_path": str(snapshot_path) if snapshot_path else None,
         "pruned_snapshots": [str(path) for path in pruned_snapshots],
@@ -787,6 +835,7 @@ def build_status_payload(
                 "duration_seconds": entry.duration_seconds,
                 "missing_files": entry.missing_files,
                 "error": entry.error,
+                "change_details": entry.change_details,
             }
             for entry in history
         ],
@@ -805,6 +854,7 @@ def render_status_json(
     log_file_enabled: bool | None,
     digests: Dict[str, str],
     changed_files: List[str],
+    change_details: Dict[str, Dict[str, str | None]],
     snapshot_path: Path | None,
     pruned_snapshots: List[Path],
     missing_files: List[str],
@@ -842,6 +892,7 @@ def render_status_json(
         log_file_enabled,
         digests,
         changed_files,
+        change_details,
         snapshot_path,
         pruned_snapshots,
         missing_files,
@@ -919,6 +970,7 @@ def render_failure_status(
         log_file_enabled,
         fallback_state.digests,
         [],
+        {},
         [],
         snapshot_path=None,
         missing_files=[],
@@ -1028,6 +1080,7 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
         result.log_file_enabled,
         result.digests,
         result.changed_files,
+        result.change_details,
         result.snapshot_path,
         result.pruned_snapshots,
         result.missing_files,
@@ -1173,6 +1226,26 @@ def write_github_summary(result: RunResult) -> None:
     else:
         lines.append("- None")
 
+    if result.change_details:
+        lines.extend(
+            [
+                "",
+                "### Change details",
+                "",
+                "| Patch file | Status | Previous digest | Current digest |",
+                "| --- | --- | --- | --- |",
+            ]
+        )
+        for name, meta in sorted(result.change_details.items()):
+            lines.append(
+                "| {name} | {status} | `{prev}` | `{current}` |".format(
+                    name=name,
+                    status=meta.get("status", "unknown"),
+                    prev=meta.get("previous_digest") or "-",
+                    current=meta.get("current_digest") or "-",
+                )
+            )
+
     lines.extend(["", "## Missing patch files"])
     if result.missing_files:
         lines.append("")
@@ -1236,7 +1309,7 @@ def run_once(
     state = AgentState.load(state_path)
     resolved_patches = resolve_patch_paths(base_dir, patch_files)
     current, missing = compute_patch_digests(resolved_patches)
-    changed = detect_changes(state, current)
+    changed, change_details = detect_changes(state, current, missing)
     for missing_name in missing:
         state.digests.pop(missing_name, None)
     snapshot_path, pruned_snapshots = apply_plan(
@@ -1249,7 +1322,7 @@ def run_once(
     state.digests.update(current)
     run_duration = time.time() - start_time
     current_run_id = state.record_run(
-        changed, run_duration, missing, history_limit=history_limit
+        changed, run_duration, missing, history_limit=history_limit, change_details=change_details
     )
     state.save(state_path, history_limit=history_limit)
     next_run_id = state.next_run_id
@@ -1275,6 +1348,7 @@ def run_once(
         snapshot_path,
         pruned_snapshots,
         missing,
+        change_details,
         patch_files,
         resolved_patches,
         patch_sources,
@@ -1299,6 +1373,7 @@ def run_once(
         log_file_enabled,
         current,
         changed,
+        change_details,
         snapshot_path,
         pruned_snapshots,
         missing,
@@ -1332,6 +1407,7 @@ def run_once(
         snapshot_path=snapshot_path,
         pruned_snapshots=pruned_snapshots,
         missing_files=missing,
+        change_details=change_details,
         history=list(state.history),
         run_duration=run_duration,
         run_id=current_run_id,
@@ -1394,6 +1470,7 @@ def build_heartbeat_metadata(result: RunResult) -> Dict[str, object]:
         "changes_detected": bool(result.changed_files),
         "missing_patches": bool(result.missing_files),
         "missing_files": result.missing_files,
+        "change_details": result.change_details,
         "snapshot_path": result.snapshot_path,
     }
 
@@ -1980,6 +2057,7 @@ def main() -> None:
                 result.log_file_enabled,
                 result.digests,
                 result.changed_files,
+                result.change_details,
                 result.snapshot_path,
                 result.pruned_snapshots,
                 result.missing_files,

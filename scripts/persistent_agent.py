@@ -14,6 +14,7 @@ import hashlib
 import json
 import logging
 import os
+import platform
 import shutil
 import time
 from dataclasses import dataclass, field
@@ -29,6 +30,11 @@ PATCH_FILENAMES: Tuple[str, ...] = (
     "Patches 1-25 – Pantheon of Oracles GPT.JSON",
     "Patches 26-41 – Pantheon of Oracles GPT.JSON",
 )
+
+# Simple semantic marker to stamp artifacts and status payloads with the agent
+# revision. Update whenever the automation gains new capabilities so downstream
+# consumers can reason about the data shape they receive.
+AGENT_VERSION = "0.0.2"
 
 
 def parse_env_patch_files(env_value: str | None) -> List[str]:
@@ -120,6 +126,15 @@ def resolve_patch_paths(base_dir: Path, patch_files: List[str]) -> Dict[str, Pat
         resolved[name] = path if path.is_absolute() else base_dir / path
     return resolved
 
+
+def gather_runtime_info() -> Dict[str, str]:
+    """Capture lightweight runtime metadata for reporting and diagnostics."""
+
+    return {
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+    }
+
 # Default location to store the digest of the last run so we can tell when the
 # patch files change. Paths can be overridden via environment variables to make
 # the agent configurable in CI without CLI arguments.
@@ -196,6 +211,8 @@ class RunResult:
     report_path: Path
     status_path: Path
     heartbeat_path: Path
+    agent_version: str
+    runtime_info: Dict[str, str]
 
 
 @dataclass
@@ -371,6 +388,8 @@ def render_report(
     log_level_name: str,
     log_level_numeric: int,
     log_path: Path | None,
+    agent_version: str,
+    runtime_info: Dict[str, str],
     loop_enabled: bool,
     loop_interval: int | None,
     loop_backoff: int | None,
@@ -402,6 +421,12 @@ def render_report(
         "",
         f"Last run: {readable_time}",
         f"Run duration: {duration_note}",
+        "",
+        "## Agent",
+        "",
+        f"- Version: {agent_version}",
+        f"- Python: {runtime_info.get('python_version', '(unknown)')}",
+        f"- Platform: {runtime_info.get('platform', '(unknown)')}",
         "",
         "## Resolved paths",
         "",
@@ -530,6 +555,8 @@ def build_status_payload(
     loop_interval_seconds: int | None = None,
     loop_backoff_seconds: int | None = None,
     max_iterations: int | None = None,
+    agent_version: str | None = None,
+    runtime_info: Dict[str, str] | None = None,
 ) -> Dict[str, object]:
     """Build a machine-readable payload describing the latest agent run."""
 
@@ -572,6 +599,11 @@ def build_status_payload(
             "heartbeat": str(heartbeat_path) if heartbeat_path else None,
             "log": str(log_path) if log_path else None,
         },
+        "agent": {
+            "version": agent_version,
+            "python": (runtime_info or {}).get("python_version"),
+            "platform": (runtime_info or {}).get("platform"),
+        },
         "history": [
             {
                 "timestamp": entry.timestamp,
@@ -613,6 +645,8 @@ def render_status_json(
     loop_interval_seconds: int | None = None,
     loop_backoff_seconds: int | None = None,
     max_iterations: int | None = None,
+    agent_version: str | None = None,
+    runtime_info: Dict[str, str] | None = None,
 ) -> Dict[str, object]:
     status_path.parent.mkdir(parents=True, exist_ok=True)
     payload = build_status_payload(
@@ -643,6 +677,8 @@ def render_status_json(
         loop_interval_seconds=loop_interval_seconds,
         loop_backoff_seconds=loop_backoff_seconds,
         max_iterations=max_iterations,
+        agent_version=agent_version,
+        runtime_info=runtime_info,
     )
     status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return payload
@@ -669,6 +705,8 @@ def render_failure_status(
     loop_interval_seconds: int | None = None,
     loop_backoff_seconds: int | None = None,
     max_iterations: int | None = None,
+    agent_version: str | None = None,
+    runtime_info: Dict[str, str] | None = None,
 ) -> Dict[str, object]:
     """Persist a status file describing a failed agent iteration."""
 
@@ -703,6 +741,8 @@ def render_failure_status(
         loop_interval_seconds=loop_interval_seconds,
         loop_backoff_seconds=loop_backoff_seconds,
         max_iterations=max_iterations,
+        agent_version=agent_version,
+        runtime_info=runtime_info,
     )
 
 
@@ -718,6 +758,7 @@ def write_github_outputs(payload: Dict[str, object]) -> None:
     missing_files = payload.get("missing_files", []) or []
     paths = payload.get("paths", {}) or {}
     snapshot_path = payload.get("snapshot_path") or ""
+    agent_info = payload.get("agent", {}) or {}
 
     try:
         with open(output_path, "a", encoding="utf-8") as fp:
@@ -750,6 +791,9 @@ def write_github_outputs(payload: Dict[str, object]) -> None:
                 f"pantheon_loop_backoff_seconds={loop_info.get('backoff_seconds', '')}\n"
             )
             fp.write(f"pantheon_loop_max_iterations={loop_info.get('max_iterations', '')}\n")
+            fp.write(f"pantheon_agent_version={agent_info.get('version', '')}\n")
+            fp.write(f"pantheon_python_version={agent_info.get('python', '')}\n")
+            fp.write(f"pantheon_platform={agent_info.get('platform', '')}\n")
 
             delimiter = "PANTHEONEOF"
             fp.write(
@@ -799,6 +843,8 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
         loop_interval_seconds=result.loop_interval,
         loop_backoff_seconds=result.loop_backoff,
         max_iterations=result.max_iterations,
+        agent_version=result.agent_version,
+        runtime_info=result.runtime_info,
     )
 
 
@@ -815,7 +861,13 @@ def write_github_summary(result: RunResult) -> None:
         "",
         f"Last run: {datetime.fromtimestamp(result.timestamp).isoformat()}",
         f"Run duration: {result.run_duration:.3f} seconds" if result.run_duration is not None else "Run duration: (unknown)",
-        "", 
+        "",
+        "## Agent",
+        "",
+        f"- Version: {result.agent_version}",
+        f"- Python: {result.runtime_info.get('python_version', '(unknown)')}",
+        f"- Platform: {result.runtime_info.get('platform', '(unknown)')}",
+        "",
         "## Resolved paths",
         "",
         f"- Base directory: {result.base_dir}",
@@ -911,6 +963,8 @@ def run_once(
     log_level: int,
     log_level_name: str,
     log_path: Path | None,
+    agent_version: str,
+    runtime_info: Dict[str, str],
     loop_enabled: bool,
     loop_interval: int | None,
     loop_backoff: int | None,
@@ -939,6 +993,8 @@ def run_once(
         log_level_name,
         log_level,
         log_path,
+        agent_version,
+        runtime_info,
         loop_enabled,
         loop_interval,
         loop_backoff,
@@ -988,6 +1044,8 @@ def run_once(
         loop_interval_seconds=loop_interval,
         loop_backoff_seconds=loop_backoff,
         max_iterations=max_iterations,
+        agent_version=agent_version,
+        runtime_info=runtime_info,
     )
 
     return RunResult(
@@ -1017,6 +1075,8 @@ def run_once(
         report_path=report_path,
         status_path=status_path,
         heartbeat_path=heartbeat_path,
+        agent_version=agent_version,
+        runtime_info=runtime_info,
     )
 
 
@@ -1187,8 +1247,15 @@ def main() -> None:
         PATCH_FILENAMES, env_patch_files, cli_patch_files
     )
     resolved_patch_paths = resolve_patch_paths(base_dir, patch_files)
+    runtime_info = gather_runtime_info()
 
+    logging.info("Agent version: %s", AGENT_VERSION)
     logging.info("Log level: %s", resolved_log_level_name)
+    logging.info(
+        "Runtime: Python %s on %s",
+        runtime_info.get("python_version"),
+        runtime_info.get("platform"),
+    )
     logging.info(
         "Tracking %s patch file(s): %s",
         len(patch_files),
@@ -1242,6 +1309,8 @@ def main() -> None:
                         configured_log_level,
                         resolved_log_level_name,
                         log_path,
+                        AGENT_VERSION,
+                        runtime_info,
                         True,
                         args.interval,
                         args.backoff,
@@ -1270,6 +1339,8 @@ def main() -> None:
                         loop_interval_seconds=args.interval,
                         loop_backoff_seconds=args.backoff,
                         max_iterations=args.max_iterations,
+                        agent_version=AGENT_VERSION,
+                        runtime_info=runtime_info,
                     )
                     write_github_outputs(failure_payload)
                     time.sleep(max(args.backoff, 1))
@@ -1314,6 +1385,8 @@ def main() -> None:
                 configured_log_level,
                 resolved_log_level_name,
                 log_path,
+                AGENT_VERSION,
+                runtime_info,
                 False,
                 args.interval,
                 args.backoff,
@@ -1342,6 +1415,8 @@ def main() -> None:
                 loop_interval_seconds=args.interval,
                 loop_backoff_seconds=args.backoff,
                 max_iterations=args.max_iterations,
+                agent_version=AGENT_VERSION,
+                runtime_info=runtime_info,
             )
             write_github_outputs(failure_payload)
             raise
@@ -1377,6 +1452,8 @@ def main() -> None:
                 loop_interval_seconds=result.loop_interval,
                 loop_backoff_seconds=result.loop_backoff,
                 max_iterations=result.max_iterations,
+                agent_version=result.agent_version,
+                runtime_info=result.runtime_info,
             )
             print(json.dumps(payload, indent=2))
 

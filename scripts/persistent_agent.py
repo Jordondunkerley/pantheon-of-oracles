@@ -34,7 +34,7 @@ PATCH_FILENAMES: Tuple[str, ...] = (
 # Simple semantic marker to stamp artifacts and status payloads with the agent
 # revision. Update whenever the automation gains new capabilities so downstream
 # consumers can reason about the data shape they receive.
-AGENT_VERSION = "0.0.9"
+AGENT_VERSION = "0.0.10"
 
 
 DEFAULT_HISTORY_LIMIT = 20
@@ -237,6 +237,7 @@ class RunRecord:
     missing_files: List[str] = field(default_factory=list)
     error: str | None = None
     change_details: Dict[str, Dict[str, str | None]] = field(default_factory=dict)
+    change_summary: Dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -258,6 +259,7 @@ class RunResult:
     pruned_snapshots: List[Path]
     missing_files: List[str]
     change_details: Dict[str, Dict[str, str | None]]
+    change_summary: Dict[str, int]
     history: List[RunRecord]
     run_duration: float | None
     run_id: int | None
@@ -312,6 +314,7 @@ class AgentState:
                     missing_files=entry.get("missing_files", []),
                     error=entry.get("error"),
                     change_details=entry.get("change_details", {}),
+                    change_summary=entry.get("change_summary", {}),
                 )
             )
 
@@ -346,6 +349,7 @@ class AgentState:
         history_limit: int | None = DEFAULT_HISTORY_LIMIT,
         error: str | None = None,
         change_details: Dict[str, Dict[str, str | None]] | None = None,
+        change_summary: Dict[str, int] | None = None,
     ) -> int:
         run_id = self.next_run_id
         self.history.append(
@@ -357,6 +361,7 @@ class AgentState:
                 missing_files=missing_files,
                 error=error,
                 change_details=change_details or {},
+                change_summary=change_summary or {},
             )
         )
         self.next_run_id += 1
@@ -420,6 +425,16 @@ def detect_changes(
         }
 
     return updated, details
+
+
+def summarize_change_details(details: Dict[str, Dict[str, str | None]]) -> Dict[str, int]:
+    """Aggregate change counts by status for quick diagnostics."""
+
+    summary: Dict[str, int] = {}
+    for meta in details.values():
+        status = (meta.get("status") or "unknown").lower()
+        summary[status] = summary.get(status, 0) + 1
+    return summary
 
 
 def resolve_under_base(base_dir: Path, path: Path) -> Path:
@@ -748,6 +763,7 @@ def build_status_payload(
     digests: Dict[str, str],
     changed_files: List[str],
     change_details: Dict[str, Dict[str, str | None]],
+    change_summary: Dict[str, int],
     snapshot_path: Path | None,
     pruned_snapshots: List[Path],
     missing_files: List[str],
@@ -790,6 +806,7 @@ def build_status_payload(
         },
         "changed_files": changed_files,
         "change_details": change_details,
+        "change_summary": change_summary,
         "missing_files": missing_files,
         "snapshot_path": str(snapshot_path) if snapshot_path else None,
         "pruned_snapshots": [str(path) for path in pruned_snapshots],
@@ -836,6 +853,7 @@ def build_status_payload(
                 "missing_files": entry.missing_files,
                 "error": entry.error,
                 "change_details": entry.change_details,
+                "change_summary": entry.change_summary,
             }
             for entry in history
         ],
@@ -855,6 +873,7 @@ def render_status_json(
     digests: Dict[str, str],
     changed_files: List[str],
     change_details: Dict[str, Dict[str, str | None]],
+    change_summary: Dict[str, int],
     snapshot_path: Path | None,
     pruned_snapshots: List[Path],
     missing_files: List[str],
@@ -893,6 +912,7 @@ def render_status_json(
         digests,
         changed_files,
         change_details,
+        change_summary,
         snapshot_path,
         pruned_snapshots,
         missing_files,
@@ -936,6 +956,7 @@ def render_failure_status(
     *,
     state: AgentState | None = None,
     failure_run_id: int | None = None,
+    change_summary: Dict[str, int] | None = None,
     base_dir: Path,
     snapshot_dir: Path,
     snapshot_retention: int | None,
@@ -971,6 +992,7 @@ def render_failure_status(
         fallback_state.digests,
         [],
         {},
+        change_summary or {},
         [],
         snapshot_path=None,
         missing_files=[],
@@ -1007,6 +1029,7 @@ def write_github_outputs(payload: Dict[str, object]) -> None:
 
     changed_files = payload.get("changed_files", []) or []
     missing_files = payload.get("missing_files", []) or []
+    change_summary = payload.get("change_summary", {}) or {}
     paths = payload.get("paths", {}) or {}
     snapshot_path = payload.get("snapshot_path") or ""
     agent_info = payload.get("agent", {}) or {}
@@ -1060,6 +1083,9 @@ def write_github_outputs(payload: Dict[str, object]) -> None:
                 f"pantheon_tracked_files<<{delimiter}\n{json.dumps(payload.get('tracked_files', []))}\n{delimiter}\n"
             )
             fp.write(
+                f"pantheon_change_summary<<{delimiter}\n{json.dumps(change_summary)}\n{delimiter}\n"
+            )
+            fp.write(
                 f"pantheon_status_payload<<{delimiter}\n{json.dumps(payload)}\n{delimiter}\n"
             )
     except OSError as exc:  # pragma: no cover - filesystem/environment specific
@@ -1081,6 +1107,7 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
         result.digests,
         result.changed_files,
         result.change_details,
+        result.change_summary,
         result.snapshot_path,
         result.pruned_snapshots,
         result.missing_files,
@@ -1226,6 +1253,11 @@ def write_github_summary(result: RunResult) -> None:
     else:
         lines.append("- None")
 
+    if result.change_summary:
+        lines.extend(["", "### Change summary", ""])
+        for status, count in sorted(result.change_summary.items()):
+            lines.append(f"- {status}: {count}")
+
     if result.change_details:
         lines.extend(
             [
@@ -1310,6 +1342,7 @@ def run_once(
     resolved_patches = resolve_patch_paths(base_dir, patch_files)
     current, missing = compute_patch_digests(resolved_patches)
     changed, change_details = detect_changes(state, current, missing)
+    change_summary = summarize_change_details(change_details)
     for missing_name in missing:
         state.digests.pop(missing_name, None)
     snapshot_path, pruned_snapshots = apply_plan(
@@ -1322,7 +1355,12 @@ def run_once(
     state.digests.update(current)
     run_duration = time.time() - start_time
     current_run_id = state.record_run(
-        changed, run_duration, missing, history_limit=history_limit, change_details=change_details
+        changed,
+        run_duration,
+        missing,
+        history_limit=history_limit,
+        change_details=change_details,
+        change_summary=change_summary,
     )
     state.save(state_path, history_limit=history_limit)
     next_run_id = state.next_run_id
@@ -1374,6 +1412,7 @@ def run_once(
         current,
         changed,
         change_details,
+        change_summary,
         snapshot_path,
         pruned_snapshots,
         missing,
@@ -1408,6 +1447,7 @@ def run_once(
         pruned_snapshots=pruned_snapshots,
         missing_files=missing,
         change_details=change_details,
+        change_summary=change_summary,
         history=list(state.history),
         run_duration=run_duration,
         run_id=current_run_id,
@@ -1471,6 +1511,7 @@ def build_heartbeat_metadata(result: RunResult) -> Dict[str, object]:
         "missing_patches": bool(result.missing_files),
         "missing_files": result.missing_files,
         "change_details": result.change_details,
+        "change_summary": result.change_summary,
         "snapshot_path": result.snapshot_path,
     }
 
@@ -1497,6 +1538,7 @@ def build_failure_heartbeat_metadata(
     loop_interval_seconds: int | None,
     loop_backoff_seconds: int | None,
     max_iterations: int | None,
+    change_summary: Dict[str, int] | None = None,
 ) -> Dict[str, object]:
     """Consistent heartbeat metadata for failure cases."""
 
@@ -1522,6 +1564,7 @@ def build_failure_heartbeat_metadata(
         "loop_backoff_seconds": loop_backoff_seconds,
         "max_iterations": max_iterations,
         "recorded_at": datetime.utcnow().isoformat(),
+        "change_summary": change_summary or {},
     }
 
 
@@ -1856,6 +1899,7 @@ def main() -> None:
                             loop_interval_seconds=args.interval,
                             loop_backoff_seconds=args.backoff,
                             max_iterations=args.max_iterations,
+                            change_summary={},
                         ),
                     )
                     failure_payload = render_failure_status(
@@ -1939,6 +1983,7 @@ def main() -> None:
                     loop_interval_seconds=args.interval,
                     loop_backoff_seconds=args.backoff,
                     max_iterations=args.max_iterations,
+                    change_summary={},
                 ),
             )
     elif args.max_iterations:
@@ -2005,6 +2050,7 @@ def main() -> None:
                     loop_interval_seconds=args.interval,
                     loop_backoff_seconds=args.backoff,
                     max_iterations=args.max_iterations,
+                    change_summary={},
                 ),
             )
             failure_payload = render_failure_status(

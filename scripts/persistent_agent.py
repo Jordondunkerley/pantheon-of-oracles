@@ -135,6 +135,27 @@ def gather_runtime_info() -> Dict[str, str]:
         "platform": platform.platform(),
     }
 
+
+def gather_ci_metadata() -> Dict[str, str]:
+    """Collect CI metadata (when available) for richer diagnostics."""
+
+    keys = {
+        "GITHUB_RUN_ID": "github_run_id",
+        "GITHUB_RUN_NUMBER": "github_run_number",
+        "GITHUB_WORKFLOW": "github_workflow",
+        "GITHUB_JOB": "github_job",
+        "GITHUB_REF": "github_ref",
+        "GITHUB_SHA": "github_sha",
+        "GITHUB_REPOSITORY": "github_repository",
+    }
+
+    metadata: Dict[str, str] = {}
+    for env_key, meta_key in keys.items():
+        value = os.getenv(env_key)
+        if value:
+            metadata[meta_key] = value
+    return metadata
+
 # Default location to store the digest of the last run so we can tell when the
 # patch files change. Paths can be overridden via environment variables to make
 # the agent configurable in CI without CLI arguments.
@@ -213,6 +234,7 @@ class RunResult:
     heartbeat_path: Path
     agent_version: str
     runtime_info: Dict[str, str]
+    ci_metadata: Dict[str, str]
 
 
 @dataclass
@@ -409,6 +431,7 @@ def render_report(
     snapshots_enabled: bool,
     status_path: Path,
     heartbeat_path: Path,
+    ci_metadata: Dict[str, str],
 ) -> None:
     """Write a human-readable summary of the latest agent execution."""
 
@@ -428,35 +451,47 @@ def render_report(
         f"- Python: {runtime_info.get('python_version', '(unknown)')}",
         f"- Platform: {runtime_info.get('platform', '(unknown)')}",
         "",
-        "## Resolved paths",
-        "",
-        f"- Base directory: {base_dir}",
-        f"- State file: {state_path}",
-        f"- Snapshot directory: {snapshot_dir}",
-        f"- Report path: {report_path}",
-        f"- Status JSON path: {status_path}",
-        f"- Heartbeat path: {heartbeat_path}",
-        "",
-        "## Logging",
-        "",
-        f"- Log level: {log_level_name} ({log_level_numeric})",
-        f"- Log file: {log_path}" if log_path else "- Log file: (none configured)",
-        "",
-        "## Loop configuration",
-        "",
-        f"- Loop mode: {'enabled' if loop_enabled else 'disabled'}",
-        f"- Loop interval: {loop_interval} second(s)" if loop_interval is not None else "- Loop interval: (not set)",
-        f"- Loop backoff: {loop_backoff} second(s)" if loop_backoff is not None else "- Loop backoff: (not set)",
-        (
-            f"- Max iterations: {max_iterations}"
-            if max_iterations is not None
-            else "- Max iterations: unlimited"
-        ),
-        "",
-        "## Snapshot settings",
-        "",
-        f"- Snapshots enabled: {'yes' if snapshots_enabled else 'no'}",
+        "## CI metadata",
     ]
+
+    if ci_metadata:
+        lines.extend(f"- {key}: {value}" for key, value in sorted(ci_metadata.items()))
+    else:
+        lines.append("- (none detected)")
+
+    lines.extend(
+        [
+            "",
+            "## Resolved paths",
+            "",
+            f"- Base directory: {base_dir}",
+            f"- State file: {state_path}",
+            f"- Snapshot directory: {snapshot_dir}",
+            f"- Report path: {report_path}",
+            f"- Status JSON path: {status_path}",
+            f"- Heartbeat path: {heartbeat_path}",
+            "",
+            "## Logging",
+            "",
+            f"- Log level: {log_level_name} ({log_level_numeric})",
+            f"- Log file: {log_path}" if log_path else "- Log file: (none configured)",
+            "",
+            "## Loop configuration",
+            "",
+            f"- Loop mode: {'enabled' if loop_enabled else 'disabled'}",
+            f"- Loop interval: {loop_interval} second(s)" if loop_interval is not None else "- Loop interval: (not set)",
+            f"- Loop backoff: {loop_backoff} second(s)" if loop_backoff is not None else "- Loop backoff: (not set)",
+            (
+                f"- Max iterations: {max_iterations}"
+                if max_iterations is not None
+                else "- Max iterations: unlimited"
+            ),
+            "",
+            "## Snapshot settings",
+            "",
+            f"- Snapshots enabled: {'yes' if snapshots_enabled else 'no'}",
+        ]
+    )
 
     if snapshot_retention is None:
         lines.append("- Snapshot retention: unlimited")
@@ -557,6 +592,7 @@ def build_status_payload(
     max_iterations: int | None = None,
     agent_version: str | None = None,
     runtime_info: Dict[str, str] | None = None,
+    ci_metadata: Dict[str, str] | None = None,
 ) -> Dict[str, object]:
     """Build a machine-readable payload describing the latest agent run."""
 
@@ -604,6 +640,7 @@ def build_status_payload(
             "python": (runtime_info or {}).get("python_version"),
             "platform": (runtime_info or {}).get("platform"),
         },
+        "ci": ci_metadata or {},
         "history": [
             {
                 "timestamp": entry.timestamp,
@@ -647,6 +684,7 @@ def render_status_json(
     max_iterations: int | None = None,
     agent_version: str | None = None,
     runtime_info: Dict[str, str] | None = None,
+    ci_metadata: Dict[str, str] | None = None,
 ) -> Dict[str, object]:
     status_path.parent.mkdir(parents=True, exist_ok=True)
     payload = build_status_payload(
@@ -679,6 +717,7 @@ def render_status_json(
         max_iterations=max_iterations,
         agent_version=agent_version,
         runtime_info=runtime_info,
+        ci_metadata=ci_metadata,
     )
     status_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return payload
@@ -707,6 +746,7 @@ def render_failure_status(
     max_iterations: int | None = None,
     agent_version: str | None = None,
     runtime_info: Dict[str, str] | None = None,
+    ci_metadata: Dict[str, str] | None = None,
 ) -> Dict[str, object]:
     """Persist a status file describing a failed agent iteration."""
 
@@ -743,6 +783,7 @@ def render_failure_status(
         max_iterations=max_iterations,
         agent_version=agent_version,
         runtime_info=runtime_info,
+        ci_metadata=ci_metadata,
     )
 
 
@@ -845,6 +886,7 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
         max_iterations=result.max_iterations,
         agent_version=result.agent_version,
         runtime_info=result.runtime_info,
+        ci_metadata=result.ci_metadata,
     )
 
 
@@ -868,35 +910,49 @@ def write_github_summary(result: RunResult) -> None:
         f"- Python: {result.runtime_info.get('python_version', '(unknown)')}",
         f"- Platform: {result.runtime_info.get('platform', '(unknown)')}",
         "",
-        "## Resolved paths",
-        "",
-        f"- Base directory: {result.base_dir}",
-        f"- State file: {result.state_path}",
-        f"- Snapshot directory: {result.snapshot_dir}",
-        f"- Report path: {result.report_path}",
-        f"- Status JSON path: {result.status_path}",
-        f"- Heartbeat path: {result.heartbeat_path}",
-        "",
-        "## Logging",
-        "",
-        f"- Log level: {result.log_level_name} ({result.log_level})",
-        f"- Log file: {result.log_path}" if result.log_path else "- Log file: (none configured)",
-        "",
-        "## Loop configuration",
-        "",
-        f"- Loop mode: {'enabled' if result.loop_enabled else 'disabled'}",
-        f"- Loop interval: {result.loop_interval} second(s)" if result.loop_interval is not None else "- Loop interval: (not set)",
-        f"- Loop backoff: {result.loop_backoff} second(s)" if result.loop_backoff is not None else "- Loop backoff: (not set)",
-        (
-            f"- Max iterations: {result.max_iterations}"
-            if result.max_iterations is not None
-            else "- Max iterations: unlimited"
-        ),
-        "",
-        "## Snapshot settings",
-        "",
-        f"- Snapshots enabled: {'yes' if result.snapshots_enabled else 'no'}",
+        "## CI metadata",
     ]
+
+    if result.ci_metadata:
+        lines.extend(
+            f"- {key}: {value}" for key, value in sorted(result.ci_metadata.items())
+        )
+    else:
+        lines.append("- (none detected)")
+
+    lines.extend(
+        [
+            "",
+            "## Resolved paths",
+            "",
+            f"- Base directory: {result.base_dir}",
+            f"- State file: {result.state_path}",
+            f"- Snapshot directory: {result.snapshot_dir}",
+            f"- Report path: {result.report_path}",
+            f"- Status JSON path: {result.status_path}",
+            f"- Heartbeat path: {result.heartbeat_path}",
+            "",
+            "## Logging",
+            "",
+            f"- Log level: {result.log_level_name} ({result.log_level})",
+            f"- Log file: {result.log_path}" if result.log_path else "- Log file: (none configured)",
+            "",
+            "## Loop configuration",
+            "",
+            f"- Loop mode: {'enabled' if result.loop_enabled else 'disabled'}",
+            f"- Loop interval: {result.loop_interval} second(s)" if result.loop_interval is not None else "- Loop interval: (not set)",
+            f"- Loop backoff: {result.loop_backoff} second(s)" if result.loop_backoff is not None else "- Loop backoff: (not set)",
+            (
+                f"- Max iterations: {result.max_iterations}"
+                if result.max_iterations is not None
+                else "- Max iterations: unlimited"
+            ),
+            "",
+            "## Snapshot settings",
+            "",
+            f"- Snapshots enabled: {'yes' if result.snapshots_enabled else 'no'}",
+        ]
+    )
 
     if result.snapshot_retention is None:
         lines.append("- Snapshot retention: unlimited")
@@ -965,6 +1021,7 @@ def run_once(
     log_path: Path | None,
     agent_version: str,
     runtime_info: Dict[str, str],
+    ci_metadata: Dict[str, str],
     loop_enabled: bool,
     loop_interval: int | None,
     loop_backoff: int | None,
@@ -1014,6 +1071,7 @@ def run_once(
         snapshots_enabled,
         status_path,
         heartbeat_path,
+        ci_metadata,
     )
     render_status_json(
         status_path,
@@ -1046,6 +1104,7 @@ def run_once(
         max_iterations=max_iterations,
         agent_version=agent_version,
         runtime_info=runtime_info,
+        ci_metadata=ci_metadata,
     )
 
     return RunResult(
@@ -1077,6 +1136,7 @@ def run_once(
         heartbeat_path=heartbeat_path,
         agent_version=agent_version,
         runtime_info=runtime_info,
+        ci_metadata=ci_metadata,
     )
 
 
@@ -1248,6 +1308,7 @@ def main() -> None:
     )
     resolved_patch_paths = resolve_patch_paths(base_dir, patch_files)
     runtime_info = gather_runtime_info()
+    ci_metadata = gather_ci_metadata()
 
     logging.info("Agent version: %s", AGENT_VERSION)
     logging.info("Log level: %s", resolved_log_level_name)
@@ -1256,6 +1317,12 @@ def main() -> None:
         runtime_info.get("python_version"),
         runtime_info.get("platform"),
     )
+    if ci_metadata:
+        logging.info("CI metadata detected:")
+        for key, value in sorted(ci_metadata.items()):
+            logging.info("- %s: %s", key, value)
+    else:
+        logging.info("CI metadata: (none detected)")
     logging.info(
         "Tracking %s patch file(s): %s",
         len(patch_files),
@@ -1311,6 +1378,7 @@ def main() -> None:
                         log_path,
                         AGENT_VERSION,
                         runtime_info,
+                        ci_metadata,
                         True,
                         args.interval,
                         args.backoff,
@@ -1341,6 +1409,7 @@ def main() -> None:
                         max_iterations=args.max_iterations,
                         agent_version=AGENT_VERSION,
                         runtime_info=runtime_info,
+                        ci_metadata=ci_metadata,
                     )
                     write_github_outputs(failure_payload)
                     time.sleep(max(args.backoff, 1))
@@ -1387,6 +1456,7 @@ def main() -> None:
                 log_path,
                 AGENT_VERSION,
                 runtime_info,
+                ci_metadata,
                 False,
                 args.interval,
                 args.backoff,
@@ -1417,6 +1487,7 @@ def main() -> None:
                 max_iterations=args.max_iterations,
                 agent_version=AGENT_VERSION,
                 runtime_info=runtime_info,
+                ci_metadata=ci_metadata,
             )
             write_github_outputs(failure_payload)
             raise
@@ -1454,6 +1525,7 @@ def main() -> None:
                 max_iterations=result.max_iterations,
                 agent_version=result.agent_version,
                 runtime_info=result.runtime_info,
+                ci_metadata=result.ci_metadata,
             )
             print(json.dumps(payload, indent=2))
 

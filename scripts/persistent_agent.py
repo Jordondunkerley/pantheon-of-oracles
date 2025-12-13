@@ -37,6 +37,9 @@ PATCH_FILENAMES: Tuple[str, ...] = (
 AGENT_VERSION = "0.0.2"
 
 
+DEFAULT_HISTORY_LIMIT = 20
+
+
 def parse_env_patch_files(env_value: str | None) -> List[str]:
     """Return any patch files defined in the PANTHEON_PATCH_FILES env var."""
 
@@ -117,6 +120,24 @@ def parse_snapshot_retention(value: str | None) -> int | None:
     return parsed
 
 
+def parse_history_limit(value: str | None, default: int | None = DEFAULT_HISTORY_LIMIT) -> int | None:
+    """Parse a history limit value from environment strings."""
+
+    if value is None or value == "":
+        return default
+
+    try:
+        parsed = int(value)
+    except ValueError:
+        logging.warning("Ignoring invalid history limit value: %s", value)
+        return default
+
+    if parsed <= 0:
+        return None
+
+    return parsed
+
+
 def resolve_patch_paths(base_dir: Path, patch_files: List[str]) -> Dict[str, Path]:
     """Resolve configured patch files relative to the provided base directory."""
 
@@ -173,6 +194,11 @@ HEARTBEAT_PATH = Path(
     os.getenv("PANTHEON_AGENT_HEARTBEAT_PATH", "state/persistent_agent_heartbeat.txt")
 )
 LOG_PATH = Path(os.getenv("PANTHEON_AGENT_LOG_PATH", "state/persistent_agent.log"))
+
+# History retention can be tuned via environment variable or CLI flag. Defaults
+# to keeping the latest 20 runs; set to 0 or a negative number for unlimited
+# retention.
+HISTORY_LIMIT_ENV = os.getenv("PANTHEON_AGENT_HISTORY_LIMIT")
 
 # Snapshot behavior can be tuned via CLI flags or environment variables. Retention
 # defaults to unlimited (``None``) but can be limited to the newest ``N``
@@ -235,6 +261,7 @@ class RunResult:
     agent_version: str
     runtime_info: Dict[str, str]
     ci_metadata: Dict[str, str]
+    history_limit: int | None
 
 
 @dataclass
@@ -260,16 +287,25 @@ class AgentState:
         history = [RunRecord(**entry) for entry in data.get("history", [])]
         return cls(digests=data.get("digests", {}), history=history)
 
-    def save(self, path: Path) -> None:
+    def save(self, path: Path, *, history_limit: int | None = DEFAULT_HISTORY_LIMIT) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
+        history = list(self.history)
+        if history_limit is not None:
+            history = history[-history_limit:]
         payload = {
             "digests": self.digests,
-            "history": [vars(entry) for entry in self.history[-20:]],
+            "history": [vars(entry) for entry in history],
         }
         with path.open("w", encoding="utf-8") as fp:
             json.dump(payload, fp, indent=2)
 
-    def record_run(self, changed_files: List[str], duration_seconds: float | None) -> None:
+    def record_run(
+        self,
+        changed_files: List[str],
+        duration_seconds: float | None,
+        *,
+        history_limit: int | None = DEFAULT_HISTORY_LIMIT,
+    ) -> None:
         self.history.append(
             RunRecord(
                 timestamp=time.time(),
@@ -277,6 +313,9 @@ class AgentState:
                 duration_seconds=duration_seconds,
             )
         )
+
+        if history_limit is not None and len(self.history) > history_limit:
+            self.history = self.history[-history_limit:]
 
 
 def hash_file(path: Path) -> str:
@@ -476,6 +515,19 @@ def render_report(
             f"- Log level: {log_level_name} ({log_level_numeric})",
             f"- Log file: {log_path}" if log_path else "- Log file: (none configured)",
             "",
+            "## State history",
+            "",
+        ]
+    )
+
+    if history_limit is None:
+        lines.append("- History retention: unlimited")
+    else:
+        lines.append(f"- History retention: newest {history_limit} run(s)")
+
+    lines.extend(
+        [
+            "",
             "## Loop configuration",
             "",
             f"- Loop mode: {'enabled' if loop_enabled else 'disabled'}",
@@ -573,6 +625,7 @@ def build_status_payload(
     pruned_snapshots: List[Path],
     missing_files: List[str],
     history: List[RunRecord],
+    history_limit: int | None,
     error: str | None = None,
     tracked_files: List[str] | None = None,
     resolved_patches: Dict[str, Path] | None = None,
@@ -641,6 +694,7 @@ def build_status_payload(
             "platform": (runtime_info or {}).get("platform"),
         },
         "ci": ci_metadata or {},
+        "history_limit": history_limit,
         "history": [
             {
                 "timestamp": entry.timestamp,
@@ -666,6 +720,7 @@ def render_status_json(
     pruned_snapshots: List[Path],
     missing_files: List[str],
     history: List[RunRecord],
+    history_limit: int | None,
     error: str | None = None,
     tracked_files: List[str] | None = None,
     resolved_patches: Dict[str, Path] | None = None,
@@ -699,6 +754,7 @@ def render_status_json(
         pruned_snapshots,
         missing_files,
         history,
+        history_limit,
         error,
         tracked_files,
         resolved_patches,
@@ -740,6 +796,7 @@ def render_failure_status(
     snapshots_enabled: bool,
     report_path: Path,
     heartbeat_path: Path,
+    history_limit: int | None,
     loop_enabled: bool | None = None,
     loop_interval_seconds: int | None = None,
     loop_backoff_seconds: int | None = None,
@@ -765,6 +822,7 @@ def render_failure_status(
         snapshot_path=None,
         missing_files=[],
         history=fallback_state.history,
+        history_limit=history_limit,
         error=error,
         tracked_files=tracked_files,
         resolved_patches=resolved_patches,
@@ -811,6 +869,7 @@ def write_github_outputs(payload: Dict[str, object]) -> None:
             fp.write(f"pantheon_status_path={paths.get('status', '')}\n")
             fp.write(f"pantheon_report_path={paths.get('report', '')}\n")
             fp.write(f"pantheon_heartbeat_path={paths.get('heartbeat', '')}\n")
+            fp.write(f"pantheon_history_limit={payload.get('history_limit', '')}\n")
             fp.write(f"pantheon_run_timestamp={payload.get('run_timestamp', '')}\n")
             fp.write(f"pantheon_run_iso={payload.get('run_iso', '')}\n")
             fp.write(
@@ -868,6 +927,7 @@ def build_payload_from_result(result: RunResult) -> Dict[str, object]:
         result.pruned_snapshots,
         result.missing_files,
         result.history,
+        result.history_limit,
         None,
         result.tracked_files,
         result.resolved_patches,
@@ -936,6 +996,19 @@ def write_github_summary(result: RunResult) -> None:
             "",
             f"- Log level: {result.log_level_name} ({result.log_level})",
             f"- Log file: {result.log_path}" if result.log_path else "- Log file: (none configured)",
+            "",
+            "## State history",
+            "",
+        ]
+    )
+
+    if result.history_limit is None:
+        lines.append("- History retention: unlimited")
+    else:
+        lines.append(f"- History retention: newest {result.history_limit} run(s)")
+
+    lines.extend(
+        [
             "",
             "## Loop configuration",
             "",
@@ -1022,6 +1095,7 @@ def run_once(
     agent_version: str,
     runtime_info: Dict[str, str],
     ci_metadata: Dict[str, str],
+    history_limit: int | None,
     loop_enabled: bool,
     loop_interval: int | None,
     loop_backoff: int | None,
@@ -1041,8 +1115,8 @@ def run_once(
     )
     state.digests.update(current)
     run_duration = time.time() - start_time
-    state.record_run(changed, run_duration)
-    state.save(state_path)
+    state.record_run(changed, run_duration, history_limit=history_limit)
+    state.save(state_path, history_limit=history_limit)
     render_report(
         report_path,
         state.history[-1].timestamp,
@@ -1052,6 +1126,7 @@ def run_once(
         log_path,
         agent_version,
         runtime_info,
+        history_limit,
         loop_enabled,
         loop_interval,
         loop_backoff,
@@ -1086,6 +1161,7 @@ def run_once(
         pruned_snapshots,
         missing,
         state.history,
+        history_limit,
         error=None,
         tracked_files=patch_files,
         resolved_patches=resolved_patches,
@@ -1137,6 +1213,7 @@ def run_once(
         agent_version=agent_version,
         runtime_info=runtime_info,
         ci_metadata=ci_metadata,
+        history_limit=history_limit,
     )
 
 
@@ -1274,6 +1351,15 @@ def parse_args() -> argparse.Namespace:
             "PANTHEON_AGENT_LOG_LEVEL is set."
         ),
     )
+    parser.add_argument(
+        "--history-limit",
+        type=int,
+        default=parse_history_limit(HISTORY_LIMIT_ENV),
+        help=(
+            "Number of recent runs to retain in the persisted state file. "
+            "Defaults to 20; set to 0 or a negative value for unlimited history."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1303,6 +1389,9 @@ def main() -> None:
     heartbeat_path = resolve_under_base(base_dir, args.heartbeat)
     env_patch_files = parse_env_patch_files(os.getenv("PANTHEON_PATCH_FILES"))
     cli_patch_files = args.patch_files or []
+    history_limit = args.history_limit
+    if history_limit is not None and history_limit <= 0:
+        history_limit = None
     patch_files, patch_sources = merge_patch_sources(
         PATCH_FILENAMES, env_patch_files, cli_patch_files
     )
@@ -1312,6 +1401,10 @@ def main() -> None:
 
     logging.info("Agent version: %s", AGENT_VERSION)
     logging.info("Log level: %s", resolved_log_level_name)
+    if history_limit is None:
+        logging.info("History retention: unlimited")
+    else:
+        logging.info("History retention: newest %s run(s)", history_limit)
     logging.info(
         "Runtime: Python %s on %s",
         runtime_info.get("python_version"),
@@ -1379,6 +1472,7 @@ def main() -> None:
                         AGENT_VERSION,
                         runtime_info,
                         ci_metadata,
+                        history_limit,
                         True,
                         args.interval,
                         args.backoff,
@@ -1403,6 +1497,7 @@ def main() -> None:
                         snapshots_enabled=snapshots_enabled,
                         report_path=report_path,
                         heartbeat_path=heartbeat_path,
+                        history_limit=history_limit,
                         loop_enabled=True,
                         loop_interval_seconds=args.interval,
                         loop_backoff_seconds=args.backoff,
@@ -1457,6 +1552,7 @@ def main() -> None:
                 AGENT_VERSION,
                 runtime_info,
                 ci_metadata,
+                history_limit,
                 False,
                 args.interval,
                 args.backoff,
@@ -1481,6 +1577,7 @@ def main() -> None:
                 snapshots_enabled=snapshots_enabled,
                 report_path=report_path,
                 heartbeat_path=heartbeat_path,
+                history_limit=history_limit,
                 loop_enabled=False,
                 loop_interval_seconds=args.interval,
                 loop_backoff_seconds=args.backoff,
@@ -1507,7 +1604,7 @@ def main() -> None:
                 result.pruned_snapshots,
                 result.missing_files,
                 result.history,
-                None,
+                result.history_limit,
                 result.tracked_files,
                 result.resolved_patches,
                 result.patch_sources,

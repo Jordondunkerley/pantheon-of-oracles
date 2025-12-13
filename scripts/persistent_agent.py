@@ -34,7 +34,7 @@ PATCH_FILENAMES: Tuple[str, ...] = (
 # Simple semantic marker to stamp artifacts and status payloads with the agent
 # revision. Update whenever the automation gains new capabilities so downstream
 # consumers can reason about the data shape they receive.
-AGENT_VERSION = "0.0.7"
+AGENT_VERSION = "0.0.8"
 
 
 DEFAULT_HISTORY_LIMIT = 20
@@ -389,6 +389,11 @@ def detect_changes(prev: AgentState, current: Dict[str, str]) -> List[str]:
     for name, digest in current.items():
         if prev.digests.get(name) != digest:
             updated.append(name)
+
+    for name in prev.digests:
+        if name not in current:
+            updated.append(name)
+
     return updated
 
 
@@ -1232,6 +1237,8 @@ def run_once(
     resolved_patches = resolve_patch_paths(base_dir, patch_files)
     current, missing = compute_patch_digests(resolved_patches)
     changed = detect_changes(state, current)
+    for missing_name in missing:
+        state.digests.pop(missing_name, None)
     snapshot_path, pruned_snapshots = apply_plan(
         resolved_patches,
         snapshot_dir,

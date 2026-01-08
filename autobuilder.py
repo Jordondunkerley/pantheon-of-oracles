@@ -25,6 +25,12 @@ import os
 import re
 from typing import List, Dict
 
+try:
+    import openai  # type: ignore
+except ImportError:
+    # openai is optional and only required for code generation
+    openai = None  # type: ignore
+
 
 def find_patch_file(default: str = 'Patches 1-50 – Pantheon of Oracles GPT.JSON') -> str:
     """Return a patch file path if the default exists, otherwise search for a similar name."""
@@ -69,18 +75,69 @@ def parse_patches(file_path: str) -> List[Dict[str, object]]:
     return tasks
 
 
+def generate_code_for_task(task: Dict[str, object], model: str = 'gpt-4', temperature: float = 0.3) -> str:
+    """
+    Generate Python code for a given task using OpenAI's ChatCompletion API.
+
+    This function constructs a prompt that describes the feature and its
+    purpose, then sends it to the specified OpenAI model. The response
+    content (assumed to be code) is returned as a string.
+
+    Note: This requires the ``openai`` package and an API key set in the
+    ``OPENAI_API_KEY`` environment variable. If the key is not set or the
+    package is unavailable, a ``RuntimeError`` is raised.
+    """
+    if openai is None:
+        raise RuntimeError("The openai package is not installed. Install it to generate code.")
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        raise RuntimeError('OPENAI_API_KEY environment variable not set.')
+    openai.api_key = api_key
+    prompt = (
+        f"Generate Python code to implement the feature '{task['feature']}' "
+        f"for the Pantheon of Oracles project. Description: {task['description']}. "
+        "Provide only the code without explanations."
+    )
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=800,
+        temperature=temperature,
+    )
+    # Extract the generated code from the first choice
+    return response.choices[0].message['content']
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description='Extract tasks from Pantheon of Oracles patch document.')
     parser.add_argument('--patch_file', default=None,
                         help='Path to the patch document (default: search for a file starting with "Patches 1-50").')
     parser.add_argument('--output', default='tasks.json',
                         help='Output path for the generated tasks JSON file (default: tasks.json).')
+    parser.add_argument('--generate-code', action='store_true',
+                        help='If set, generate code scaffolds for each extracted task using the OpenAI API.')
     args = parser.parse_args()
     patch_file = args.patch_file or find_patch_file()
     tasks = parse_patches(patch_file)
     with open(args.output, 'w', encoding='utf-8') as f:
         json.dump(tasks, f, indent=2, ensure_ascii=False)
     print(f'Extracted {len(tasks)} tasks from {patch_file} and wrote them to {args.output}')
+
+    # Optionally generate code for each task
+    if args.generate_code:
+        os.makedirs('generated_code', exist_ok=True)
+        for task in tasks:
+            # Create a safe filename based on patch and feature name
+            feat_name = str(task['feature']).replace(' ', '_').replace('/', '_').replace(':', '_')
+            file_name = f"patch{task['patch']}_{feat_name}.py"
+            try:
+                code = generate_code_for_task(task)
+            except Exception as e:
+                print(f"Failed to generate code for {task['feature']}: {e}")
+                continue
+            with open(os.path.join('generated_code', file_name), 'w', encoding='utf-8') as cf:
+                cf.write(code)
+            print(f"Generated code for patch {task['patch']} feature '{task['feature']}' -> {file_name}")
 
 
 if __name__ == '__main__':

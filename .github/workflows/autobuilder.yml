@@ -1,0 +1,31 @@
+name: Autobuilder
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 * * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openai
+      - name: Run autobuilder
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python autobuilder.py --patch_file 'Patches 1-50 – Pantheon of Oracles GPT.JSON' --output tasks.json --generate-code
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add generated_code tasks.json
+          if git diff --cached --quiet; then echo 'No changes to commit.'; else git commit -m 'Automated: Update generated tasks and code' && git push; fi

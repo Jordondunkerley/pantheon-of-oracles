@@ -64,7 +64,7 @@ def parse_patches(file_path: str) -> List[Dict[str, object]]:
             continue
         for line in content.splitlines():
             # Match lines that look like: "key": "value",
-            m = re.match(r'\s*"([^\"]+)"\s*:\s*"([^\"]*)"', line)
+            m = re.match(r'\s*"([^"]+)"\s*:\s*"([^"]*)"', line)
             if m:
                 feature_name, description = m.groups()
                 tasks.append({
@@ -108,6 +108,33 @@ def generate_code_for_task(task: Dict[str, object], model: str = 'gpt-4', temper
     return response.choices[0].message['content']
 
 
+def generate_code_stub(task: Dict[str, object]) -> str:
+    """
+    Generate a minimal Python stub for a given task when OpenAI code generation is unavailable.
+
+    This function sanitizes the feature name to create a valid Python function name, includes
+    metadata about the patch and description, and returns a simple function definition
+    with a TODO note. It avoids reliance on external services and ensures that every
+    task produces at least a placeholder file in the generated_code directory.
+    """
+    patch = task.get('patch')
+    feature = task.get('feature', '')
+    description = str(task.get('description', '')).strip()
+    import re as _re
+    func_name = _re.sub(r'[^0-9a-zA-Z_]+', '_', str(feature).strip()).lower()
+    stub_lines = [
+        f"# Auto-generated stub for {feature}",
+        f"# Patch: {patch}",
+        f"# Description: {description}",
+        "",
+        f"def {func_name}():",
+        f"    \"\"\"TODO: implement {feature}\"\"\"",
+        f"    pass",
+        "",
+    ]
+    return "\n".join(stub_lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description='Extract tasks from Pantheon of Oracles patch document.')
     parser.add_argument('--patch_file', default=None,
@@ -131,10 +158,13 @@ def main() -> None:
             feat_name = str(task['feature']).replace(' ', '_').replace('/', '_').replace(':', '_')
             file_name = f"patch{task['patch']}_{feat_name}.py"
             try:
+                # Attempt to generate code using OpenAI if available
                 code = generate_code_for_task(task)
             except Exception as e:
-                print(f"Failed to generate code for {task['feature']}: {e}")
-                continue
+                # Fall back to a simple stub if code generation fails
+                print(f"Failed to generate code for {task['feature']}: {e}, generating stub instead.")
+                code = generate_code_stub(task)
+            # Write the generated or stub code to the appropriate file
             with open(os.path.join('generated_code', file_name), 'w', encoding='utf-8') as cf:
                 cf.write(code)
             print(f"Generated code for patch {task['patch']} feature '{task['feature']}' -> {file_name}")

@@ -16,6 +16,7 @@ from supabase import create_client, Client
 import os
 
 from .player_oracle_endpoints import router as player_oracle_router
+from .patch_router import router as patch_router
 
 # -------- env --------
 APP_NAME = os.getenv("APP_NAME", "Pantheon of Oracles API")
@@ -39,6 +40,7 @@ app.add_middleware(
 )
 
 app.include_router(player_oracle_router)
+app.include_router(patch_router)
 
 # -------- models --------
 class RegisterRequest(BaseModel):

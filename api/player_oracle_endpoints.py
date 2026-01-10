@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Header, HTTPException
-from typing import Optional, Dict, Any
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any, List
+from uuid import uuid4
 from jose import jwt, JWTError
 from supabase import create_client
+from datetime import datetime
 import os
 
 router = APIRouter()
@@ -13,7 +16,126 @@ JWT_SECRET = os.getenv("JWT_SECRET", "please-change-me")
 JWT_ALG = "HS256"
 
 # Initialize Supabase client
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set")
+
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+
+def _cap_limit(value: Optional[int], *, default: int = 50, max_limit: int = 500) -> int:
+    """Return a sane limit value bounded by ``max_limit``.
+
+    Negative or zero values fall back to ``default`` to avoid unexpected empty
+    responses or heavy Supabase scans.
+    """
+
+    if value is None or value <= 0:
+        return default
+    return min(value, max_limit)
+
+
+def _normalize_offset(value: Optional[int], *, default: int = 0) -> int:
+    """Return a non-negative offset with a sensible default."""
+
+    if value is None or value < 0:
+        return default
+    return value
+
+
+def _parse_iso_timestamp(value: Optional[str]) -> Optional[str]:
+    """Validate and normalize ISO-8601 timestamps.
+
+    Returns a string suitable for Supabase queries or raises ``HTTPException``
+    when the input cannot be parsed. Accepts ``Z`` suffixes by translating them
+    to ``+00:00`` for ``datetime.fromisoformat`` compatibility.
+    """
+
+    if not value:
+        return None
+
+    normalized = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid ISO timestamp format")
+
+    return parsed.isoformat()
+
+
+def _normalize_sort_direction(value: Optional[str], *, default: str = "desc") -> str:
+    """Normalize a sort direction value to ``asc`` or ``desc``.
+
+    Raises ``HTTPException`` for unsupported inputs to prevent accidental heavy
+    scans or unpredictable ordering.
+    """
+
+    if not value:
+        return default
+
+    lowered = value.lower()
+    if lowered not in {"asc", "desc"}:
+        raise HTTPException(status_code=400, detail="Invalid sort direction; use 'asc' or 'desc'")
+
+    return lowered
+
+
+def _normalize_client_action_id(value: Optional[str]) -> Optional[str]:
+    """Trim and validate optional client-supplied action IDs.
+
+    Empty strings collapse to ``None`` so callers can omit the field without
+    causing unique constraint issues. A defensive length cap prevents oversized
+    payloads from bloating the table.
+    """
+
+    if value is None:
+        return None
+
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+
+    if len(trimmed) > 255:
+        raise HTTPException(status_code=400, detail="client_action_id must be 255 characters or fewer")
+
+    return trimmed
+
+
+class PlayerAccountPayload(BaseModel):
+    player_id: Optional[str] = Field(None, description="Stable player UUID/string")
+    username: Optional[str] = None
+    email: Optional[str] = None
+    profile: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OracleProfilePayload(BaseModel):
+    oracle_id: Optional[str] = Field(None, description="Stable oracle UUID/string")
+    oracle_name: Optional[str] = None
+    name: Optional[str] = None
+    archetype: Optional[str] = None
+    profile: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OracleActionPayload(BaseModel):
+    oracle_id: str
+    player_id: str
+    action: str
+    client_action_id: Optional[str] = Field(
+        None, description="Idempotency key to deduplicate repeated submissions"
+    )
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OracleActionBatchPayload(BaseModel):
+    actions: List[OracleActionPayload] = Field(
+        ..., min_items=1, max_items=100, description="Batch of oracle actions to insert"
+    )
+
+
+class DeleteBundlePayload(BaseModel):
+    delete_actions: bool = Field(
+        default=True,
+        description="Whether to remove oracle_actions linked to the user's IDs.",
+    )
 
 def require_auth(authorization: Optional[str]) -> str:
     """
@@ -39,18 +161,121 @@ def get_user_id_by_email(email: str) -> Optional[str]:
     data = res.data or {}
     return data.get("id") if data else None
 
+
+def _get_player_by_player_id(player_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    res = (
+        supabase.table("player_accounts")
+        .select("*")
+        .eq("player_id", player_id)
+        .eq("user_id", user_id)
+        .single()
+        .execute()
+    )
+    return res.data
+
+
+def _get_oracle_profile(oracle_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    res = (
+        supabase.table("oracle_profiles")
+        .select("*")
+        .eq("oracle_id", oracle_id)
+        .eq("user_id", user_id)
+        .single()
+        .execute()
+    )
+    return res.data
+
+
+def _get_owned_ids(user_id: str) -> Dict[str, set]:
+    """Return the oracle_ids and player_ids belonging to a user for ownership checks."""
+
+    oracles_res = (
+        supabase.table("oracle_profiles")
+        .select("oracle_id")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    players_res = (
+        supabase.table("player_accounts")
+        .select("player_id")
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    return {
+        "oracle_ids": {row["oracle_id"] for row in (oracles_res.data or []) if row.get("oracle_id")},
+        "player_ids": {row["player_id"] for row in (players_res.data or []) if row.get("player_id")},
+    }
+
+
+def _ensure_oracle_row(oracle_id: str, oracle_name: Optional[str], archetype: Optional[str]) -> None:
+    """
+    Guarantee there is an ``oracles`` row that matches the externally visible oracle_id.
+
+    ``oracle_actions.oracle_id`` has a foreign key reference to ``oracles.id``. To keep
+    inserts consistent, we upsert into ``oracles`` with the user-facing oracle_id so
+    action logging always succeeds.
+    """
+    supabase.table("oracles").upsert(
+        {
+            "id": oracle_id,
+            "code": oracle_name or oracle_id,
+            "name": oracle_name or oracle_id,
+            "role": archetype,
+        },
+        on_conflict="code",
+    ).execute()
+
+
+def _fetch_existing_actions_by_client_id(client_ids: set[str], oracle_ids: set[str]) -> Dict[tuple, Dict[str, Any]]:
+    """Return existing actions keyed by (oracle_id, client_action_id)."""
+
+    if not client_ids or not oracle_ids:
+        return {}
+
+    res = (
+        supabase.table("oracle_actions")
+        .select("*")
+        .in_("client_action_id", list(client_ids))
+        .in_("oracle_id", list(oracle_ids))
+        .execute()
+    )
+
+    return {
+        (row["oracle_id"], row["client_action_id"]): row
+        for row in (res.data or [])
+        if row.get("client_action_id") is not None and row.get("oracle_id") is not None
+    }
+
 @router.post("/gpt/create-player-account")
-def create_player_account(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
+def create_player_account(payload: PlayerAccountPayload, authorization: Optional[str] = Header(None)):
     """
     Create or update a player account associated with the authenticated user.
+
+    The incoming payload is stored as a JSON profile so the Pantheon templates
+    (factions, stats, tokens, preferences) remain intact. A stable `player_id`
+    is generated when missing, enabling repeat upserts from the GPT router.
     """
     user_email = require_auth(authorization)
     user_id = get_user_id_by_email(user_email)
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
-    insert_data = {"user_id": user_id, **payload}
-    res = supabase.table("player_accounts").upsert(insert_data, on_conflict="user_id").execute()
-    return {"ok": True, "account": res.data}
+
+    player_id = payload.player_id or str(uuid4())
+    username = payload.username
+    email = payload.email or user_email
+
+    profile_data = payload.profile or payload.dict(exclude={"profile"}, exclude_none=True)
+
+    insert_data = {
+        "user_id": user_id,
+        "player_id": player_id,
+        "username": username,
+        "email": email,
+        "profile": profile_data,
+    }
+    res = supabase.table("player_accounts").upsert(insert_data, on_conflict="player_id").execute()
+    return {"ok": True, "account": res.data, "player_id": player_id}
 
 @router.get("/gpt/player-account")
 def get_player_account(authorization: Optional[str] = Header(None)):
@@ -65,17 +290,38 @@ def get_player_account(authorization: Optional[str] = Header(None)):
     return {"ok": True, "account": res.data}
 
 @router.post("/gpt/create-oracle")
-def create_oracle(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
+def create_oracle(payload: OracleProfilePayload, authorization: Optional[str] = Header(None)):
     """
     Create or update an oracle profile associated with the authenticated user.
+
+    All oracle metadata is preserved in the ``profile`` column so rising signs,
+    council state, fused creatures, and other nested attributes from the patch
+    templates are kept intact.
     """
     user_email = require_auth(authorization)
     user_id = get_user_id_by_email(user_email)
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
-    insert_data = {"user_id": user_id, **payload}
-    res = supabase.table("oracle_profiles").upsert(insert_data, on_conflict="id").execute()
-    return {"ok": True, "oracle": res.data}
+
+    oracle_id = payload.oracle_id or str(uuid4())
+    oracle_name = payload.oracle_name or payload.name
+    archetype = payload.archetype
+
+    profile_data = payload.profile or payload.dict(exclude={"profile"}, exclude_none=True)
+
+    insert_data = {
+        "user_id": user_id,
+        "oracle_id": oracle_id,
+        "oracle_name": oracle_name,
+        "archetype": archetype,
+        "profile": profile_data,
+    }
+    res = supabase.table("oracle_profiles").upsert(insert_data, on_conflict="oracle_id").execute()
+
+    # Ensure the oracle is also registered in the base "oracles" table so action logging works
+    _ensure_oracle_row(oracle_id, oracle_name, archetype)
+
+    return {"ok": True, "oracle": res.data, "oracle_id": oracle_id}
 
 @router.get("/gpt/my-oracles")
 def get_my_oracles(authorization: Optional[str] = Header(None)):
@@ -90,16 +336,253 @@ def get_my_oracles(authorization: Optional[str] = Header(None)):
     return {"ok": True, "oracles": res.data}
 
 
+def _list_actions_for_owned(
+    oracle_ids: set,
+    player_ids: set,
+    limit: int,
+    offset: int,
+    order: str,
+    action: Optional[str] = None,
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+    *,
+    include_metadata: bool = False,
+):
+    """
+    Fetch recent oracle_actions scoped to owned oracle/player IDs.
+
+    This helper mirrors the ownership protections in ``/gpt/oracle-actions``
+    by constraining the Supabase query to the caller's oracle_ids. Player
+    filtering is optional but constrained to known player_ids when present.
+    ``limit`` is capped at 500, and ``action`` can filter by action name.
+
+    When ``include_metadata`` is true, the response includes pagination
+    metadata (limit, offset, normalized timestamps, total_count when available,
+    and a ``has_more`` hint) to support client-side pagination.
+    """
+
+    capped_limit = _cap_limit(limit, default=50, max_limit=500)
+    normalized_offset = _normalize_offset(offset)
+    normalized_since = _parse_iso_timestamp(since)
+    normalized_until = _parse_iso_timestamp(until)
+    normalized_order = _normalize_sort_direction(order)
+
+    if not oracle_ids:
+        if include_metadata:
+            return {
+                "actions": [],
+                "meta": {
+                    "total_available": 0,
+                    "returned": 0,
+                    "limit": capped_limit,
+                    "offset": normalized_offset,
+                    "oracle_ids": [],
+                    "player_ids": [],
+                    "since": normalized_since,
+                    "until": normalized_until,
+                    "action": action,
+                    "order": normalized_order,
+                    "has_more": False,
+                },
+            }
+        return []
+
+    select_kwargs = {"count": "exact"} if include_metadata else {}
+    query = supabase.table("oracle_actions").select("*", **select_kwargs).order(
+        "created_at", desc=normalized_order == "desc"
+    )
+    query = query.in_("oracle_id", list(oracle_ids))
+
+    if player_ids:
+        query = query.in_("player_id", list(player_ids))
+
+    if action:
+        query = query.eq("action", action)
+
+    if normalized_since:
+        query = query.gte("created_at", normalized_since)
+
+    if normalized_until:
+        query = query.lte("created_at", normalized_until)
+
+    query = query.range(normalized_offset, normalized_offset + capped_limit - 1)
+
+    res = query.execute()
+    actions = res.data or []
+
+    if not include_metadata:
+        return actions
+
+    total_available = getattr(res, "count", None)
+    has_more = False
+    if total_available is not None:
+        has_more = normalized_offset + len(actions) < total_available
+    else:
+        has_more = len(actions) >= capped_limit
+
+    return {
+        "actions": actions,
+        "meta": {
+            "total_available": total_available,
+            "returned": len(actions),
+            "limit": capped_limit,
+            "offset": normalized_offset,
+            "oracle_ids": sorted(list(oracle_ids)) if oracle_ids else [],
+            "player_ids": sorted(list(player_ids)) if player_ids else [],
+            "since": normalized_since,
+            "until": normalized_until,
+            "action": action,
+            "order": normalized_order,
+            "has_more": has_more,
+        },
+    }
+
+
+def _summarize_actions_for_owned(
+    oracle_ids: set,
+    player_ids: set,
+    limit: int,
+    offset: int,
+    order: str,
+    action: Optional[str] = None,
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+    *,
+    include_ok_flag: bool = False,
+):
+    """Aggregate counts for owned actions with optional filters.
+
+    Reuses ``_list_actions_for_owned`` to enforce ownership scoping and limits, then
+    counts the number of rows per action name. ``include_ok_flag`` mirrors the API
+    response structure when reused in route handlers.
+    """
+
+    actions_result = _list_actions_for_owned(
+        oracle_ids,
+        player_ids,
+        limit,
+        offset,
+        order,
+        action,
+        since,
+        until,
+        include_metadata=True,
+    )
+    actions = actions_result.get("actions", [])
+    meta = actions_result.get("meta", {})
+
+    counts: Dict[str, int] = {}
+    for row in actions:
+        key = row.get("action") or "UNKNOWN"
+        counts[key] = counts.get(key, 0) + 1
+
+    response = {
+        "action_counts": sorted(
+            [{"action": k, "count": v} for k, v in counts.items()],
+            key=lambda x: x["action"],
+        ),
+        "meta": {
+            "rows_aggregated": len(actions),
+            "limit": meta.get("limit", limit),
+            "offset": meta.get("offset", offset),
+            "since": meta.get("since", since),
+            "until": meta.get("until", until),
+            "oracle_ids": meta.get("oracle_ids"),
+            "player_ids": meta.get("player_ids"),
+            "action": action,
+            "order": meta.get("order"),
+            "returned": meta.get("returned", len(actions)),
+            "total_available": meta.get("total_available"),
+            "has_more": meta.get("has_more", False),
+        },
+    }
+
+    if include_ok_flag:
+        response = {"ok": True, **response}
+
+    return response
+
+
+def _delete_bundle_for_owned(
+    user_id: str,
+    *,
+    delete_actions: bool = True,
+) -> Dict[str, Any]:
+    """Delete a caller's player/oracle rows and optionally their actions.
+
+    Oracle actions are only removed when we have at least one owned oracle_id or
+    player_id to constrain the delete query, preventing accidental table-wide
+    wipes. This mirrors the service-role purge helper but scopes everything to
+    the authenticated user's IDs.
+    """
+
+    player_res = (
+        supabase.table("player_accounts")
+        .select("id,player_id")
+        .eq("user_id", user_id)
+        .single()
+        .execute()
+    )
+    oracles_res = (
+        supabase.table("oracle_profiles")
+        .select("oracle_id")
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    player_row = player_res.data or {}
+    oracle_ids = [row.get("oracle_id") for row in (oracles_res.data or []) if row.get("oracle_id")]
+
+    deleted_actions = 0
+    if delete_actions and (oracle_ids or player_row.get("player_id")):
+        action_query = supabase.table("oracle_actions").delete()
+
+        if oracle_ids:
+            action_query = action_query.in_("oracle_id", oracle_ids)
+        if player_row.get("player_id"):
+            action_query = action_query.eq("player_id", player_row["player_id"])
+
+        actions_res = action_query.execute()
+        deleted_actions = len(actions_res.data or []) if hasattr(actions_res, "data") else 0
+
+    profiles_res = supabase.table("oracle_profiles").delete().eq("user_id", user_id).execute()
+    players_res = supabase.table("player_accounts").delete().eq("user_id", user_id).execute()
+
+    return {
+        "deleted_actions": deleted_actions,
+        "deleted_oracle_profiles": len(profiles_res.data or []) if hasattr(profiles_res, "data") else 0,
+        "deleted_player_accounts": len(players_res.data or []) if hasattr(players_res, "data") else 0,
+    }
+
+
 @router.get("/gpt/sync")
-def sync_player_data(authorization: Optional[str] = Header(None)):
+def sync_player_data(
+    include_actions: bool = False,
+    include_action_stats: bool = False,
+    actions_limit: int = 50,
+    actions_offset: int = 0,
+    actions_order: str = "desc",
+    actions_filter: Optional[str] = None,
+    actions_since: Optional[str] = None,
+    actions_until: Optional[str] = None,
+    action_stats_limit: int = 200,
+    action_stats_offset: int = 0,
+    action_stats_order: str = "desc",
+    authorization: Optional[str] = Header(None),
+):
     """
     Return the authenticated user's player account and all oracle profiles.
 
     This endpoint combines the logic of ``/gpt/player-account`` and ``/gpt/my-oracles``
     into a single call. It verifies the JWT, resolves the user's ID, and then
-    retrieves both the player's account and list of oracles from Supabase. This
-    allows the Pantheon GPT router to fetch all relevant data in one request,
-    enabling continuous syncing across sessions without manual imports.
+    retrieves both the player's account and list of oracles from Supabase. When
+    ``include_actions`` is true, recent oracle_actions are also returned, capped
+    to 500 rows and optionally filtered by ``actions_filter`` (action name) or
+    timestamp bounds (``actions_since``/``actions_until``). The response now
+    includes ``actions_meta`` (limit, offset, filters, total when available, and
+    ``has_more``) so clients can paginate consistently. This allows the Pantheon
+    GPT router to fetch all relevant data in one request, enabling continuous
+    syncing across sessions without manual imports.
     """
     user_email = require_auth(authorization)
     user_id = get_user_id_by_email(user_email)
@@ -109,9 +592,370 @@ def sync_player_data(authorization: Optional[str] = Header(None)):
     acc_res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
     # Fetch all oracles owned by the user
     orc_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
+
+    actions = []
+    actions_meta: Optional[Dict[str, Any]] = None
+    action_stats = None
+    action_stats_meta: Optional[Dict[str, Any]] = None
+    normalized_since = _parse_iso_timestamp(actions_since)
+    normalized_until = _parse_iso_timestamp(actions_until)
+    normalized_actions_order = _normalize_sort_direction(actions_order)
+    normalized_action_stats_order = _normalize_sort_direction(action_stats_order)
+    if include_actions:
+        owned_ids = _get_owned_ids(user_id)
+        actions_result = _list_actions_for_owned(
+            owned_ids["oracle_ids"],
+            owned_ids["player_ids"],
+            _cap_limit(actions_limit, default=50, max_limit=500),
+            _normalize_offset(actions_offset),
+            normalized_actions_order,
+            actions_filter,
+            normalized_since,
+            normalized_until,
+            include_metadata=True,
+        )
+        actions = actions_result.get("actions", [])
+        actions_meta = actions_result.get("meta")
+    if include_action_stats:
+        owned_ids = _get_owned_ids(user_id)
+        capped_stats_limit = _cap_limit(action_stats_limit, default=200, max_limit=1000)
+        stats_result = _summarize_actions_for_owned(
+            owned_ids["oracle_ids"],
+            owned_ids["player_ids"],
+            capped_stats_limit,
+            _normalize_offset(action_stats_offset),
+            normalized_action_stats_order,
+            actions_filter,
+            normalized_since,
+            normalized_until,
+        )
+        action_stats = stats_result.get("action_counts")
+        action_stats_meta = stats_result.get("meta")
     return {
         "ok": True,
         "account": acc_res.data,
         "oracles": orc_res.data,
+        "actions": actions,
+        "actions_meta": actions_meta,
+        "action_stats": action_stats,
+        "action_stats_meta": action_stats_meta,
     }
+
+
+@router.post("/gpt/oracle-action")
+def log_oracle_action(payload: OracleActionPayload, authorization: Optional[str] = Header(None)):
+    """
+    Record an oracle action after verifying ownership of the supplied player/oracle IDs.
+
+    The incoming payload should include ``oracle_id``, ``player_id``, ``action``, and
+    optional ``metadata``. We confirm that both IDs belong to the authenticated user
+    before inserting into ``oracle_actions``.
+    """
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    oracle_id = payload.oracle_id
+    player_id = payload.player_id
+    action = payload.action
+    client_action_id = _normalize_client_action_id(payload.client_action_id)
+    metadata = payload.metadata or {}
+
+    if not _get_oracle_profile(oracle_id, user_id):
+        raise HTTPException(status_code=404, detail="Oracle not found for this user")
+    if not _get_player_by_player_id(player_id, user_id):
+        raise HTTPException(status_code=404, detail="Player account not found for this user")
+
+    # Ensure oracle exists in `oracles` for FK constraint safety
+    _ensure_oracle_row(oracle_id, None, None)
+    existing = {}
+    if client_action_id:
+        existing = _fetch_existing_actions_by_client_id({client_action_id}, {oracle_id})
+    if existing:
+        return {"ok": True, "action": existing.get((oracle_id, client_action_id)), "meta": {"duplicate": True}}
+
+    payload_dict = {
+        "oracle_id": oracle_id,
+        "player_id": player_id,
+        "action": action,
+        "metadata": metadata,
+    }
+    if client_action_id:
+        payload_dict["client_action_id"] = client_action_id
+
+    insert_query = supabase.table("oracle_actions")
+    if client_action_id:
+        res = insert_query.upsert(payload_dict, on_conflict="oracle_id,client_action_id").execute()
+    else:
+        res = insert_query.insert(payload_dict).execute()
+
+    if not res.data:
+        raise HTTPException(status_code=400, detail="Failed to record action")
+
+    return {"ok": True, "action": res.data[0], "meta": {"duplicate": False}}
+
+
+@router.post("/gpt/oracle-actions/bulk")
+def log_oracle_actions_bulk(
+    payload: OracleActionBatchPayload, authorization: Optional[str] = Header(None)
+):
+    """
+    Insert a batch of oracle actions after enforcing ownership and batch safety.
+
+    The payload accepts up to 100 action objects. Each entry must reference oracle
+    and player IDs owned by the authenticated user. The endpoint mirrors the
+    single-action handler but performs a single Supabase insert for efficiency
+    while preserving the same FK safety via oracle catalog upserts.
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    owned_ids = _get_owned_ids(user_id)
+    owned_oracles = owned_ids["oracle_ids"]
+    owned_players = owned_ids["player_ids"]
+
+    if len(payload.actions) > 100:
+        raise HTTPException(status_code=400, detail="Batch too large; max 100 actions")
+
+    rows = []
+    touched_oracles: set[str] = set()
+    seen_client_ids: dict[str, int] = {}
+    batch_client_ids: set[str] = set()
+    normalized_payloads: list[tuple[OracleActionPayload, Optional[str]]] = []
+
+    for idx, action in enumerate(payload.actions):
+        if action.oracle_id not in owned_oracles:
+            raise HTTPException(status_code=404, detail=f"Oracle not found for this user at index {idx}")
+        if action.player_id not in owned_players:
+            raise HTTPException(status_code=404, detail=f"Player account not found for this user at index {idx}")
+
+        normalized_client_action_id = _normalize_client_action_id(action.client_action_id)
+        if normalized_client_action_id:
+            if normalized_client_action_id in seen_client_ids:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Duplicate client_action_id detected between payload indexes "
+                        f"{seen_client_ids[normalized_client_action_id]} and {idx}"
+                    ),
+                )
+            seen_client_ids[normalized_client_action_id] = idx
+            batch_client_ids.add(normalized_client_action_id)
+
+        normalized_payloads.append((action, normalized_client_action_id))
+        touched_oracles.add(action.oracle_id)
+
+    existing_by_key = _fetch_existing_actions_by_client_id(batch_client_ids, owned_oracles)
+    deduped_actions = []
+
+    for action, normalized_client_action_id in normalized_payloads:
+        existing_match = None
+        if normalized_client_action_id:
+            existing_match = existing_by_key.get((action.oracle_id, normalized_client_action_id))
+        if existing_match:
+            deduped_actions.append(existing_match)
+            continue
+
+        rows.append(
+            {
+                "oracle_id": action.oracle_id,
+                "player_id": action.player_id,
+                "action": action.action,
+                "client_action_id": normalized_client_action_id,
+                "metadata": action.metadata or {},
+            }
+        )
+
+    # Ensure oracle catalog entries exist for FK compatibility
+    for oid in touched_oracles:
+        _ensure_oracle_row(oid, None, None)
+
+    inserted_actions = []
+    if rows:
+        res = supabase.table("oracle_actions").upsert(rows, on_conflict="oracle_id,client_action_id").execute()
+        if not res.data:
+            raise HTTPException(status_code=400, detail="Failed to record actions")
+        inserted_actions = res.data
+
+    all_actions = inserted_actions + deduped_actions
+    return {
+        "ok": True,
+        "inserted": len(inserted_actions),
+        "deduped": len(deduped_actions),
+        "actions": all_actions,
+        "meta": {"requested": len(payload.actions), "skipped_existing": len(deduped_actions)},
+    }
+
+
+@router.get("/gpt/oracle-actions")
+def list_oracle_actions(
+    oracle_id: Optional[str] = None,
+    player_id: Optional[str] = None,
+    action: Optional[str] = None,
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+    order: str = "desc",
+    limit: int = 50,
+    offset: int = 0,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    List recent oracle actions for the authenticated user.
+
+    Ownership is enforced by intersecting the requested ``oracle_id``/``player_id``
+    with the caller's stored profiles. When no filters are provided, only actions
+    tied to the user's own oracle IDs are returned. ``limit`` defaults to 50 and
+    is capped at 500. ``action`` can be supplied to filter by action name, and
+    ``since``/``until`` can bound results by ``created_at`` to slice windows of
+    history. The response includes ``meta`` with limit/offset, applied filters,
+    the applied sort direction, and a ``has_more`` hint to drive pagination.
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    owned_ids = _get_owned_ids(user_id)
+
+    # Validate supplied filters belong to the caller
+    if oracle_id and oracle_id not in owned_ids["oracle_ids"]:
+        raise HTTPException(status_code=404, detail="Oracle not found for this user")
+    if player_id and player_id not in owned_ids["player_ids"]:
+        raise HTTPException(status_code=404, detail="Player account not found for this user")
+
+    normalized_order = _normalize_sort_direction(order)
+
+    actions_result = _list_actions_for_owned(
+        owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
+        owned_ids["player_ids"] if not player_id else {player_id},
+        limit,
+        offset,
+        normalized_order,
+        action,
+        since,
+        until,
+        include_metadata=True,
+    )
+
+    return {
+        "ok": True,
+        "actions": actions_result.get("actions", []),
+        "meta": actions_result.get("meta"),
+    }
+
+
+@router.get("/gpt/oracle-action-stats")
+def oracle_action_stats(
+    oracle_id: Optional[str] = None,
+    player_id: Optional[str] = None,
+    action: Optional[str] = None,
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+    order: str = "desc",
+    limit: int = 200,
+    offset: int = 0,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Aggregate action counts for the authenticated user's oracle/player IDs.
+
+    Returns a simple count per action type drawn from ``oracle_actions`` after
+    enforcing ownership of the supplied IDs. ``since`` can restrict results to
+    recent activity (based on ``created_at`` timestamps), ``until`` can cap the
+    upper bound, and ``limit`` caps the number of rows fetched before
+    aggregation (default 200, max 1000). The response now mirrors the action
+    listing pagination metadata via a ``meta`` block (limit, offset, applied
+    filters, and ``has_more``) so clients can align aggregation windows with
+    paginated history calls.
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    owned_ids = _get_owned_ids(user_id)
+
+    if oracle_id and oracle_id not in owned_ids["oracle_ids"]:
+        raise HTTPException(status_code=404, detail="Oracle not found for this user")
+    if player_id and player_id not in owned_ids["player_ids"]:
+        raise HTTPException(status_code=404, detail="Player account not found for this user")
+
+    capped_limit = _cap_limit(limit, default=200, max_limit=1000)
+    normalized_offset = _normalize_offset(offset)
+    normalized_since = _parse_iso_timestamp(since)
+    normalized_until = _parse_iso_timestamp(until)
+    normalized_order = _normalize_sort_direction(order)
+
+    return _summarize_actions_for_owned(
+        owned_ids["oracle_ids"] if not oracle_id else {oracle_id},
+        owned_ids["player_ids"] if not player_id else {player_id},
+        capped_limit,
+        normalized_offset,
+        normalized_order,
+        action,
+        normalized_since,
+        normalized_until,
+        include_ok_flag=True,
+    )
+
+
+@router.post("/gpt/delete-bundle")
+def delete_bundle(payload: DeleteBundlePayload, authorization: Optional[str] = Header(None)):
+    """Allow callers to purge their own profiles and optionally action history.
+
+    This is useful for resetting a demo account before re-importing templates from
+    the GPT patches. Auth is enforced via JWT, and deletes are scoped to the
+    caller's owned IDs to prevent cross-user data loss. Actions are only removed
+    when at least one owned oracle/player ID exists.
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    result = _delete_bundle_for_owned(user_id, delete_actions=payload.delete_actions)
+    return {"ok": True, **result}
+
+
+@router.get("/gpt/oracle-catalog")
+def list_oracle_catalog(
+    code: Optional[str] = None,
+    role: Optional[str] = None,
+    limit: int = 100,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Return seeded oracle catalog entries for authenticated callers.
+
+    This surfaces the compact rules and metadata stored in the ``oracles``
+    table (seeded from the GPT patches). Callers can optionally filter by
+    oracle ``code`` or ``role`` and cap the result size with ``limit``
+    (defaults to 100, max 500).
+    """
+
+    user_email = require_auth(authorization)
+    user_id = get_user_id_by_email(user_email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    capped_limit = min(limit if limit and limit > 0 else 100, 500)
+
+    query = supabase.table("oracles").select("id,code,name,role,rules").order("code")
+
+    if code:
+        query = query.eq("code", code)
+    if role:
+        query = query.eq("role", role)
+
+    query = query.limit(capped_limit)
+
+    res = query.execute()
+    return {"ok": True, "oracles": res.data or []}
 

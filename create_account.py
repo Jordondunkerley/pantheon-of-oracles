@@ -1,38 +1,46 @@
-# create_account.py
+"""
+CLI helper to create a Pantheon user with hashed password storage.
 
-from supabase import create_client, Client
-import os
-from dotenv import load_dotenv
-import uuid
+Usage:
+    python create_account.py --email you@example.com --password hunter2
 
-load_dotenv()
+The script uses the shared Supabase environment variables (`SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`) and leverages ``supabase_client`` so credentials
+match the FastAPI service defaults. It is idempotent when ``--allow-existing``
+is provided, returning the existing record instead of failing.
+"""
+from argparse import ArgumentParser
+from typing import Any, Dict
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+from supabase_client import get_or_create_user, create_user, _get_user_record
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-def create_user(username: str, first_name: str, last_name: str, password: str):
-    """
-    Creates a new user in the Supabase 'users' table.
-    Automatically assigns a unique user_id (UUIDv4).
-    """
-    user_id = str(uuid.uuid4())
+def parse_args() -> Dict[str, Any]:
+    parser = ArgumentParser(description="Create a Pantheon account in Supabase")
+    parser.add_argument("--email", required=True, help="User email to create")
+    parser.add_argument("--password", required=True, help="Plaintext password to hash")
+    parser.add_argument(
+        "--allow-existing", action="store_true", help="Return the existing user instead of failing"
+    )
+    return vars(parser.parse_args())
 
-    data = {
-        "id": user_id,
-        "username": username,
-        "first_name": first_name,
-        "last_name": last_name,
-        "password": password  # ⛔ Future: hash this before saving
-    }
 
-    response = supabase.table("users").insert(data).execute()
+def main() -> None:
+    args = parse_args()
+    email = args["email"]
+    password = args["password"]
+    allow_existing = args["allow_existing"]
 
-    if response.status_code == 201:
-        return {"status": "success", "user_id": user_id}
+    if allow_existing:
+        user = get_or_create_user(email, password)
     else:
-        return {
-            "status": "error",
-            "details": response.json()
-        }
+        existing = _get_user_record(email)
+        if existing:
+            raise SystemExit(f"User already exists for {email}; rerun with --allow-existing")
+        user = create_user(email, password)
+
+    print("✅ User ready:", {"id": user.get("id"), "email": user.get("email")})
+
+
+if __name__ == "__main__":
+    main()

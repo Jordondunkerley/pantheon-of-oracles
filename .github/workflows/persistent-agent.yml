@@ -1,0 +1,35 @@
+name: Persistent Pantheon Agent
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  monitor-patches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install minimal dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Run persistent agent once
+        env:
+          PANTHEON_AGENT_INTERVAL: 300
+        run: |
+          python scripts/persistent_agent.py
+
+      - name: Upload agent state and snapshots
+        if: ${{ always() && hashFiles('state/persistent_agent_state.json') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pantheon-agent-state
+          path: state

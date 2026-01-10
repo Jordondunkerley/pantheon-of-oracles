@@ -1,22 +1,40 @@
-from supabase import create_client, Client
+"""Supabase helpers for legacy Pantheon utilities.
+
+This module previously embedded a concrete Supabase URL and service key. Those
+credentials are now sourced from the environment to avoid shipping secrets in
+the repository and to keep behavior aligned with the primary FastAPI service
+configuration. The module reuses the shared API settings so any deployment only
+needs to export the expected environment variables once.
+"""
+
 from uuid import uuid4
 
-SUPABASE_URL = "https://mammtgndjoydbeeuehiw.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hbW10Z25kam95ZGJlZXVlaGl3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzQ1MzkzNCwiZXhwIjoyMDU5MDI5OTM0fQ.B6dgvr7DSFdjQvGAoTLLNXvLRBdd48aA0heg_aSdK2E"
+from supabase import Client
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+from api.config import get_supabase_client
+from api.security import hash_password, validate_password_strength
+from api.supabase_utils import run_supabase
+
+
+# Reuse the shared Supabase client so all Pantheon utilities honor the same
+# environment-driven configuration.
+supabase: Client = get_supabase_client()
 
 
 def create_user(username, first_name, last_name, password):
     user_id = str(uuid4())
+    validate_password_strength(password)
     data = {
         "id": user_id,
         "username": username,
         "first_name": first_name,
         "last_name": last_name,
-        "password": password
+        "password_hash": hash_password(password),
     }
-    return supabase.table("users").insert(data).execute()
+    return run_supabase(
+        lambda: supabase.table("users").insert(data).execute(),
+        "create legacy user",
+    )
 
 
 def save_astrology_profile(user_id, profile_json):
@@ -25,7 +43,10 @@ def save_astrology_profile(user_id, profile_json):
         "user_id": user_id,
         "profile_json": profile_json
     }
-    return supabase.table("astrology_profiles").insert(data).execute()
+    return run_supabase(
+        lambda: supabase.table("astrology_profiles").insert(data).execute(),
+        "save astrology profile",
+    )
 
 
 def save_oracle(user_id, oracle_type, oracle_data):
@@ -35,8 +56,14 @@ def save_oracle(user_id, oracle_type, oracle_data):
         "oracle_type": oracle_type,
         "oracle_data": oracle_data
     }
-    return supabase.table("oracles").insert(data).execute()
+    return run_supabase(
+        lambda: supabase.table("oracles").insert(data).execute(),
+        "save oracle",
+    )
 
 
 def get_user_oracles(user_id):
-    return supabase.table("oracles").select("*").eq("user_id", user_id).execute()
+    return run_supabase(
+        lambda: supabase.table("oracles").select("*").eq("user_id", user_id).execute(),
+        "fetch user oracles",
+    )

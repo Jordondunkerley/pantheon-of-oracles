@@ -1,16 +1,16 @@
-# create_account.py
+"""Helper for creating Pantheon users via Supabase."""
 
-from supabase import create_client, Client
-import os
-from dotenv import load_dotenv
 import uuid
 
-load_dotenv()
+from fastapi import HTTPException
+from supabase import Client
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+from api.config import get_supabase_client
+from api.security import hash_password, validate_password_strength
+from api.supabase_utils import run_supabase
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+supabase: Client = get_supabase_client()
 
 def create_user(username: str, first_name: str, last_name: str, password: str):
     """
@@ -19,20 +19,28 @@ def create_user(username: str, first_name: str, last_name: str, password: str):
     """
     user_id = str(uuid.uuid4())
 
+    try:
+        validate_password_strength(password)
+    except ValueError as exc:
+        return {"status": "error", "details": str(exc)}
+
     data = {
         "id": user_id,
         "username": username,
         "first_name": first_name,
         "last_name": last_name,
-        "password": password  # ⛔ Future: hash this before saving
+        "password_hash": hash_password(password),
     }
 
-    response = supabase.table("users").insert(data).execute()
+    try:
+        response = run_supabase(
+            lambda: supabase.table("users").insert(data).execute(),
+            "create user helper",
+        )
+    except HTTPException as exc:
+        return {"status": "error", "details": exc.detail}
 
-    if response.status_code == 201:
+    if getattr(response, "status_code", None) == 201 or response.data:
         return {"status": "success", "user_id": user_id}
-    else:
-        return {
-            "status": "error",
-            "details": response.json()
-        }
+
+    return {"status": "error", "details": getattr(response, "json", lambda: {})()}

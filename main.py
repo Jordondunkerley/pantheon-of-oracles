@@ -4,14 +4,17 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 import pytz, os
-from supabase import create_client
+
+from api.config import get_supabase_client
+from api.supabase_utils import run_supabase
 
 # === CONFIG ===
-API_KEY = "J&h^fvAc*gH!aS#ba@PL#iuW&D11J"
-SUPABASE_URL = os.getenv("SUPABASE_URL") or "https://mammtgndjoydbeeuehiw.supabase.co"
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hbW10Z25kam95ZGJlZXVlaGl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NTM5MzQsImV4cCI6MjA1OTAyOTkzNH0.VPseSq4UpYA3NJfq6wmjVkqfmOpsIFyPM--4lmN8hx4"
+API_KEY = os.getenv("PANTHEON_API_KEY")
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+if not API_KEY:
+    raise RuntimeError("PANTHEON_API_KEY must be set for gpt/update-oracle access")
+
+supabase = get_supabase_client()
 
 # === FASTAPI APP ===
 app = FastAPI(
@@ -70,7 +73,10 @@ async def update_oracle_action(request: Request, oracle_command: OracleCommand, 
         "timestamp": oracle_command.metadata.timestamp
     }
 
-    result = supabase.table("oracle_actions").insert(payload).execute()
+    result = run_supabase(
+        lambda: supabase.table("oracle_actions").insert(payload).execute(),
+        "legacy oracle action insert",
+    )
     print(f"\n[ORACLE ACTION RECEIVED] {oracle_command.oracle_name} | {oracle_command.command} | {now_est}")
     print(f"[SUPABASE INSERT RESULT] {result}")
 

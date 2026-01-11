@@ -1,39 +1,130 @@
-*** Begin Patch
-*** Update File: api/player_oracle_endpoints.py
-@@
-     @router.get("/gpt/my-oracles")
-     def get_my_oracles(authorization: Optional[str] = Header(None)):
-@@
-         res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
--        return {"ok": True, "oracles": res.data}
-+        return {"ok": True, "oracles": res.data}
+diff --git a/api/main.py b/api/main.py
+index 389b34c..ad633ae 100644
+--- a/api/main.py
++++ b/api/main.py
+@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
+ from fastapi import FastAPI, HTTPException, Header
+ from fastapi.middleware.cors import CORSMiddleware
+ from jose import JWTError, jwt
+-from pydantic import BaseModel, Field
++from pydantic import BaseModel, EmailStr, Field
+ from supabase import Client
+ 
+ try:
+@@ -24,7 +24,7 @@ except Exception as exc:  # pragma: no cover - defensive startup guard
+ # -------- env --------
+ from .config import get_settings, get_supabase_client
+ from .supabase_utils import run_supabase
+-from .security import hash_password, validate_password_strength, verify_password
++from .security import hash_password, normalize_email, validate_password_strength, verify_password
+ 
+ settings = get_settings()
+ supabase: Client = get_supabase_client()
+@@ -41,11 +41,11 @@ if player_oracle_router:
+ 
+ # -------- models --------
+ class RegisterRequest(BaseModel):
+-    email: str
++    email: EmailStr
+     password: str = Field(min_length=8)
+ 
+ class LoginRequest(BaseModel):
+-    email: str
++    email: EmailStr
+     password: str
+ 
+ class UpdateOracleRequest(BaseModel):
+@@ -74,7 +74,11 @@ def require_auth(authorization: Optional[str]) -> str:
+     sub = payload.get("sub")
+     if not sub:
+         raise HTTPException(status_code=401, detail="Token payload missing subject")
+-    return sub
 +
-+# -----------------------------------------------------------------------------
-+# New endpoint: sync player account and oracles
-+# -----------------------------------------------------------------------------
++    try:
++        return normalize_email(sub)
++    except ValueError as exc:
++        raise HTTPException(status_code=401, detail=str(exc))
+ 
+ 
+ def _insert_oracle_action(payload: UpdateOracleRequest) -> Dict[str, Any]:
+@@ -109,25 +113,35 @@ def register(req: RegisterRequest):
+     except ValueError as exc:
+         raise HTTPException(status_code=422, detail=str(exc))
+ 
++    try:
++        email = normalize_email(req.email)
++    except ValueError as exc:
++        raise HTTPException(status_code=422, detail=str(exc))
 +
-+@router.get("/gpt/sync")
-+def sync_player_data(authorization: Optional[str] = Header(None)):
-+    """
-+    Return the authenticated user's player account and all oracle profiles.
+     hashed = hash_password(req.password)
+     res = run_supabase(
+-        lambda: supabase.table("users").insert({"email": req.email, "password_hash": hashed}).execute(),
++        lambda: supabase.table("users").insert({"email": email, "password_hash": hashed}).execute(),
+         "register user",
+     )
+     if not res.data:
+         raise HTTPException(status_code=400, detail="Registration failed")
+-    return {"ok": True, "token": create_access_token(sub=req.email)}
++    return {"ok": True, "token": create_access_token(sub=email)}
+ 
+ @app.post("/auth/login")
+ def login(req: LoginRequest):
++    try:
++        email = normalize_email(req.email)
++    except ValueError as exc:
++        raise HTTPException(status_code=422, detail=str(exc))
 +
-+    This endpoint combines the logic of ``/gpt/player-account`` and ``/gpt/my-oracles``
-+    into a single call. It verifies the JWT, resolves the user's ID, and then
-+    retrieves both the player's account and list of oracles from Supabase. This
-+    allows the Pantheon GPT router to fetch all relevant data in one request,
-+    enabling continuous syncing across sessions without manual imports.
-+    """
-+    user_email = require_auth(authorization)
-+    user_id = get_user_id_by_email(user_email)
-+    if not user_id:
-+        raise HTTPException(status_code=404, detail="User not found")
-+    # Fetch player account (if any)
-+    acc_res = supabase.table("player_accounts").select("*").eq("user_id", user_id).single().execute()
-+    # Fetch all oracles owned by the user
-+    orc_res = supabase.table("oracle_profiles").select("*").eq("user_id", user_id).execute()
-+    return {
-+        "ok": True,
-+        "account": acc_res.data,
-+        "oracles": orc_res.data,
-+    }
-*** End Patch
+     res = run_supabase(
+-        lambda: supabase.table("users").select("email,password_hash").eq("email", req.email).single().execute(),
++        lambda: supabase.table("users").select("email,password_hash").eq("email", email).single().execute(),
+         "login lookup",
+     )
+     data = res.data or {}
+     if not data or not verify_password(req.password, data.get("password_hash", "")):
+         raise HTTPException(status_code=401, detail="Invalid credentials")
+-    return {"ok": True, "token": create_access_token(sub=req.email)}
++    return {"ok": True, "token": create_access_token(sub=email)}
+ 
+ # -------- GPT actions --------
+ @app.post("/gpt/update-oracle")
+diff --git a/api/player_oracle_endpoints.py b/api/player_oracle_endpoints.py
+index e3dedcf..f343a20 100644
+--- a/api/player_oracle_endpoints.py
++++ b/api/player_oracle_endpoints.py
+@@ -12,6 +12,7 @@ from jose import JWTError, jwt
+ from supabase import Client
+ 
+ from .config import get_settings, get_supabase_client
++from .security import normalize_email
+ from .supabase_utils import run_supabase
+ 
+ 
+@@ -35,7 +36,10 @@ def verify_token(authorization: Optional[str]) -> str:
+     sub = payload.get("sub")
+     if not sub:
+         raise HTTPException(status_code=401, detail="Token payload missing subject")
+-    return sub
++    try:
++        return normalize_email(sub)
++    except ValueError as exc:
++        raise HTTPException(status_code=401, detail=str(exc))
+ 
+ 
+ def get_user_id(email: str) -> str:
+diff --git a/api/security.py b/api/security.py
+index 81b9eea..b4844dc 100644
+--- a/api/security.py
++++ b/api/security.py
+@@ -29,3 +29,12 @@ def validate_password_strength(password: str, *, min_length: int = 8) -> None:
+ 
+     if len(password) < min_length:
+         raise ValueError(f"Password must be at least {min_length} characters long")
++
++
++def normalize_email(email: str) -> str:
++    """Return a trimmed, lowercase email or raise ``ValueError`` if empty."""
++
++    normalized = email.strip().lower()
++    if not normalized:
++        raise ValueError("Email is required")
++    return normalized

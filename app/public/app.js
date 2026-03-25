@@ -192,11 +192,11 @@ function renderActiveCouncil(state) {
         ${badge(oracle.astrology_profile?.dominant_sign || 'sign pending')}
         ${badge(session?.mood || 'active presence')}
         ${badge(getCouncilLayerLabel(oracle, state.currentUser.accountEntitlements))}
-        ${badge(getAwakeningRoleLabel(oracle))}
+        ${badge(getAccountChamberRoleLabel(oracle))}
         ${badge(access.locked ? 'sealed' : 'available', access.locked ? 'warn' : 'good')}
       </div>
       <div class="presence-visual">${access.locked ? 'Veiled oracle silhouette withheld behind ritual seal' : (oracle.visual_attributes?.visual_silhouette || 'Oracle presence forming in chamber')}</div>
-      <p class="meta"><strong>Awakening role:</strong> ${getAwakeningRoleLabel(oracle)}</p>
+      <p class="meta"><strong>Chamber role for this account:</strong> ${getAwakeningRoleLabel(oracle)}</p>
       <p class="meta"><strong>Why present now:</strong> ${session?.useCase || oracle.visual_attributes?.role_in_pantheon || 'Oracle guidance is available.'}</p>
       <p class="meta ${access.locked ? 'seal-text' : ''}"><strong>${access.locked ? 'Seal condition:' : 'Access:'}</strong> ${access.reason}</p>
       <p class="meta"><strong>Chamber tone:</strong> ${access.locked ? 'The chamber is present but ritually muted until the proper council access is granted.' : (session?.atmosphere || 'Atmosphere still taking shape.')}</p>
@@ -508,7 +508,7 @@ function oracleCard(oracle) {
         ${badge(oracle.archetype)}
         ${badge(oracle.council_type)}
         ${badge(getCouncilLayerLabel(oracle, currentState?.currentUser?.accountEntitlements))}
-        ${badge(getAwakeningRoleLabel(oracle))}
+        ${badge(getAccountChamberRoleLabel(oracle))}
         ${badge(access.locked ? 'locked' : 'available', access.locked ? 'warn' : 'good')}
       </div>
       <p class="meta oracle-mission">${oracle.visual_attributes?.role_in_pantheon || oracle.oracle_voice || 'No role yet'}</p>
@@ -548,7 +548,7 @@ function renderOracleDetail(oracle) {
       <p class="meta"><strong>Tone overlay:</strong> ${oracle.tone_overlay || '—'}</p>
       <p class="meta"><strong>Degree:</strong> ${astro.degree || '—'} • <strong>Motion:</strong> ${astro.motion || '—'} ${astro.stationary ? `• <strong>Stationary:</strong> ${astro.stationary}` : ''}</p>
       <p class="meta"><strong>Rising overlay:</strong> ${astro.rising_decan_sign || '—'}</p>
-      <p class="meta"><strong>Awakening role:</strong> ${getAwakeningRoleLabel(oracle)}</p>
+      <p class="meta"><strong>Chamber role for this account:</strong> ${getAwakeningRoleLabel(oracle)}</p>
       <p class="meta ${access.locked ? 'seal-note' : ''}"><strong>Access status:</strong> ${access.locked ? `Sealed — ${access.reason}` : 'Available in current plan'}</p>
     `,
     gameplay: `

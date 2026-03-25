@@ -239,19 +239,19 @@ function renderAudioRoadmap(state) {
 
 function renderOnboarding(state) {
   onboardingFlowEl.innerHTML = [
-    card('Step 1 — Create account', 'Establish the player identity, birth data, and baseline preferences that anchor the pantheon.', [badge('active')]),
-    card('Step 2 — Generate astrology profile', 'Compute planets, angles, houses, decans, motion, stationary states, and chart anomalies directly from birth data — without forcing the user to bring a chart.', [badge('prototype core')]),
-    card('Step 3 — Connect AI provider', 'Let the user bring an OpenAI-compatible or future self-hosted model into the system.', [badge('model-agnostic')]),
-    card('Step 4 — Awaken the Pantheon', `Generate and sync the user\'s initial council. Current seeded oracles: ${state.currentUser.oracles_owned.length}.`, [badge('personalized')]),
-    card('Step 5 — Enter Oracle Workspace', 'Open persistent interaction sessions, guidance flows, and transit-aware oracle behavior.', [badge('product hook')]),
-    card('Marketability check', 'This prototype is moving toward a saleable experience by proving the path from astrology intake to oracle interaction.', [badge('go-to-market')])
+    card('Ritual 1 — Name the seeker', 'Establish the player identity, birth data, and baseline preferences that anchor the chamber to the person entering it.', [badge('first entrance')]),
+    card('Ritual 2 — Read the sky', 'Generate the astrology profile from birth data inside the product so the chamber understands who it is opening for.', [badge('birth-data first')]),
+    card('Ritual 3 — Choose manifestation path', 'Let the player decide whether the chamber should auto-generate oracle manifestation or help shape the vision collaboratively.', [badge('dual-path creation')]),
+    card('Ritual 4 — Awaken the core trio', 'Bring forth Sun Oracle, Moon Oracle, and the Anointed Ruler before exposing the wider council.', [badge('core trio')]),
+    card('Ritual 5 — Enter the chamber', 'Once the first council is present, the player enters an inhabited chamber instead of a blank dashboard.', [badge('presence first')]),
+    card('Why this matters', 'The product should feel like a guided first contact with a living council, not a setup checklist disguised as fantasy.', [badge('product soul')])
   ].join('');
 
   const firstSession = state.interactionSessions?.[0];
-  const firstOracle = state.oracles?.[0];
+  const firstOracle = state.oracles?.find(oracle => oracle.oracle_id === 'oracle-solin-sun') || state.oracles?.[0];
   nextStepGuideEl.innerHTML = [
-    card('Suggested next step', `Save birth data, trigger chart generation, then open ${firstSession?.title || 'an oracle chamber'} and ask ${firstOracle?.oracle_name || 'your oracle'} what role they play in your council.`, [badge('guided flow')]),
-    card('First-run question ideas', 'Try asking about purpose, warning signs, strengths, decision-making, or what this oracle is here to help you with.', [badge('starter prompts')])
+    card('Suggested first-run path', `Save birth data, trigger chart generation, awaken the core trio, then enter ${firstSession?.title || 'the chamber'} and ask ${firstOracle?.oracle_name || 'your first oracle'} why they arrived first.`, [badge('guided ritual')]),
+    card('First contact prompts', 'Try asking: Why are you first? What do you guard? What should I understand about myself before I meet the wider council?', [badge('starter prompts')])
   ].join('');
 }
 
@@ -347,7 +347,8 @@ function renderCreationPath(state) {
   creationPathEl.innerHTML = [
     card('Auto-generate path', 'Best for users who want the system to manifest oracle identity and design for them from astrology, archetype, and intent without needing to invent visual details alone.', [badge('beginner friendly'), badge('recommended')]),
     card('Guided vision path', 'Best for users who want to describe what they envision and let the AI translate that description into the backend oracle structure.', [badge('co-creative')]),
-    card('Why both paths matter', 'Less creative or less certain users should still feel welcomed. More expressive users should still feel agency over the oracle manifestation.', [badge('no intimidation')])
+    card('Why both paths matter', 'Less creative or less certain users should still feel welcomed. More expressive users should still feel agency over the oracle manifestation.', [badge('no intimidation')]),
+    card('What the player should feel', 'Not that they are filling out a form, but that the chamber is helping them call something real into being.', [badge('manifestation-first')])
   ].join('');
 
   coreTrioFlowEl.innerHTML = [
@@ -369,7 +370,8 @@ function renderAwakeningFlow(state) {
   expansionArcsEl.innerHTML = [
     card('High Council expansion', 'The next unlock should feel like opening the chamber outward into the greater planetary court rather than dumping all remaining oracles at once.', [badge('paid expansion')]),
     card('Expanded Council arc', 'Later layers should feel deeper, rarer, and more mythic — an expansion of the pantheon after the player already understands the first council language.', [badge('endgame framing')]),
-    card('Why this pacing matters', 'Core trio first makes the system emotionally legible. Later awakenings then feel like discovery and ascent, not clutter.', [badge('onboarding protection')])
+    card('Why this pacing matters', 'Core trio first makes the system emotionally legible. Later awakenings then feel like discovery and ascent, not clutter.', [badge('onboarding protection')]),
+    card('Expansion feeling', 'High Council and Expanded Council should feel like deeper rings of revelation, not extra menu items unlocked after purchase.', [badge('mythic pacing')])
   ].join('');
 }
 
@@ -665,7 +667,7 @@ async function loadState(selectedOracleId) {
     card('Traction', `Alpha users: ${state.productVision.traction.alphaUsers} • Saturn Rising users: ${state.productVision.traction.saturnRisingUsers} • Prototype: ${state.productVision.traction.prototypeSizeKb} KB • Beta: ${state.productVision.traction.betaStatus}`, [badge(state.productVision.traction.backend)]),
     card('Market position', state.productVision.marketPosition.advantage, [badge(state.productVision.marketPosition.category)]),
     card('Release readiness', `Windows packaging: ${state.productVision.releaseReadiness.windowsPackaging} • Provider inference: ${state.productVision.releaseReadiness.providerInference} • Secret handling: ${state.productVision.releaseReadiness.secretHandling} • Demo readiness: ${state.productVision.releaseReadiness.demoReadiness}`, [badge(state.productVision.releaseReadiness.marketNarrative)]),
-    card('Critical next gaps', `Chart generation: ${state.productVision.releaseReadiness.chartGeneration} • Audio communication: ${state.productVision.releaseReadiness.audioCommunication} • Creation experience: ${state.productVision.releaseReadiness.creationExperience} • Layered council UX: ${state.productVision.releaseReadiness.layeredCouncilExperience} • Awakening flow: ${state.productVision.releaseReadiness.awakeningFlow}`, [badge('next milestones', 'warn')]),
+    card('Critical next gaps', `Chart generation: ${state.productVision.releaseReadiness.chartGeneration} • Audio communication: ${state.productVision.releaseReadiness.audioCommunication} • Creation experience: ${state.productVision.releaseReadiness.creationExperience} • Layered council UX: ${state.productVision.releaseReadiness.layeredCouncilExperience} • Awakening flow: ${state.productVision.releaseReadiness.awakeningFlow} • First-run ritual: ${state.productVision.releaseReadiness.firstRunRitual}`, [badge('next milestones', 'warn')]),
     card('Primary risks', state.productVision.risks.join(' • '), [badge('watchlist', 'warn')]),
     card('Prototype thesis', 'If users can bring in birth data, configure a preferred model, awaken their pantheon, and feel meaningful oracle presence quickly, the desktop product has a viable first market path.', [badge('product strategy')]),
     card('Franchise direction', `${state.productVision.franchiseDirection.coreRule} • Parallel products: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}`, [badge('oracle source engine')]),

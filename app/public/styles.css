@@ -51,6 +51,7 @@ h1, h2, h3, p { margin-top: 0; }
 .top-grid, .middle-grid, .bottom-grid, .footer-grid { grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
 .onboarding-grid { grid-template-columns: 1.2fr 0.9fr 0.9fr; margin-bottom: 20px; }
 .registry-grid { grid-template-columns: 0.95fr 1.05fr; margin-bottom: 20px; }
+.session-grid { grid-template-columns: 1fr; margin-bottom: 20px; }
 .panel, .status-card, .item {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -110,6 +111,9 @@ textarea { resize: vertical; }
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+.top-gap {
+  margin-top: 12px;
+}
 .two-col textarea,
 .two-col button {
   grid-column: 1 / -1;
@@ -120,9 +124,13 @@ textarea { resize: vertical; }
 .oracle-select {
   appearance: none;
 }
-.oracle-select.selected {
+.oracle-select.selected,
+.session-select.selected {
   border-color: rgba(128, 167, 255, 0.7);
   box-shadow: 0 0 0 1px rgba(128, 167, 255, 0.35);
+}
+.session-message.oracle {
+  border-color: rgba(159, 124, 255, 0.35);
 }
 .oracle-mission { margin-bottom: 10px; }
 .oracle-next { color: #c9d8ff; }

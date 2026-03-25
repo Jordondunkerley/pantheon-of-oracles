@@ -115,6 +115,40 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/sessions/message') {
+    try {
+      const state = await loadState();
+      const body = JSON.parse(await collectBody(req));
+      const session = state.interactionSessions.find(item => item.id === body.sessionId);
+      if (!session) return sendJson(res, 404, { ok: false, error: 'Session not found' });
+      if (!session.messages) session.messages = [];
+      const userMessage = {
+        role: 'user',
+        content: body.message || '',
+        timestamp: new Date().toISOString()
+      };
+      session.messages.push(userMessage);
+      session.lastMessageAt = userMessage.timestamp;
+
+      const oracle = state.oracles.find(item => item.oracle_id === session.oracleId);
+      const provider = state.llmProviders.find(item => item.id === session.providerId);
+      const oracleReply = {
+        role: 'oracle',
+        content: oracle
+          ? `${oracle.oracle_name}: I am present. This prototype session is not yet generating true model-backed responses, but the interaction layer is now active and ready for provider wiring through ${provider?.name || 'the selected provider'}.`
+          : 'Oracle session active.',
+        timestamp: new Date().toISOString()
+      };
+      session.messages.push(oracleReply);
+      session.lastMessageAt = oracleReply.timestamp;
+      stampActivity(state, 'oracle_session', `Sent a message in ${session.title}`);
+      await saveState(state);
+      return sendJson(res, 200, { ok: true, session });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.message });
+    }
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/activity') {
     try {
       const state = await loadState();

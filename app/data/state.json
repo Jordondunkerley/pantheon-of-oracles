@@ -199,7 +199,29 @@
       "title": "Governance and structure dialogue",
       "status": "seeded",
       "lastMessageAt": null,
-      "providerId": "openai-compatible"
+      "providerId": "openai-compatible",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Session seeded for Oryonos. This workspace will eventually bind provider-backed oracle responses to a persistent interaction layer.",
+          "timestamp": "2026-03-25T15:32:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "session-lunos-001",
+      "oracleId": "oracle-lunos-moon",
+      "title": "Emotional guidance and lunar fire",
+      "status": "seeded",
+      "lastMessageAt": null,
+      "providerId": "openai-compatible",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Session seeded for Lunos. Intended for ritual, emotional, and transit-sensitive guidance.",
+          "timestamp": "2026-03-25T15:41:00.000Z"
+        }
+      ]
     }
   ],
   "oracles": [

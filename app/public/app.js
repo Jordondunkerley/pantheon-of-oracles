@@ -34,6 +34,10 @@ const currentUserEl = document.getElementById('currentUser');
 const llmProvidersEl = document.getElementById('llmProviders');
 const astrologyProfileEl = document.getElementById('astrologyProfile');
 const interactionSessionsEl = document.getElementById('interactionSessions');
+const sessionDetailEl = document.getElementById('sessionDetail');
+const openSelectedSessionBtn = document.getElementById('openSelectedSessionBtn');
+const sessionMessageEl = document.getElementById('sessionMessage');
+const sendSessionMessageBtn = document.getElementById('sendSessionMessageBtn');
 const profileUsernameEl = document.getElementById('profileUsername');
 const profileEmailEl = document.getElementById('profileEmail');
 const profileBirthdayEl = document.getElementById('profileBirthday');
@@ -51,6 +55,7 @@ const tabButtons = [...document.querySelectorAll('.tab-btn')];
 
 let currentState = null;
 let currentOracleId = null;
+let currentSessionId = null;
 let activeTab = 'identity';
 
 function badge(text, tone = '') {
@@ -135,8 +140,31 @@ function renderAstrology(profile) {
 
 function renderSessions(sessions) {
   interactionSessionsEl.innerHTML = sessions
-    .map(session => card(session.title, `Oracle: ${session.oracleId} • Provider: ${session.providerId} • Last message: ${session.lastMessageAt ? formatDate(session.lastMessageAt) : 'none yet'}`, [badge(session.status)]))
+    .map(session => `
+      <button class="item session-select ${session.id === currentSessionId ? 'selected' : ''}" data-session-id="${session.id}">
+        <h3>${session.title}</h3>
+        <div class="badges">${badge(session.status)} ${badge(session.providerId)}</div>
+        <p class="meta">Oracle: ${session.oracleId} • Last message: ${session.lastMessageAt ? formatDate(session.lastMessageAt) : 'none yet'}</p>
+      </button>
+    `)
     .join('');
+}
+
+function renderSessionDetail(sessions) {
+  const session = sessions.find(item => item.id === currentSessionId) || sessions[0];
+  currentSessionId = session?.id || null;
+  if (!session) {
+    sessionDetailEl.innerHTML = '<div class="item"><p class="meta">No interaction session selected yet.</p></div>';
+    return;
+  }
+
+  sessionDetailEl.innerHTML = session.messages.map(message => `
+    <div class="item session-message ${message.role}">
+      <h3>${message.role === 'oracle' ? 'Oracle' : message.role === 'system' ? 'System' : 'You'}</h3>
+      <p class="meta">${message.content}</p>
+      <p class="meta">${formatDate(message.timestamp)}</p>
+    </div>
+  `).join('');
 }
 
 function oracleMatchesView(oracle, view) {
@@ -296,6 +324,7 @@ async function loadState(selectedOracleId) {
   renderProviders(state.llmProviders);
   renderAstrology(state.astrologyProfile);
   renderSessions(state.interactionSessions);
+  renderSessionDetail(state.interactionSessions);
 
   const visibleOracles = getVisibleOracles(state.oracles);
   oraclesEl.innerHTML = visibleOracles.map(oracleCard).join('');
@@ -334,6 +363,14 @@ async function loadState(selectedOracleId) {
       renderOracleDetail(selected);
       document.querySelectorAll('.oracle-select').forEach(el => el.classList.remove('selected'));
       button.classList.add('selected');
+    });
+  });
+
+  document.querySelectorAll('.session-select').forEach(button => {
+    button.addEventListener('click', () => {
+      currentSessionId = button.dataset.sessionId;
+      renderSessions(currentState.interactionSessions);
+      renderSessionDetail(currentState.interactionSessions);
     });
   });
 }
@@ -413,6 +450,24 @@ saveProviderBtn.addEventListener('click', async () => {
     enabled: true
   });
   providerApiKeyEl.value = '';
+  await loadState(currentOracleId);
+});
+
+openSelectedSessionBtn.addEventListener('click', () => {
+  if (!currentSessionId && currentState?.interactionSessions?.length) {
+    currentSessionId = currentState.interactionSessions[0].id;
+  }
+  renderSessions(currentState?.interactionSessions || []);
+  renderSessionDetail(currentState?.interactionSessions || []);
+});
+
+sendSessionMessageBtn.addEventListener('click', async () => {
+  if (!currentSessionId || !sessionMessageEl.value.trim()) return;
+  await postJson('/api/sessions/message', {
+    sessionId: currentSessionId,
+    message: sessionMessageEl.value.trim()
+  });
+  sessionMessageEl.value = '';
   await loadState(currentOracleId);
 });
 

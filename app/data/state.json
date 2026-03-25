@@ -254,6 +254,60 @@
           "timestamp": "2026-03-25T15:55:00.000Z"
         }
       ]
+    },
+    {
+      "id": "session-arcures-001",
+      "oracleId": "oracle-arcures-mercury",
+      "title": "Precision, wit, and decision velocity",
+      "status": "seeded",
+      "lastMessageAt": "2026-03-25T15:57:00.000Z",
+      "providerId": "openai-compatible",
+      "model": "",
+      "providerReady": false,
+      "messages": [
+        {
+          "role": "system",
+          "content": "Session seeded for Arcures. Intended for strategic thinking, clever reframing, and fast tactical insight.",
+          "timestamp": "2026-03-25T15:56:30.000Z"
+        },
+        {
+          "role": "user",
+          "content": "Arcures, where does this product win first?",
+          "timestamp": "2026-03-25T15:56:45.000Z"
+        },
+        {
+          "role": "oracle",
+          "content": "Arcures: It wins where curiosity outruns skepticism. Give them a fast path from birth data to a distinct voice they can feel. The first victory is not the whole system — it is a sharp, undeniable moment of recognition.",
+          "timestamp": "2026-03-25T15:57:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "session-valeya-001",
+      "oracleId": "oracle-valeya-venus",
+      "title": "Charm, confidence, and magnetic presence",
+      "status": "seeded",
+      "lastMessageAt": "2026-03-25T15:58:00.000Z",
+      "providerId": "openai-compatible",
+      "model": "",
+      "providerReady": false,
+      "messages": [
+        {
+          "role": "system",
+          "content": "Session seeded for Valeya. Intended for magnetism, attraction, aesthetics, and relational confidence.",
+          "timestamp": "2026-03-25T15:57:20.000Z"
+        },
+        {
+          "role": "user",
+          "content": "Valeya, what should the product feel like?",
+          "timestamp": "2026-03-25T15:57:40.000Z"
+        },
+        {
+          "role": "oracle",
+          "content": "Valeya: It should feel intimate before it feels massive. Beautiful before it feels complex. Desired before it is explained. Let the user feel chosen by their council, and they will forgive what is not yet finished.",
+          "timestamp": "2026-03-25T15:58:00.000Z"
+        }
+      ]
     }
   ],
   "oracles": [
@@ -820,7 +874,7 @@
   ],
   "productVision": {
     "releaseReadiness": {
-      "windowsPackaging": "pending",
+      "windowsPackaging": "config-ready / build-unverified",
       "providerInference": "prototype-only",
       "secretHandling": "prototype-only",
       "demoReadiness": "strong",

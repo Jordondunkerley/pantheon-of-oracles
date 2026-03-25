@@ -10,7 +10,7 @@
 - [x] Import tooling
 - [ ] True provider-backed inference
 - [ ] Better secret handling
-- [ ] Windows packaging artifact
+- [ ] Windows packaging artifact (config ready; artifact still needs Windows-side build validation)
 - [ ] App icon / visual identity pack
 - [ ] Demo screenshots / video
 

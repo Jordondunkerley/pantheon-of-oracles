@@ -56,6 +56,11 @@ The packaged app will be placed in the `dist/` directory.
 5. Show provider configuration
 6. Show import pipeline
 
+## Release / handoff docs
+- `release/RELEASE_NOTES.md`
+- `release/HANDOFF.md`
+- `release/WINDOWS_BUILD.md`
+
 ## Import oracle data
 
 You can import oracle records into the prototype with:

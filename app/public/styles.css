@@ -161,6 +161,9 @@ textarea { resize: vertical; }
   background: linear-gradient(180deg, rgba(29, 35, 73, 0.98), rgba(13, 18, 40, 0.94));
   border: 1px solid rgba(159, 124, 255, 0.2);
 }
+.council-presence .badge {
+  backdrop-filter: blur(4px);
+}
 .locked-presence {
   opacity: 0.88;
   border-color: rgba(245, 183, 95, 0.28);

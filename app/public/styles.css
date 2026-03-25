@@ -138,7 +138,8 @@ textarea { resize: vertical; }
   margin-top: 12px;
 }
 .two-col textarea,
-.two-col button {
+.two-col button,
+.two-col .full-width {
   grid-column: 1 / -1;
 }
 .oracle-card {

@@ -57,6 +57,7 @@ const profileBirthLocationEl = document.getElementById('profileBirthLocation');
 const profileVoiceFlavorEl = document.getElementById('profileVoiceFlavor');
 const profilePromptToneEl = document.getElementById('profilePromptTone');
 const saveProfileBtn = document.getElementById('saveProfileBtn');
+const generateChartBtn = document.getElementById('generateChartBtn');
 const providerSelectEl = document.getElementById('providerSelect');
 const providerBaseUrlEl = document.getElementById('providerBaseUrl');
 const providerModelEl = document.getElementById('providerModel');
@@ -131,7 +132,7 @@ function renderOnboarding(state) {
   const firstSession = state.interactionSessions?.[0];
   const firstOracle = state.oracles?.[0];
   nextStepGuideEl.innerHTML = [
-    card('Suggested next step', `Open ${firstSession?.title || 'an oracle chamber'} and ask ${firstOracle?.oracle_name || 'your oracle'} what role they play in your council. The long-term ideal flow is birth data → chart generation → awakened council → chamber dialogue.`, [badge('guided flow')]),
+    card('Suggested next step', `Save birth data, trigger chart generation, then open ${firstSession?.title || 'an oracle chamber'} and ask ${firstOracle?.oracle_name || 'your oracle'} what role they play in your council.`, [badge('guided flow')]),
     card('First-run question ideas', 'Try asking about purpose, warning signs, strengths, decision-making, or what this oracle is here to help you with.', [badge('starter prompts')])
   ].join('');
 }
@@ -529,6 +530,16 @@ saveProfileBtn.addEventListener('click', async () => {
     oracle_voice_flavor: profileVoiceFlavorEl.value.trim(),
     system_prompt_tone: profilePromptToneEl.value.trim()
   });
+  await loadState(currentOracleId);
+});
+
+generateChartBtn.addEventListener('click', async () => {
+  await postJson('/api/chart/generate', {
+    birthday: profileBirthdayEl.value.trim(),
+    birth_time: profileBirthTimeEl.value.trim(),
+    birth_location: profileBirthLocationEl.value.trim()
+  });
+  addDraft('Chart generation', 'Chart generation flow triggered from birth data. Native calculation will eventually run here, with validation against reputable sources when needed.');
   await loadState(currentOracleId);
 });
 

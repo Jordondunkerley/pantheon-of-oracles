@@ -97,6 +97,21 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/chart/generate') {
+    try {
+      const state = await loadState();
+      stampActivity(state, 'chart_generation', 'Triggered chart generation flow from birth data. This prototype still uses seeded astrology data while native chart generation is being prepared.');
+      await saveState(state);
+      return sendJson(res, 200, {
+        ok: true,
+        mode: 'prototype-seeded',
+        message: 'Chart generation flow triggered. Native calculation and external validation path will plug into this endpoint.'
+      });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.message });
+    }
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/providers') {
     try {
       const state = await loadState();

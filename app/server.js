@@ -75,6 +75,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const state = await loadState();
       const body = JSON.parse(await collectBody(req));
+      const founderIdentity = body.founderIdentity || state.currentUser.founderIdentity || {};
       state.currentUser = {
         ...state.currentUser,
         username: body.username ?? state.currentUser.username,
@@ -83,6 +84,19 @@ const server = http.createServer(async (req, res) => {
         birthday: body.birthday ?? state.currentUser.birthday,
         birth_time: body.birth_time ?? state.currentUser.birth_time,
         birth_location: body.birth_location ?? state.currentUser.birth_location,
+        founderIdentity: {
+          founderKey: founderIdentity.founderKey ?? '',
+          founderEmail: founderIdentity.founderEmail ?? body.email ?? state.currentUser.email ?? '',
+          recognized: Boolean(founderIdentity.recognized ?? state.currentUser.founderIdentity?.recognized ?? state.currentUser.founder_status),
+          role: founderIdentity.role ?? state.currentUser.founderIdentity?.role ?? 'Founder / Creator / CEO',
+          accessMode: founderIdentity.accessMode ?? state.currentUser.founderIdentity?.accessMode ?? 'account-recognized',
+          featureFlags: founderIdentity.featureFlags ?? state.currentUser.founderIdentity?.featureFlags ?? [
+            'founder-console',
+            'oracle-canon-edit',
+            'release-preview',
+            'provider-lab'
+          ]
+        },
         preferences: {
           ...state.currentUser.preferences,
           oracle_voice_flavor: body.oracle_voice_flavor ?? state.currentUser.preferences.oracle_voice_flavor,

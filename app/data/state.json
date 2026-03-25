@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Pantheon of Oracles",
+    "title": "Pantheon of Oracles: The Council Chamber",
     "updatedAt": "2026-03-25T15:40:00.000Z"
   },
   "projects": [
@@ -9,7 +9,7 @@
       "name": "Pantheon of Oracles",
       "status": "active",
       "priority": "critical",
-      "summary": "AI-driven role-playing, lifestyle, and multiplayer oracle platform personalized by astrology.",
+      "summary": "The Council Chamber is the personal council-space product for meeting, managing, and growing a living astrology-driven oracle pantheon.",
       "updatedAt": "2026-03-25T15:32:00.000Z"
     },
     {
@@ -112,6 +112,19 @@
     },
     "access_tier": "Founder",
     "founder_status": true,
+    "founderIdentity": {
+      "founderKey": "",
+      "founderEmail": "",
+      "recognized": true,
+      "role": "Founder / Creator / CEO",
+      "accessMode": "account-recognized",
+      "featureFlags": [
+        "founder-console",
+        "oracle-canon-edit",
+        "release-preview",
+        "provider-lab"
+      ]
+    },
     "season_pass": {
       "active": true,
       "season_name": "Prototype Season",

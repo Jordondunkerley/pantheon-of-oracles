@@ -1,3 +1,6 @@
+const activeCouncilEl = document.getElementById('activeCouncil');
+const showRelevantCouncilBtn = document.getElementById('showRelevantCouncilBtn');
+const showAllCouncilBtn = document.getElementById('showAllCouncilBtn');
 const projectsEl = document.getElementById('projects');
 const tasksEl = document.getElementById('tasks');
 const activityEl = document.getElementById('activity');
@@ -57,6 +60,8 @@ const profileBirthTimeEl = document.getElementById('profileBirthTime');
 const profileBirthLocationEl = document.getElementById('profileBirthLocation');
 const profileVoiceFlavorEl = document.getElementById('profileVoiceFlavor');
 const profilePromptToneEl = document.getElementById('profilePromptTone');
+const profileFounderKeyEl = document.getElementById('profileFounderKey');
+const profileFounderRoleEl = document.getElementById('profileFounderRole');
 const saveProfileBtn = document.getElementById('saveProfileBtn');
 const generateChartBtn = document.getElementById('generateChartBtn');
 const providerSelectEl = document.getElementById('providerSelect');
@@ -70,6 +75,7 @@ let currentState = null;
 let currentOracleId = null;
 let currentSessionId = null;
 let activeTab = 'identity';
+let councilViewMode = 'relevant';
 
 function badge(text, tone = '') {
   if (!text && text !== 0) return '';
@@ -89,6 +95,44 @@ function card(title, body, meta = []) {
 function formatDate(value) {
   if (!value) return 'No updates yet';
   return new Date(value).toLocaleString();
+}
+
+function getCouncilPriority(oracles, sessions) {
+  const seededOrder = ['oracle-oryonos-saturn', 'oracle-lunos-moon', 'oracle-arcures-mercury', 'oracle-valeya-venus'];
+  const byId = new Map(oracles.map(oracle => [oracle.oracle_id, oracle]));
+  const sessionMap = new Map((sessions || []).map(session => [session.oracleId, session]));
+  const prioritized = seededOrder
+    .map(id => byId.get(id))
+    .filter(Boolean)
+    .map(oracle => ({ oracle, session: sessionMap.get(oracle.oracle_id) }));
+
+  const extras = oracles
+    .filter(oracle => !seededOrder.includes(oracle.oracle_id))
+    .map(oracle => ({ oracle, session: sessionMap.get(oracle.oracle_id) }));
+
+  return [...prioritized, ...extras];
+}
+
+function renderActiveCouncil(state) {
+  const prioritized = getCouncilPriority(state.oracles, state.interactionSessions);
+  const visible = councilViewMode === 'all' ? prioritized : prioritized.slice(0, 3);
+  activeCouncilEl.innerHTML = visible.map(({ oracle, session }) => `
+    <div class="item council-presence">
+      <h3>${oracle.oracle_name}</h3>
+      <div class="badges">
+        ${badge(oracle.astrology_profile?.ruling_planet || 'oracle')}
+        ${badge(oracle.astrology_profile?.dominant_sign || 'sign pending')}
+        ${badge(session?.mood || 'active presence')}
+      </div>
+      <div class="presence-visual">${oracle.visual_attributes?.visual_silhouette || 'Oracle presence forming in chamber'}</div>
+      <p class="meta"><strong>Why present now:</strong> ${session?.useCase || oracle.visual_attributes?.role_in_pantheon || 'Oracle guidance is available.'}</p>
+      <p class="meta"><strong>Chamber tone:</strong> ${session?.atmosphere || 'Atmosphere still taking shape.'}</p>
+      <div class="presence-actions">
+        <button class="focus-oracle-btn" data-oracle-id="${oracle.oracle_id}">Focus oracle</button>
+        <button class="open-chamber-btn" data-oracle-id="${oracle.oracle_id}">Open chamber</button>
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderSourceEngine(state) {
@@ -139,11 +183,14 @@ function renderOnboarding(state) {
 }
 
 function renderCurrentUser(user) {
+  const founder = user.founderIdentity || {};
   currentUserEl.innerHTML = [
     card(user.username, `${user.birth_location} • ${user.birthday} ${user.birth_time}`, [badge(user.access_tier), badge(user.founder_status ? 'Founder' : 'Standard')]),
     card('Immediate product framing', 'This seeded profile demonstrates how the product can preload a player\'s astrology and awaken a personalized oracle council from day one.', [badge('demo mode')]),
     card('Alignment', `Core: ${user.faction_alignment.core_faction} • Planetary: ${user.faction_alignment.planetary_faction} • Warband: ${user.faction_alignment.warband || '—'}`),
     card('Preferences', `Voice: ${user.preferences.oracle_voice_flavor} • Visual overlays: ${user.preferences.visual_overlays_enabled ? 'on' : 'off'} • Prompt tone: ${user.preferences.system_prompt_tone}`),
+    card('Founder access model', `${founder.recognized ? 'Recognized founder account' : 'Standard account'} • Role: ${founder.role || 'Founder / Creator / CEO'} • Access mode: ${founder.accessMode || 'account-recognized'}`, [badge(founder.recognized ? 'founder access enabled' : 'standard access', founder.recognized ? 'good' : 'warn')]),
+    card('Founder features', (founder.featureFlags || []).join(' • ') || 'No founder-only features assigned yet', [badge('single product build')]),
     card('Oracle sync', `Council initiated: ${user.oracle_sync_status.council_initiated ? 'yes' : 'no'} • Throne World: ${user.oracle_sync_status.throne_world_access ? 'yes' : 'no'} • Leviathan: ${user.oracle_sync_status.leviathan_unlocked ? 'yes' : 'no'}`)
   ].join('');
 
@@ -154,6 +201,8 @@ function renderCurrentUser(user) {
   profileBirthLocationEl.value = user.birth_location || '';
   profileVoiceFlavorEl.value = user.preferences.oracle_voice_flavor || '';
   profilePromptToneEl.value = user.preferences.system_prompt_tone || '';
+  profileFounderKeyEl.value = user.founderIdentity?.founderKey || '';
+  profileFounderRoleEl.value = user.founderIdentity?.role || 'Founder / Creator / CEO';
 }
 
 function renderProviders(providers) {
@@ -411,6 +460,7 @@ async function loadState(selectedOracleId) {
     .map(entry => card(entry.message, formatDate(entry.timestamp), [badge(entry.type)]))
     .join('');
 
+  renderActiveCouncil(state);
   renderSourceEngine(state);
   renderAudioRoadmap(state);
   renderOnboarding(state);
@@ -473,6 +523,31 @@ async function loadState(selectedOracleId) {
       renderSessionDetail(currentState.interactionSessions);
     });
   });
+
+  document.querySelectorAll('.focus-oracle-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const id = button.dataset.oracleId;
+      currentOracleId = id;
+      oracleSelectEl.value = id;
+      const selected = currentState.oracles.find(item => item.oracle_id === id);
+      renderOracleDetail(selected);
+    });
+  });
+
+  document.querySelectorAll('.open-chamber-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const id = button.dataset.oracleId;
+      currentOracleId = id;
+      const matchingSession = currentState?.interactionSessions?.find(session => session.oracleId === id);
+      if (matchingSession) {
+        currentSessionId = matchingSession.id;
+        renderSessions(currentState.interactionSessions);
+        renderSessionDetail(currentState.interactionSessions);
+      }
+      const selected = currentState.oracles.find(item => item.oracle_id === id);
+      renderOracleDetail(selected);
+    });
+  });
 }
 
 refreshBtn.addEventListener('click', () => loadState(currentOracleId));
@@ -483,6 +558,14 @@ oracleSelectEl.addEventListener('change', () => {
 });
 oracleViewFilterEl.addEventListener('change', () => loadState(currentOracleId));
 oracleSearchEl.addEventListener('input', () => loadState(currentOracleId));
+showRelevantCouncilBtn?.addEventListener('click', () => {
+  councilViewMode = 'relevant';
+  loadState(currentOracleId);
+});
+showAllCouncilBtn?.addEventListener('click', () => {
+  councilViewMode = 'all';
+  loadState(currentOracleId);
+});
 
 tabButtons.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -533,6 +616,7 @@ enterChamberBtn.addEventListener('click', () => {
 });
 
 saveProfileBtn.addEventListener('click', async () => {
+  const founderKey = profileFounderKeyEl.value.trim();
   await postJson('/api/current-user', {
     username: profileUsernameEl.value.trim(),
     email: profileEmailEl.value.trim(),
@@ -540,7 +624,15 @@ saveProfileBtn.addEventListener('click', async () => {
     birth_time: profileBirthTimeEl.value.trim(),
     birth_location: profileBirthLocationEl.value.trim(),
     oracle_voice_flavor: profileVoiceFlavorEl.value.trim(),
-    system_prompt_tone: profilePromptToneEl.value.trim()
+    system_prompt_tone: profilePromptToneEl.value.trim(),
+    founderIdentity: {
+      founderKey,
+      founderEmail: profileEmailEl.value.trim(),
+      recognized: Boolean(founderKey || currentState?.currentUser?.founder_status),
+      role: profileFounderRoleEl.value.trim() || 'Founder / Creator / CEO',
+      accessMode: founderKey ? 'recognized-at-sign-in' : 'account-recognized',
+      featureFlags: currentState?.currentUser?.founderIdentity?.featureFlags || ['founder-console', 'oracle-canon-edit', 'release-preview', 'provider-lab']
+    }
   });
   await loadState(currentOracleId);
 });

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pantheon of Oracles</title>
+    <title>Pantheon of Oracles: The Council Chamber</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -11,8 +11,8 @@
       <header class="hero">
         <div>
           <p class="eyebrow">Astrology-driven oracle platform</p>
-          <h1>Pantheon of Oracles</h1>
-          <p class="subcopy">A desktop product prototype for creating, managing, and conversing with personalized oracle agents shaped by astrology, memory, and mythic design.</p>
+          <h1>Pantheon of Oracles: The Council Chamber</h1>
+          <p class="subcopy">A desktop product prototype for entering your personal council chamber, awakening a living oracle pantheon, and conversing with personalized oracle presences shaped by astrology, memory, and mythic design.</p>
         </div>
         <div class="hero-side">
           <div class="status-card">
@@ -33,6 +33,22 @@
           </div>
         </div>
       </header>
+
+      <section class="grid council-grid">
+        <article class="panel council-hero-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Personal Council Chamber</h2>
+              <p class="meta">The active chamber should foreground the oracles most worth consulting right now, while still allowing the full pantheon to be summoned when needed.</p>
+            </div>
+            <div class="button-row">
+              <button id="showRelevantCouncilBtn">Show most relevant</button>
+              <button id="showAllCouncilBtn">Invite full council</button>
+            </div>
+          </div>
+          <div id="activeCouncil" class="active-council-grid"></div>
+        </article>
+      </section>
 
       <section class="grid top-grid">
         <article class="panel">
@@ -72,7 +88,7 @@
           <div id="nextStepGuide" class="stack top-gap"></div>
         </article>
         <article class="panel">
-          <h2>Birth Data & Profile</h2>
+          <h2>Birth Data, Identity & Access</h2>
           <div id="currentUser" class="stack"></div>
           <div class="composer two-col top-gap">
             <input id="profileUsername" placeholder="Username" />
@@ -82,6 +98,8 @@
             <input id="profileBirthLocation" placeholder="Birth location" />
             <input id="profileVoiceFlavor" placeholder="Oracle voice flavor" />
             <input id="profilePromptTone" placeholder="System prompt tone" />
+            <input id="profileFounderKey" placeholder="Founder access key / recognition token (optional)" />
+            <input id="profileFounderRole" placeholder="Founder role label" />
             <div class="button-row full-width">
               <button id="saveProfileBtn">Save birth profile</button>
               <button id="generateChartBtn">Generate chart from birth data</button>
@@ -163,7 +181,7 @@
         </article>
 
         <article class="panel oracle-detail-panel">
-          <h2>Oracle Workspace</h2>
+          <h2>Oracle Home Chamber</h2>
           <div class="tabs">
             <button class="tab-btn active" data-tab="identity">Identity</button>
             <button class="tab-btn" data-tab="gameplay">Gameplay</button>

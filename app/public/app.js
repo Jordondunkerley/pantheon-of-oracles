@@ -103,7 +103,8 @@ function renderAudioRoadmap(state) {
     card('Current phase', 'Text-first oracle communication with normalized voice profiles and audio-readiness hooks.', [badge('audio groundwork')]),
     card('Next leap', 'Add oracle voice output so the chamber experience becomes spoken, not only written.', [badge('high-value milestone')]),
     card('Later expansion', 'Voice input, conversational audio loops, then richer avatar/video embodiment — always grounded in the same oracle canon.', [badge('stepwise build')]),
-    card('Readiness snapshot', `${readyCount} oracles currently marked audio-ready. Voice profiles are being normalized now so audio can plug into stable identities later.`, [badge('canon-first')])
+    card('Readiness snapshot', `${readyCount} oracles currently marked audio-ready. Voice profiles are being normalized now so audio can plug into stable identities later.`, [badge('canon-first')]),
+    card('Export continuity', 'Preferred voice profile and audio/avatar readiness now belong to canonical oracle packages, so future products can inherit them instead of redefining them.', [badge('cross-product audio')])
   ].join('');
 
   voiceOracleSelectEl.innerHTML = state.oracles.map(oracle => `<option value="${oracle.oracle_id}">${oracle.oracle_name}</option>`).join('');

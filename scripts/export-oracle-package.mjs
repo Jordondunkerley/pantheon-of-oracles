@@ -34,7 +34,10 @@ const pkg = {
     oracle_type: oracle.oracle_type,
     oracle_voice: oracle.oracle_voice,
     tone_overlay: oracle.tone_overlay,
-    role_in_pantheon: oracle.visual_attributes?.role_in_pantheon || ''
+    role_in_pantheon: oracle.visual_attributes?.role_in_pantheon || '',
+    preferred_voice_profile: oracle.visual_attributes?.preferred_voice_profile || '',
+    audio_ready: Boolean(oracle.visual_attributes?.audio_ready),
+    avatar_ready: Boolean(oracle.visual_attributes?.avatar_ready)
   },
   franchise_traits: {
     weapon_signature: weapons.weapon_1 || '',

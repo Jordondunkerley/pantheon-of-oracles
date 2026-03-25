@@ -25,7 +25,10 @@
     "oracle_type": "Playable",
     "oracle_voice": "",
     "tone_overlay": "",
-    "role_in_pantheon": ""
+    "role_in_pantheon": "",
+    "preferred_voice_profile": "",
+    "audio_ready": false,
+    "avatar_ready": false
   },
   "franchise_traits": {
     "weapon_signature": "",

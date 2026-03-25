@@ -131,12 +131,12 @@ function getCouncilLayerLabel(oracle, entitlements) {
   return 'High Council';
 }
 
-function getAccountChamberRoleLabel(oracle) {
-  if (oracle.solar_ruler || oracle.oracle_id === 'oracle-solin-sun') return 'Sun position';
-  if (oracle.oracle_id === 'oracle-lunos-moon') return 'Moon position';
+function getCouncilPlacementLabel(oracle) {
+  if (oracle.solar_ruler || oracle.oracle_id === 'oracle-solin-sun') return 'Sun Oracle';
+  if (oracle.oracle_id === 'oracle-lunos-moon') return 'Moon Oracle';
   if (oracle.anointed_ruler) return 'Anointed Ruler';
-  if (oracle.council_type === 'Expanded Council') return 'Expanded Council position';
-  return 'High Council position';
+  if (oracle.council_type === 'Expanded Council') return 'Expanded Council';
+  return 'High Council';
 }
 
 function renderCouncilLayers(state) {
@@ -153,9 +153,9 @@ function renderCouncilLayers(state) {
 
   councilLayersEl.innerHTML = [
     card('Council structure', `Core Trio: ${grouped['Core Trio'].length} • High Council: ${grouped['High Council'].length} • Expanded Council: ${grouped['Expanded Council'].length}`, [badge('layered revelation')]),
-    card('Core Trio', grouped['Core Trio'].map(oracle => `${oracle.oracle_name} (${getAccountChamberRoleLabel(oracle)})`).join(' • ') || 'Not assigned yet', [badge('starter chamber', 'good')]),
-    card('High Council', grouped['High Council'].map(oracle => `${oracle.oracle_name} (${getAccountChamberRoleLabel(oracle)})`).join(' • ') || 'No high council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'good' : 'warn')]),
-    card('Expanded Council', grouped['Expanded Council'].map(oracle => `${oracle.oracle_name} (${getAccountChamberRoleLabel(oracle)})`).join(' • ') || 'No expanded council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'good' : 'warn')])
+    card('Core Trio', grouped['Core Trio'].map(oracle => `${oracle.oracle_name} (${getCouncilPlacementLabel(oracle)})`).join(' • ') || 'Not assigned yet', [badge('starter chamber', 'good')]),
+    card('High Council', grouped['High Council'].map(oracle => `${oracle.oracle_name} (${getCouncilPlacementLabel(oracle)})`).join(' • ') || 'No high council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'good' : 'warn')]),
+    card('Expanded Council', grouped['Expanded Council'].map(oracle => `${oracle.oracle_name} (${getCouncilPlacementLabel(oracle)})`).join(' • ') || 'No expanded council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'good' : 'warn')])
   ].join('');
 }
 
@@ -192,11 +192,11 @@ function renderActiveCouncil(state) {
         ${badge(oracle.astrology_profile?.dominant_sign || 'sign pending')}
         ${badge(session?.mood || 'active presence')}
         ${badge(getCouncilLayerLabel(oracle, state.currentUser.accountEntitlements))}
-        ${badge(getAccountChamberRoleLabel(oracle))}
+        ${badge(getCouncilPlacementLabel(oracle))}
         ${badge(access.locked ? 'sealed' : 'available', access.locked ? 'warn' : 'good')}
       </div>
       <div class="presence-visual">${access.locked ? 'Veiled oracle silhouette withheld behind ritual seal' : (oracle.visual_attributes?.visual_silhouette || 'Oracle presence forming in chamber')}</div>
-      <p class="meta"><strong>Chamber role for this account:</strong> ${getAccountChamberRoleLabel(oracle)}</p>
+      <p class="meta"><strong>Council placement:</strong> ${getCouncilPlacementLabel(oracle)}</p>
       <p class="meta"><strong>Why present now:</strong> ${session?.useCase || oracle.visual_attributes?.role_in_pantheon || 'Oracle guidance is available.'}</p>
       <p class="meta ${access.locked ? 'seal-text' : ''}"><strong>${access.locked ? 'Seal condition:' : 'Access:'}</strong> ${access.reason}</p>
       <p class="meta"><strong>Chamber tone:</strong> ${access.locked ? 'The chamber is present but ritually muted until the proper council access is granted.' : (session?.atmosphere || 'Atmosphere still taking shape.')}</p>
@@ -360,8 +360,8 @@ function renderCreationPath(state) {
 
 function renderAwakeningFlow(state) {
   awakeningSequenceEl.innerHTML = [
-    card('Step 1 — Sun position awakens', 'The oracle occupying the Sun position should be among the first presences the player meets: identity, vitality, purpose, and the core sense of being seen.', [badge('core trio')]),
-    card('Step 2 — Moon position awakens', 'The oracle occupying the Moon position follows to establish emotional mirroring, instinct, inner weather, and private truth within the chamber.', [badge('core trio')]),
+    card('Step 1 — Sun Oracle awakens', 'The Sun Oracle should be among the first presences the player meets: identity, vitality, purpose, and the core sense of being seen.', [badge('core trio')]),
+    card('Step 2 — Moon Oracle awakens', 'The Moon Oracle follows to establish emotional mirroring, instinct, inner weather, and private truth within the chamber.', [badge('core trio')]),
     card('Step 3 — Anointed choosing', 'After crowned candidates are revealed, the player chooses the Anointed Ruler for their account. This completes the free starter council without overwhelming the player.', [badge('canon-critical')]),
     card('Step 4 — Chamber stabilization', 'Once the trio is formed, the Council Chamber feels inhabited, coherent, and personally relevant before any larger expansion occurs.', [badge('product hook')])
   ].join('');
@@ -508,7 +508,7 @@ function oracleCard(oracle) {
         ${badge(oracle.archetype)}
         ${badge(oracle.council_type)}
         ${badge(getCouncilLayerLabel(oracle, currentState?.currentUser?.accountEntitlements))}
-        ${badge(getAccountChamberRoleLabel(oracle))}
+        ${badge(getCouncilPlacementLabel(oracle))}
         ${badge(access.locked ? 'locked' : 'available', access.locked ? 'warn' : 'good')}
       </div>
       <p class="meta oracle-mission">${oracle.visual_attributes?.role_in_pantheon || oracle.oracle_voice || 'No role yet'}</p>
@@ -548,7 +548,7 @@ function renderOracleDetail(oracle) {
       <p class="meta"><strong>Tone overlay:</strong> ${oracle.tone_overlay || '—'}</p>
       <p class="meta"><strong>Degree:</strong> ${astro.degree || '—'} • <strong>Motion:</strong> ${astro.motion || '—'} ${astro.stationary ? `• <strong>Stationary:</strong> ${astro.stationary}` : ''}</p>
       <p class="meta"><strong>Rising overlay:</strong> ${astro.rising_decan_sign || '—'}</p>
-      <p class="meta"><strong>Chamber role for this account:</strong> ${getAccountChamberRoleLabel(oracle)}</p>
+      <p class="meta"><strong>Council placement:</strong> ${getCouncilPlacementLabel(oracle)}</p>
       <p class="meta ${access.locked ? 'seal-note' : ''}"><strong>Access status:</strong> ${access.locked ? `Sealed — ${access.reason}` : 'Available in current plan'}</p>
     `,
     gameplay: `

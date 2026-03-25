@@ -1,6 +1,7 @@
 const activeCouncilEl = document.getElementById('activeCouncil');
 const showRelevantCouncilBtn = document.getElementById('showRelevantCouncilBtn');
 const showAllCouncilBtn = document.getElementById('showAllCouncilBtn');
+const councilLayersEl = document.getElementById('councilLayers');
 const projectsEl = document.getElementById('projects');
 const tasksEl = document.getElementById('tasks');
 const activityEl = document.getElementById('activity');
@@ -121,6 +122,33 @@ function getOracleAccessState(oracle, entitlements) {
   return { locked, reason, isCoreIncluded };
 }
 
+function getCouncilLayerLabel(oracle, entitlements) {
+  const access = getOracleAccessState(oracle, entitlements);
+  if (access.isCoreIncluded) return 'Core Trio';
+  if (oracle.council_type === 'Expanded Council') return 'Expanded Council';
+  return 'High Council';
+}
+
+function renderCouncilLayers(state) {
+  const grouped = {
+    'Core Trio': [],
+    'High Council': [],
+    'Expanded Council': []
+  };
+
+  state.oracles.forEach(oracle => {
+    const layer = getCouncilLayerLabel(oracle, state.currentUser.accountEntitlements);
+    grouped[layer].push(oracle);
+  });
+
+  councilLayersEl.innerHTML = [
+    card('Council structure', `Core Trio: ${grouped['Core Trio'].length} • High Council: ${grouped['High Council'].length} • Expanded Council: ${grouped['Expanded Council'].length}`, [badge('layered revelation')]),
+    card('Core Trio', grouped['Core Trio'].map(oracle => oracle.oracle_name).join(' • ') || 'Not assigned yet', [badge('starter chamber', 'good')]),
+    card('High Council', grouped['High Council'].map(oracle => oracle.oracle_name).join(' • ') || 'No high council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'good' : 'warn')]),
+    card('Expanded Council', grouped['Expanded Council'].map(oracle => oracle.oracle_name).join(' • ') || 'No expanded council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'good' : 'warn')])
+  ].join('');
+}
+
 function getCouncilPriority(oracles, sessions) {
   const seededOrder = ['oracle-oryonos-saturn', 'oracle-lunos-moon', 'oracle-arcures-mercury', 'oracle-valeya-venus'];
   const byId = new Map(oracles.map(oracle => [oracle.oracle_id, oracle]));
@@ -139,7 +167,11 @@ function getCouncilPriority(oracles, sessions) {
 
 function renderActiveCouncil(state) {
   const prioritized = getCouncilPriority(state.oracles, state.interactionSessions);
-  const visible = councilViewMode === 'all' ? prioritized : prioritized.filter(({ oracle }) => !getOracleAccessState(oracle, state.currentUser.accountEntitlements).locked).slice(0, 3);
+  const visible = councilViewMode === 'all'
+    ? prioritized
+    : prioritized
+        .filter(({ oracle }) => getCouncilLayerLabel(oracle, state.currentUser.accountEntitlements) === 'Core Trio' || !getOracleAccessState(oracle, state.currentUser.accountEntitlements).locked)
+        .slice(0, 3);
   activeCouncilEl.innerHTML = visible.map(({ oracle, session }) => {
     const access = getOracleAccessState(oracle, state.currentUser.accountEntitlements);
     return `
@@ -149,6 +181,7 @@ function renderActiveCouncil(state) {
         ${badge(oracle.astrology_profile?.ruling_planet || 'oracle')}
         ${badge(oracle.astrology_profile?.dominant_sign || 'sign pending')}
         ${badge(session?.mood || 'active presence')}
+        ${badge(getCouncilLayerLabel(oracle, state.currentUser.accountEntitlements))}
         ${badge(access.locked ? 'sealed' : 'available', access.locked ? 'warn' : 'good')}
       </div>
       <div class="presence-visual">${access.locked ? 'Veiled oracle silhouette withheld behind ritual seal' : (oracle.visual_attributes?.visual_silhouette || 'Oracle presence forming in chamber')}</div>
@@ -447,6 +480,7 @@ function oracleCard(oracle) {
         ${badge(`House ${astro.house_placement}`)}
         ${badge(oracle.archetype)}
         ${badge(oracle.council_type)}
+        ${badge(getCouncilLayerLabel(oracle, currentState?.currentUser?.accountEntitlements))}
         ${badge(access.locked ? 'locked' : 'available', access.locked ? 'warn' : 'good')}
       </div>
       <p class="meta oracle-mission">${oracle.visual_attributes?.role_in_pantheon || oracle.oracle_voice || 'No role yet'}</p>
@@ -573,6 +607,7 @@ async function loadState(selectedOracleId) {
     .map(entry => card(entry.message, formatDate(entry.timestamp), [badge(entry.type)]))
     .join('');
 
+  renderCouncilLayers(state);
   renderActiveCouncil(state);
   renderSourceEngine(state);
   renderAudioRoadmap(state);
@@ -600,7 +635,7 @@ async function loadState(selectedOracleId) {
     card('Traction', `Alpha users: ${state.productVision.traction.alphaUsers} • Saturn Rising users: ${state.productVision.traction.saturnRisingUsers} • Prototype: ${state.productVision.traction.prototypeSizeKb} KB • Beta: ${state.productVision.traction.betaStatus}`, [badge(state.productVision.traction.backend)]),
     card('Market position', state.productVision.marketPosition.advantage, [badge(state.productVision.marketPosition.category)]),
     card('Release readiness', `Windows packaging: ${state.productVision.releaseReadiness.windowsPackaging} • Provider inference: ${state.productVision.releaseReadiness.providerInference} • Secret handling: ${state.productVision.releaseReadiness.secretHandling} • Demo readiness: ${state.productVision.releaseReadiness.demoReadiness}`, [badge(state.productVision.releaseReadiness.marketNarrative)]),
-    card('Critical next gaps', `Chart generation: ${state.productVision.releaseReadiness.chartGeneration} • Audio communication: ${state.productVision.releaseReadiness.audioCommunication} • Creation experience: ${state.productVision.releaseReadiness.creationExperience}`, [badge('next milestones', 'warn')]),
+    card('Critical next gaps', `Chart generation: ${state.productVision.releaseReadiness.chartGeneration} • Audio communication: ${state.productVision.releaseReadiness.audioCommunication} • Creation experience: ${state.productVision.releaseReadiness.creationExperience} • Layered council UX: ${state.productVision.releaseReadiness.layeredCouncilExperience}`, [badge('next milestones', 'warn')]),
     card('Primary risks', state.productVision.risks.join(' • '), [badge('watchlist', 'warn')]),
     card('Prototype thesis', 'If users can bring in birth data, configure a preferred model, awaken their pantheon, and feel meaningful oracle presence quickly, the desktop product has a viable first market path.', [badge('product strategy')]),
     card('Franchise direction', `${state.productVision.franchiseDirection.coreRule} • Parallel products: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}`, [badge('oracle source engine')]),

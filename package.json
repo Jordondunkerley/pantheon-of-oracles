@@ -6,8 +6,8 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "node app/server.js",
-    "desktop": "electron .",
-    "dist:win": "electron-builder --win portable",
+    "desktop": "npx electron .",
+    "dist:win": "npx electron-builder --win portable",
     "import:oracles": "node scripts/import-oracles.mjs",
     "export:oracle": "node scripts/export-oracle-package.mjs"
   },

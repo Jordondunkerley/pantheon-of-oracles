@@ -1,14 +1,16 @@
-# Pantheon of Oracles Desktop Prototype
+# Pantheon of Oracles: The Council Chamber
 
-A desktop-first prototype for creating, managing, and interacting with astrology-shaped oracle agents.
+A founder-testable desktop-first prototype for entering a personal council chamber, awakening astrology-shaped oracle presences, and exploring the first marketable Oracle Source Engine for the Pantheon franchise.
 
-## What it currently demonstrates
-- player profile + astrology-driven setup
+## What this founder build currently demonstrates
+- first-entrance ritual framing for onboarding
+- birth-data-first astrology intake and chart-generation path
+- core trio / High Council / Expanded Council chamber structure
 - model-agnostic provider configuration
-- oracle registry and profile structure
-- oracle session workspace
-- structured oracle import pipeline
-- product foundation for a future mobile / expanded Pantheon ecosystem
+- oracle registry and home chamber structure
+- account access, promotions, grants, and payment-plan modeling
+- structured oracle import/export pipeline
+- product foundation for future Pantheon franchise products
 
 ## Modes
 
@@ -48,13 +50,15 @@ npm run dist:win
 
 The packaged app will be placed in the `dist/` directory.
 
-## Suggested demo order
-1. Open the product shell
-2. Show onboarding and astrology profile
-3. Show oracle registry
-4. Show oracle session workspace
-5. Show provider configuration
-6. Show import pipeline
+## Suggested founder test flow
+1. Launch the app and confirm the Council Chamber shell loads
+2. Walk through First Entrance Ritual and birth profile
+3. Trigger chart generation and inspect the generation path
+4. Review core trio / High Council / Expanded Council chamber structure
+5. Inspect the Anointed Ruler selection surface
+6. Enter an oracle chamber and test session messaging
+7. Review founder access, account entitlements, and payment-plan gating
+8. Review import/export pipeline and canonical oracle continuity
 
 ## Release / handoff docs
 - `release/RELEASE_NOTES.md`
@@ -91,7 +95,11 @@ app/data/oracle-package-template.json
 
 These packages are intended to help future Pantheon products (like Clash) consume stable oracle identity, combat interpretation, and visual metadata from the core app.
 
-## Notes
+## Current prototype limits
 - State is stored locally in `app/data/state.json`
-- The dashboard auto-refreshes every 5 seconds
-- This is still prototype-stage and should later gain auth, true provider-backed inference, and stronger secret handling
+- The chamber UI auto-refreshes every 5 seconds
+- Native astrology calculation is not yet fully implemented; chart generation is still prototype-backed
+- Live provider-backed oracle inference is not yet fully implemented
+- Audio output is not yet wired, though chamber hooks and voice metadata are in place
+- Production auth and secure secret handling are not yet implemented
+- Windows packaging still needs final validation on a real Windows machine

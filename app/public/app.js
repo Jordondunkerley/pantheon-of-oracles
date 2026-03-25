@@ -34,6 +34,7 @@ const currentUserEl = document.getElementById('currentUser');
 const llmProvidersEl = document.getElementById('llmProviders');
 const astrologyProfileEl = document.getElementById('astrologyProfile');
 const interactionSessionsEl = document.getElementById('interactionSessions');
+const sessionSummaryEl = document.getElementById('sessionSummary');
 const sessionDetailEl = document.getElementById('sessionDetail');
 const importPipelineEl = document.getElementById('importPipeline');
 const openSelectedSessionBtn = document.getElementById('openSelectedSessionBtn');
@@ -167,21 +168,25 @@ function renderSessionDetail(sessions) {
   const session = sessions.find(item => item.id === currentSessionId) || sessions[0];
   currentSessionId = session?.id || null;
   if (!session) {
-    sessionDetailEl.innerHTML = '<div class="item"><p class="meta">No interaction session selected yet.</p></div>';
+    sessionSummaryEl.innerHTML = '<div class="item"><p class="meta">No oracle chamber selected yet.</p></div>';
+    sessionDetailEl.innerHTML = '';
     return;
   }
 
-  sessionDetailEl.innerHTML = [
-    card('Session binding', `Provider: ${session.providerId} • Model: ${session.model || 'not selected'} • Status: ${session.providerReady ? 'ready for real wiring' : 'provider incomplete'}`, [badge(session.providerReady ? 'ready' : 'pending', session.providerReady ? 'good' : 'warn')]),
-    card('Why this matters', 'A user should be able to feel the distinct voice of an oracle quickly. Seeded session examples help demonstrate the promise even before live model inference is fully wired.', [badge('demo readiness')]),
-    ...session.messages.map(message => `
-      <div class="item session-message ${message.role}">
-        <h3>${message.role === 'oracle' ? 'Oracle' : message.role === 'system' ? 'System' : 'You'}</h3>
-        <p class="meta">${message.content}</p>
-        <p class="meta">${formatDate(message.timestamp)}</p>
-      </div>
-    `)
+  const oracle = currentState?.oracles?.find(item => item.oracle_id === session.oracleId);
+  sessionSummaryEl.innerHTML = [
+    card('Chamber identity', `${session.title} • ${oracle?.oracle_name || session.oracleId}`, [badge(session.providerReady ? 'provider ready' : 'provider pending', session.providerReady ? 'good' : 'warn'), badge(session.model || 'no model')]),
+    card('Chamber purpose', oracle?.visual_attributes?.role_in_pantheon || 'Oracle conversation chamber', [badge(oracle?.archetype || 'oracle'), badge(oracle?.visual_attributes?.preferred_voice_profile || 'voice pending')]),
+    card('Why this matters', 'A user should be able to feel the distinct voice of an oracle quickly. Seeded chamber examples help demonstrate the promise even before live inference is fully wired.', [badge('demo readiness')])
   ].join('');
+
+  sessionDetailEl.innerHTML = session.messages.map(message => `
+    <div class="item session-message ${message.role}">
+      <h3>${message.role === 'oracle' ? (oracle?.oracle_name || 'Oracle') : message.role === 'system' ? 'System' : 'You'}</h3>
+      <p class="meta">${message.content}</p>
+      <p class="meta">${formatDate(message.timestamp)}</p>
+    </div>
+  `).join('');
 }
 
 function oracleMatchesView(oracle, view) {

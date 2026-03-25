@@ -204,7 +204,7 @@
     {
       "id": "session-oryonos-001",
       "oracleId": "oracle-oryonos-saturn",
-      "title": "Governance and structure dialogue",
+      "title": "Chamber of Sovereign Measure",
       "status": "seeded",
       "lastMessageAt": "2026-03-25T15:54:00.000Z",
       "providerId": "openai-compatible",
@@ -231,7 +231,7 @@
     {
       "id": "session-lunos-001",
       "oracleId": "oracle-lunos-moon",
-      "title": "Emotional guidance and lunar fire",
+      "title": "Chamber of Ember Tides",
       "status": "seeded",
       "lastMessageAt": "2026-03-25T15:55:00.000Z",
       "providerId": "openai-compatible",
@@ -258,7 +258,7 @@
     {
       "id": "session-arcures-001",
       "oracleId": "oracle-arcures-mercury",
-      "title": "Precision, wit, and decision velocity",
+      "title": "Chamber of Burning Precision",
       "status": "seeded",
       "lastMessageAt": "2026-03-25T15:57:00.000Z",
       "providerId": "openai-compatible",
@@ -285,7 +285,7 @@
     {
       "id": "session-valeya-001",
       "oracleId": "oracle-valeya-venus",
-      "title": "Charm, confidence, and magnetic presence",
+      "title": "Chamber of Velvet Cinders",
       "status": "seeded",
       "lastMessageAt": "2026-03-25T15:58:00.000Z",
       "providerId": "openai-compatible",

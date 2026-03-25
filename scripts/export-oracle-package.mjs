@@ -38,10 +38,10 @@ const pkg = {
   },
   franchise_traits: {
     weapon_signature: weapons.weapon_1 || '',
-    combat_style: oracle.visual_attributes?.additional_notes || '',
-    visual_silhouette: `${visual.head || ''} ${visual.torso || ''}`.trim(),
+    combat_style: oracle.visual_attributes?.combat_style || oracle.visual_attributes?.additional_notes || '',
+    visual_silhouette: oracle.visual_attributes?.visual_silhouette || `${visual.head || ''} ${visual.torso || ''}`.trim(),
     color_scheme: visual.color_scheme || '',
-    spirit_identity: oracle.pet_name || oracle.behemoth_name || ''
+    spirit_identity: oracle.visual_attributes?.spirit_identity || oracle.pet_name || oracle.behemoth_name || ''
   },
   faction_affiliation: oracle.faction_affiliation,
   visual_attributes: {

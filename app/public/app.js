@@ -252,6 +252,7 @@ function renderOracleDetail(oracle) {
       <p class="meta"><strong>Voice:</strong> ${oracle.oracle_voice || '—'}</p>
       <p class="meta"><strong>Voice profile:</strong> ${oracle.visual_attributes?.preferred_voice_profile || 'Not assigned yet'}</p>
       <p class="meta"><strong>Audio readiness:</strong> ${oracle.visual_attributes?.audio_ready ? 'ready' : 'not yet wired'} • <strong>Avatar readiness:</strong> ${oracle.visual_attributes?.avatar_ready ? 'ready' : 'future'}</p>
+      <p class="meta"><strong>Franchise silhouette:</strong> ${oracle.visual_attributes?.visual_silhouette || 'Not defined yet'}</p>
       <p class="meta"><strong>Tone overlay:</strong> ${oracle.tone_overlay || '—'}</p>
       <p class="meta"><strong>Degree:</strong> ${astro.degree || '—'} • <strong>Motion:</strong> ${astro.motion || '—'} ${astro.stationary ? `• <strong>Stationary:</strong> ${astro.stationary}` : ''}</p>
       <p class="meta"><strong>Rising overlay:</strong> ${astro.rising_decan_sign || '—'}</p>
@@ -268,6 +269,7 @@ function renderOracleDetail(oracle) {
       <p class="meta"><strong>Planetary faction:</strong> ${oracle.faction_affiliation?.planetary_faction || '—'}</p>
       <p class="meta"><strong>Guild:</strong> ${oracle.faction_affiliation?.guild || '—'}</p>
       <p class="meta"><strong>Weapons:</strong> ${weapons.weapon_1 || '—'}${weapons.weapon_2 ? ` / ${weapons.weapon_2}` : ''}</p>
+      <p class="meta"><strong>Combat style:</strong> ${visuals.combat_style || visuals.additional_notes || 'Not defined yet'}</p>
     `,
     guidance: `
       <h3>${oracle.oracle_name} — Guidance</h3>

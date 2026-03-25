@@ -149,13 +149,13 @@ function renderActiveCouncil(state) {
         ${badge(session?.mood || 'active presence')}
         ${badge(access.locked ? 'sealed' : 'available', access.locked ? 'warn' : 'good')}
       </div>
-      <div class="presence-visual">${access.locked ? 'Chamber veil active' : (oracle.visual_attributes?.visual_silhouette || 'Oracle presence forming in chamber')}</div>
+      <div class="presence-visual">${access.locked ? 'Veiled oracle silhouette withheld behind ritual seal' : (oracle.visual_attributes?.visual_silhouette || 'Oracle presence forming in chamber')}</div>
       <p class="meta"><strong>Why present now:</strong> ${session?.useCase || oracle.visual_attributes?.role_in_pantheon || 'Oracle guidance is available.'}</p>
-      <p class="meta"><strong>Access:</strong> ${access.reason}</p>
-      <p class="meta"><strong>Chamber tone:</strong> ${session?.atmosphere || 'Atmosphere still taking shape.'}</p>
+      <p class="meta ${access.locked ? 'seal-text' : ''}"><strong>${access.locked ? 'Seal condition:' : 'Access:'}</strong> ${access.reason}</p>
+      <p class="meta"><strong>Chamber tone:</strong> ${access.locked ? 'The chamber is present but ritually muted until the proper council access is granted.' : (session?.atmosphere || 'Atmosphere still taking shape.')}</p>
       <div class="presence-actions">
         <button class="focus-oracle-btn" data-oracle-id="${oracle.oracle_id}">${access.locked ? 'Inspect seal' : 'Focus oracle'}</button>
-        <button class="open-chamber-btn" data-oracle-id="${oracle.oracle_id}">${access.locked ? 'View unlock path' : 'Open chamber'}</button>
+        <button class="open-chamber-btn" data-oracle-id="${oracle.oracle_id}">${access.locked ? 'View unlock rite' : 'Open chamber'}</button>
       </div>
     </div>
   `}).join('');
@@ -221,7 +221,7 @@ function renderCurrentUser(user) {
     card('Founder access model', `${founder.recognized ? 'Recognized founder account' : 'Standard account'} • Role: ${founder.role || 'Founder / Creator / CEO'} • Access mode: ${founder.accessMode || 'account-recognized'}`, [badge(founder.recognized ? 'founder access enabled' : 'standard access', founder.recognized ? 'good' : 'warn')]),
     card('Founder features', (founder.featureFlags || []).join(' • ') || 'No founder-only features assigned yet', [badge('single product build')]),
     card('Entitlement model', `${user.accountEntitlements?.tier || 'standard'} • Grants: ${(user.accountEntitlements?.grants || []).length} • Promotion flags: ${(user.accountEntitlements?.promotionFlags || []).join(' • ') || 'none'} • Payment plan: ${user.accountEntitlements?.paymentAccess?.plan || 'unassigned'}`, [badge('account benefits')]),
-    card('Current council access', `Core included now: ${coreOracleNames || 'none assigned'} • High Council: ${user.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'unlocked' : 'locked'} • Expanded Council: ${user.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'unlocked' : 'locked'}`, [badge('chamber access')]),
+    card('Current council access', `Core included now: ${coreOracleNames || 'none assigned'} • High Council: ${user.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'unlocked' : 'sealed'} • Expanded Council: ${user.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'unlocked' : 'sealed'}`, [badge('chamber access')]),
     card('Oracle sync', `Council initiated: ${user.oracle_sync_status.council_initiated ? 'yes' : 'no'} • Throne World: ${user.oracle_sync_status.throne_world_access ? 'yes' : 'no'} • Leviathan: ${user.oracle_sync_status.leviathan_unlocked ? 'yes' : 'no'}`)
   ].join('');
 
@@ -287,7 +287,7 @@ function renderAccountEntitlements(user, accessControl) {
   ].join('');
 
   accessControlEl.innerHTML = [
-    card('Payment plans', `${paymentPlans.length} configured. Free, High Council, and Expanded Council access can be plan-driven instead of hard-coded.`, [badge('payment engine')]),
+    card('Payment plans', `${paymentPlans.length} configured. Free, High Council, and Expanded Council access can be plan-driven instead of hard-coded, with chamber seals used instead of blunt unavailable states.`, [badge('payment engine')]),
     ...paymentPlans.map(plan => card(plan.name, `${plan.price} • ${plan.oracleAccessMode} • High Council: ${plan.highCouncilUnlocked ? 'yes' : 'no'} • Expanded: ${plan.expandedCouncilUnlocked ? 'yes' : 'no'} • ${plan.notes}`, [badge(plan.status), ...(plan.featureFlags || []).map(item => badge(item))])),
     card('Promotion rules', `${promotionRules.length} configured. Time-gated signup windows can automatically grant tiers, badges, and feature flags.`, [badge('promo engine')]),
     ...promotionRules.map(rule => card(rule.name, `${rule.type} • ${rule.status} • ${rule.windowStart} → ${rule.windowEnd}`, [badge(rule.grantTier), ...(rule.badges || []).map(item => badge(item))])),
@@ -433,7 +433,7 @@ function oracleCard(oracle) {
         ${badge(access.locked ? 'locked' : 'available', access.locked ? 'warn' : 'good')}
       </div>
       <p class="meta oracle-mission">${oracle.visual_attributes?.role_in_pantheon || oracle.oracle_voice || 'No role yet'}</p>
-      <p class="meta"><strong>Access:</strong> ${access.reason}</p>
+      <p class="meta ${access.locked ? 'seal-note' : ''}"><strong>${access.locked ? 'Seal condition:' : 'Access:'}</strong> ${access.reason}</p>
       <p class="meta"><strong>Weapon:</strong> ${oracle.visual_attributes?.weapons?.weapon_1 || '—'} • <strong>Tier:</strong> ${oracle.tier}</p>
       <p class="meta"><strong>Form:</strong> ${oracle.oracle_form} • <strong>Rank:</strong> ${oracle.ascended_rank}</p>
     </button>
@@ -469,7 +469,7 @@ function renderOracleDetail(oracle) {
       <p class="meta"><strong>Tone overlay:</strong> ${oracle.tone_overlay || '—'}</p>
       <p class="meta"><strong>Degree:</strong> ${astro.degree || '—'} • <strong>Motion:</strong> ${astro.motion || '—'} ${astro.stationary ? `• <strong>Stationary:</strong> ${astro.stationary}` : ''}</p>
       <p class="meta"><strong>Rising overlay:</strong> ${astro.rising_decan_sign || '—'}</p>
-      <p class="meta"><strong>Access status:</strong> ${access.locked ? `Locked — ${access.reason}` : 'Available in current plan'}</p>
+      <p class="meta ${access.locked ? 'seal-note' : ''}"><strong>Access status:</strong> ${access.locked ? `Sealed — ${access.reason}` : 'Available in current plan'}</p>
     `,
     gameplay: `
       <h3>${oracle.oracle_name} — Gameplay</h3>

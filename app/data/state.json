@@ -137,7 +137,9 @@
         "oracle-canon-edit",
         "release-preview",
         "provider-lab",
-        "lifetime-access"
+        "lifetime-access",
+        "full-high-council",
+        "expanded-council"
       ],
       "promotionFlags": [
         "founder-seed"
@@ -149,7 +151,23 @@
           "label": "Founder Lifetime Access",
           "status": "active"
         }
-      ]
+      ],
+      "oracleAccess": {
+        "mode": "full",
+        "freeLimit": 3,
+        "includedOracleIds": [
+          "oracle-solin-sun",
+          "oracle-lunos-moon",
+          "oracle-oryonos-saturn"
+        ],
+        "lockedCollections": []
+      },
+      "paymentAccess": {
+        "plan": "founder-lifetime",
+        "billingStatus": "complimentary",
+        "highCouncilUnlocked": true,
+        "expandedCouncilUnlocked": true
+      }
     },
     "season_pass": {
       "active": true,
@@ -227,6 +245,58 @@
           "creator",
           "ceo"
         ]
+      }
+    ],
+    "paymentPlans": [
+      {
+        "id": "plan-free-trial-council",
+        "name": "Free Trial Council",
+        "status": "planned",
+        "price": "$0",
+        "oracleAccessMode": "limited",
+        "freeLimit": 3,
+        "includedOracleIds": [
+          "oracle-solin-sun",
+          "oracle-lunos-moon",
+          "oracle-oryonos-saturn"
+        ],
+        "highCouncilUnlocked": false,
+        "expandedCouncilUnlocked": false,
+        "featureFlags": [
+          "trial-access"
+        ],
+        "notes": "Free entry plan limited to Sun, Moon, and Anointed Ruler for initial release."
+      },
+      {
+        "id": "plan-paid-high-council",
+        "name": "High Council Access",
+        "status": "planned",
+        "price": "TBD",
+        "oracleAccessMode": "high-council",
+        "freeLimit": null,
+        "includedOracleIds": [],
+        "highCouncilUnlocked": true,
+        "expandedCouncilUnlocked": false,
+        "featureFlags": [
+          "high-council-access"
+        ],
+        "notes": "Unlocks the rest of the High Council beyond the free core trio."
+      },
+      {
+        "id": "plan-expanded-council",
+        "name": "Expanded Council Access",
+        "status": "planned",
+        "price": "TBD",
+        "oracleAccessMode": "full",
+        "freeLimit": null,
+        "includedOracleIds": [],
+        "highCouncilUnlocked": true,
+        "expandedCouncilUnlocked": true,
+        "featureFlags": [
+          "high-council-access",
+          "expanded-council-access"
+        ],
+        "notes": "Unlocks the expanded council beyond the High Council tiers."
       }
     ]
   },
@@ -1183,7 +1253,8 @@
       "Budget and timeline overruns",
       "Market adoption across a niche-but-promising intersection",
       "Operational security for a 24/7 live service handling personal birth data",
-      "Account entitlement automation is not yet backed by persistent auth infrastructure"
+      "Account entitlement automation is not yet backed by persistent auth infrastructure",
+      "Payment-plan gating for free core trio vs paid councils is not yet enforced in live chamber flows"
     ]
   }
 }

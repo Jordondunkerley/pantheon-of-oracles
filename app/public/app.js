@@ -193,7 +193,7 @@ function renderCurrentUser(user) {
     card('Preferences', `Voice: ${user.preferences.oracle_voice_flavor} • Visual overlays: ${user.preferences.visual_overlays_enabled ? 'on' : 'off'} • Prompt tone: ${user.preferences.system_prompt_tone}`),
     card('Founder access model', `${founder.recognized ? 'Recognized founder account' : 'Standard account'} • Role: ${founder.role || 'Founder / Creator / CEO'} • Access mode: ${founder.accessMode || 'account-recognized'}`, [badge(founder.recognized ? 'founder access enabled' : 'standard access', founder.recognized ? 'good' : 'warn')]),
     card('Founder features', (founder.featureFlags || []).join(' • ') || 'No founder-only features assigned yet', [badge('single product build')]),
-    card('Entitlement model', `${user.accountEntitlements?.tier || 'standard'} • Grants: ${(user.accountEntitlements?.grants || []).length} • Promotion flags: ${(user.accountEntitlements?.promotionFlags || []).join(' • ') || 'none'}`, [badge('account benefits')]),
+    card('Entitlement model', `${user.accountEntitlements?.tier || 'standard'} • Grants: ${(user.accountEntitlements?.grants || []).length} • Promotion flags: ${(user.accountEntitlements?.promotionFlags || []).join(' • ') || 'none'} • Payment plan: ${user.accountEntitlements?.paymentAccess?.plan || 'unassigned'}`, [badge('account benefits')]),
     card('Oracle sync', `Council initiated: ${user.oracle_sync_status.council_initiated ? 'yes' : 'no'} • Throne World: ${user.oracle_sync_status.throne_world_access ? 'yes' : 'no'} • Leviathan: ${user.oracle_sync_status.leviathan_unlocked ? 'yes' : 'no'}`)
   ].join('');
 
@@ -212,15 +212,22 @@ function renderAccountEntitlements(user, accessControl) {
   const entitlements = user.accountEntitlements || {};
   const promotionRules = accessControl?.promotionRules || [];
   const manualGrants = accessControl?.manualAccountGrants || [];
+  const paymentPlans = accessControl?.paymentPlans || [];
+  const oracleAccess = entitlements.oracleAccess || {};
+  const paymentAccess = entitlements.paymentAccess || {};
 
   accountEntitlementsEl.innerHTML = [
     card('Access tier', entitlements.tier || 'standard', [badge('account-recognized')]),
+    card('Payment access', `${paymentAccess.plan || 'unassigned'} • Billing: ${paymentAccess.billingStatus || 'unknown'} • High Council: ${paymentAccess.highCouncilUnlocked ? 'unlocked' : 'locked'} • Expanded Council: ${paymentAccess.expandedCouncilUnlocked ? 'unlocked' : 'locked'}`, [badge('payment model')]),
+    card('Oracle access', `${oracleAccess.mode || 'standard'} • Free limit: ${oracleAccess.freeLimit ?? 'none'} • Included: ${(oracleAccess.includedOracleIds || []).join(' • ') || 'all by plan'}`, [badge('oracle gate')]),
     card('Badges', (entitlements.badges || []).join(' • ') || 'None assigned', [badge('identity flags')]),
     card('Feature flags', (entitlements.featureFlags || []).join(' • ') || 'None assigned', [badge('capabilities')]),
     card('Active grants', (entitlements.grants || []).map(grant => `${grant.label} (${grant.status})`).join(' • ') || 'No grants assigned', [badge('entitlements')])
   ].join('');
 
   accessControlEl.innerHTML = [
+    card('Payment plans', `${paymentPlans.length} configured. Free, High Council, and Expanded Council access can be plan-driven instead of hard-coded.`, [badge('payment engine')]),
+    ...paymentPlans.map(plan => card(plan.name, `${plan.price} • ${plan.oracleAccessMode} • High Council: ${plan.highCouncilUnlocked ? 'yes' : 'no'} • Expanded: ${plan.expandedCouncilUnlocked ? 'yes' : 'no'} • ${plan.notes}`, [badge(plan.status), ...(plan.featureFlags || []).map(item => badge(item))])),
     card('Promotion rules', `${promotionRules.length} configured. Time-gated signup windows can automatically grant tiers, badges, and feature flags.`, [badge('promo engine')]),
     ...promotionRules.map(rule => card(rule.name, `${rule.type} • ${rule.status} • ${rule.windowStart} → ${rule.windowEnd}`, [badge(rule.grantTier), ...(rule.badges || []).map(item => badge(item))])),
     card('Manual account grants', `${manualGrants.length} configured. Specific accounts can be directly granted lifetime or custom access by your choosing.`, [badge('manual override')]),

@@ -250,6 +250,8 @@ function renderOracleDetail(oracle) {
         ${badge(oracle.council_type)}
       </div>
       <p class="meta"><strong>Voice:</strong> ${oracle.oracle_voice || '—'}</p>
+      <p class="meta"><strong>Voice profile:</strong> ${oracle.visual_attributes?.preferred_voice_profile || 'Not assigned yet'}</p>
+      <p class="meta"><strong>Audio readiness:</strong> ${oracle.visual_attributes?.audio_ready ? 'ready' : 'not yet wired'} • <strong>Avatar readiness:</strong> ${oracle.visual_attributes?.avatar_ready ? 'ready' : 'future'}</p>
       <p class="meta"><strong>Tone overlay:</strong> ${oracle.tone_overlay || '—'}</p>
       <p class="meta"><strong>Degree:</strong> ${astro.degree || '—'} • <strong>Motion:</strong> ${astro.motion || '—'} ${astro.stationary ? `• <strong>Stationary:</strong> ${astro.stationary}` : ''}</p>
       <p class="meta"><strong>Rising overlay:</strong> ${astro.rising_decan_sign || '—'}</p>
@@ -359,7 +361,8 @@ async function loadState(selectedOracleId) {
     card('Release readiness', `Windows packaging: ${state.productVision.releaseReadiness.windowsPackaging} • Provider inference: ${state.productVision.releaseReadiness.providerInference} • Secret handling: ${state.productVision.releaseReadiness.secretHandling} • Demo readiness: ${state.productVision.releaseReadiness.demoReadiness}`, [badge(state.productVision.releaseReadiness.marketNarrative)]),
     card('Primary risks', state.productVision.risks.join(' • '), [badge('watchlist', 'warn')]),
     card('Prototype thesis', 'If users can bring in birth data, configure a preferred model, awaken their pantheon, and feel meaningful oracle presence quickly, the desktop product has a viable first market path.', [badge('product strategy')]),
-    card('Franchise direction', `${state.productVision.franchiseDirection.coreRule} • Parallel products: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}`, [badge('oracle source engine')])
+    card('Franchise direction', `${state.productVision.franchiseDirection.coreRule} • Parallel products: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}`, [badge('oracle source engine')]),
+    card('Audio roadmap', 'Text-first foundation → oracle voice output → voice input → conversational audio loop → later visual/video embodiment.', [badge('stepwise expansion')])
   ].join('');
 
   populateOracleSelect(state.oracles);

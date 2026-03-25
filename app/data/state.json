@@ -580,6 +580,9 @@
         },
         "oracle_avatar_url": "",
         "voice_style": "Mythic martial",
+        "preferred_voice_profile": "Solar Vanguard",
+        "audio_ready": false,
+        "avatar_ready": false,
         "role_in_pantheon": "Core identity oracle",
         "additional_notes": "Spirit animal: Boar Monkey."
       }
@@ -671,6 +674,9 @@
         },
         "oracle_avatar_url": "",
         "voice_style": "Low, deliberate, crackling",
+        "preferred_voice_profile": "Infernal Whisper",
+        "audio_ready": false,
+        "avatar_ready": false,
         "role_in_pantheon": "Emotional guidance oracle",
         "additional_notes": "Born on New Moon day theme." 
       }
@@ -762,6 +768,9 @@
         },
         "oracle_avatar_url": "",
         "voice_style": "Measured cosmic authority",
+        "preferred_voice_profile": "Celestial Sovereign",
+        "audio_ready": false,
+        "avatar_ready": false,
         "role_in_pantheon": "Governance and structure oracle",
         "additional_notes": "First-dominant rulership emphasis."
       }
@@ -853,6 +862,9 @@
         },
         "oracle_avatar_url": "",
         "voice_style": "Mystic immersion",
+        "preferred_voice_profile": "Dreamforge Echo",
+        "audio_ready": false,
+        "avatar_ready": false,
         "role_in_pantheon": "Mysticism and dream logic oracle",
         "additional_notes": "Stationary entering state relevant to ritual and dialogue tone."
       }

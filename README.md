@@ -75,6 +75,20 @@ A starter import shape is available at:
 app/data/import-template.json
 ```
 
+## Export canonical oracle packages
+
+You can export an oracle into a franchise-ready package with:
+
+```bash
+npm run export:oracle -- oracle-oryonos-saturn
+```
+
+Starter package shape:
+
+```text
+app/data/oracle-package-template.json
+```
+
 ## Notes
 - State is stored locally in `app/data/state.json`
 - The dashboard auto-refreshes every 5 seconds

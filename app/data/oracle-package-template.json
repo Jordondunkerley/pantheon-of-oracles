@@ -1,0 +1,57 @@
+{
+  "package_version": "0.1.0",
+  "oracle_id": "oracle-xxxx",
+  "oracle_name": "Oracle Name",
+  "source_product": "Pantheon of Oracles Desktop Prototype",
+  "canonical": true,
+  "astrology_profile": {
+    "ruling_planet": "",
+    "dominant_sign": "",
+    "house_placement": "",
+    "degree": "",
+    "motion": "",
+    "stationary": "",
+    "decan": {
+      "method": "Modern",
+      "decan_ruler": "",
+      "decan_ruler_sign": "",
+      "flavor": "Full"
+    },
+    "rising_sign": "",
+    "rising_decan_sign": ""
+  },
+  "identity": {
+    "archetype": "",
+    "oracle_type": "Playable",
+    "oracle_voice": "",
+    "tone_overlay": "",
+    "role_in_pantheon": ""
+  },
+  "franchise_traits": {
+    "weapon_signature": "",
+    "combat_style": "",
+    "visual_silhouette": "",
+    "color_scheme": "",
+    "spirit_identity": ""
+  },
+  "faction_affiliation": {
+    "core_faction": "",
+    "planetary_faction": "",
+    "tribe": "",
+    "guild": ""
+  },
+  "visual_attributes": {
+    "head": "",
+    "torso": "",
+    "arms": "",
+    "legs": "",
+    "aura": "",
+    "ambient_flavor": "",
+    "visual_style_notes": ""
+  },
+  "future_hooks": {
+    "supports_clash": true,
+    "supports_mobile": true,
+    "supports_story_modes": true
+  }
+}

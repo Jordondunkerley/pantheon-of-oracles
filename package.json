@@ -8,7 +8,8 @@
     "start": "node app/server.js",
     "desktop": "electron .",
     "dist:win": "electron-builder --win portable",
-    "import:oracles": "node scripts/import-oracles.mjs"
+    "import:oracles": "node scripts/import-oracles.mjs",
+    "export:oracle": "node scripts/export-oracle-package.mjs"
   },
   "devDependencies": {
     "electron": "^35.0.0",

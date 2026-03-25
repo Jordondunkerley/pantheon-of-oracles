@@ -126,9 +126,10 @@ function renderProviders(providers) {
 function renderImportPipeline(state) {
   importPipelineEl.innerHTML = [
     card('Structured oracle import', 'The prototype can now ingest structured JSON oracle records using the CLI import pipeline.', [badge('prototype utility'), badge('json import')]),
-    card('Command', 'npm run import:oracles -- ./path/to/oracles.json', [badge('workspace CLI')]),
-    card('Template path', 'app/data/import-template.json', [badge('starter schema')]),
-    card('Why it matters', `Current oracle count in state: ${state.oracles.length}. This is the bridge between Jordon\'s source material and a scalable user-facing pantheon builder.`, [badge('marketability')])
+    card('Import command', 'npm run import:oracles -- ./path/to/oracles.json', [badge('workspace CLI')]),
+    card('Export command', 'npm run export:oracle -- oracle-oryonos-saturn', [badge('canonical package')]),
+    card('Template paths', 'app/data/import-template.json • app/data/oracle-package-template.json', [badge('starter schemas')]),
+    card('Why it matters', `Current oracle count in state: ${state.oracles.length}. The desktop app is becoming the oracle source engine for future Pantheon products.`, [badge('franchise leverage')])
   ].join('');
 }
 

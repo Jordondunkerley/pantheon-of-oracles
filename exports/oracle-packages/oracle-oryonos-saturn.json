@@ -1,0 +1,59 @@
+{
+  "package_version": "0.1.0",
+  "oracle_id": "oracle-oryonos-saturn",
+  "oracle_name": "Oryonos",
+  "source_product": "Pantheon of Oracles Desktop Prototype",
+  "canonical": true,
+  "astrology_profile": {
+    "ruling_planet": "Saturn",
+    "dominant_sign": "Aquarius",
+    "house_placement": "1",
+    "motion": "Direct",
+    "stationary": "",
+    "shadow": "",
+    "degree": "28°21'51\"",
+    "degree_mark": "",
+    "decan": {
+      "method": "Modern",
+      "decan_ruler": "Venus",
+      "decan_ruler_sign": "Aries",
+      "flavor": "Full"
+    },
+    "rising_sign": "Aquarius",
+    "rising_decan_sign": "Aquarius flavored through Mercury in Aries"
+  },
+  "identity": {
+    "archetype": "The Celestial Overlord",
+    "oracle_type": "Playable",
+    "oracle_voice": "Deep, unwavering, precise cosmic authority",
+    "tone_overlay": "Celestial rulership and sovereign order",
+    "role_in_pantheon": "Governance and structure oracle"
+  },
+  "franchise_traits": {
+    "weapon_signature": "Sovereign Sacrament",
+    "combat_style": "First-dominant rulership emphasis.",
+    "visual_silhouette": "Imposing celestial crown helm of gold and black with capricornian horns in aquarius style. Ornate high-collared robe in gold and black.",
+    "color_scheme": "Gold, Black, White",
+    "spirit_identity": "Falcon Griffin"
+  },
+  "faction_affiliation": {
+    "core_faction": "Mystic",
+    "planetary_faction": "Saturn",
+    "tribe": "Air",
+    "guild": "Aquarius Dolphin Guild"
+  },
+  "visual_attributes": {
+    "head": "Imposing celestial crown helm of gold and black with capricornian horns in aquarius style.",
+    "torso": "Ornate high-collared robe in gold and black.",
+    "arms": "Gold bracers.",
+    "legs": "Robed lower half with ceremonial layers.",
+    "aura": "Subtle white-gold rays radiating timeless authority.",
+    "ambient_flavor": "Cosmic blend of gold, black, deep navy and purple.",
+    "visual_style_notes": "Traditional and dominant rulership infused."
+  },
+  "future_hooks": {
+    "supports_clash": true,
+    "supports_mobile": true,
+    "supports_story_modes": true
+  }
+}

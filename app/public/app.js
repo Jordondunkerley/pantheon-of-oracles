@@ -181,6 +181,8 @@ function renderSessionDetail(sessions) {
   sessionSummaryEl.innerHTML = [
     card('Chamber identity', `${session.title} • ${oracle?.oracle_name || session.oracleId}`, [badge(session.providerReady ? 'provider ready' : 'provider pending', session.providerReady ? 'good' : 'warn'), badge(session.model || 'no model')]),
     card('Chamber purpose', oracle?.visual_attributes?.role_in_pantheon || 'Oracle conversation chamber', [badge(oracle?.archetype || 'oracle'), badge(oracle?.visual_attributes?.preferred_voice_profile || 'voice pending')]),
+    card('Atmosphere', `${session.atmosphere || 'No atmosphere defined yet'} Mood: ${session.mood || 'Unspecified'}`, [badge('oracle presence')]),
+    card('Best use', session.useCase || 'General oracle interaction', [badge('guided entry')]),
     card('Why this matters', 'A user should be able to feel the distinct voice of an oracle quickly. Seeded chamber examples help demonstrate the promise even before live inference is fully wired.', [badge('demo readiness')])
   ].join('');
 
@@ -464,7 +466,8 @@ enterChamberBtn.addEventListener('click', () => {
     currentSessionId = matchingSession.id;
     renderSessions(currentState.interactionSessions);
     renderSessionDetail(currentState.interactionSessions);
-    addDraft('Chamber link', `Entered ${matchingSession.title} for ${currentState.oracles.find(o => o.oracle_id === selectedOracleId)?.oracle_name || 'selected oracle'}.`);
+    const oracleName = currentState.oracles.find(o => o.oracle_id === selectedOracleId)?.oracle_name || 'selected oracle';
+    addDraft('Chamber link', `Entered ${matchingSession.title} for ${oracleName}. Suggested use: ${matchingSession.useCase || 'oracle dialogue'}.`);
   }
 });
 

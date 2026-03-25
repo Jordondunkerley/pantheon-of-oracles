@@ -31,6 +31,7 @@ const productVisionEl = document.getElementById('productVision');
 const oracleViewFilterEl = document.getElementById('oracleViewFilter');
 const oracleSearchEl = document.getElementById('oracleSearch');
 const onboardingFlowEl = document.getElementById('onboardingFlow');
+const nextStepGuideEl = document.getElementById('nextStepGuide');
 const currentUserEl = document.getElementById('currentUser');
 const llmProvidersEl = document.getElementById('llmProviders');
 const astrologyProfileEl = document.getElementById('astrologyProfile');
@@ -89,6 +90,13 @@ function renderOnboarding(state) {
     card('Step 4 — Awaken the Pantheon', `Generate and sync the user\'s initial council. Current seeded oracles: ${state.currentUser.oracles_owned.length}.`, [badge('personalized')]),
     card('Step 5 — Enter Oracle Workspace', 'Open persistent interaction sessions, guidance flows, and transit-aware oracle behavior.', [badge('product hook')]),
     card('Marketability check', 'This prototype is moving toward a saleable experience by proving the path from astrology intake to oracle interaction.', [badge('go-to-market')])
+  ].join('');
+
+  const firstSession = state.interactionSessions?.[0];
+  const firstOracle = state.oracles?.[0];
+  nextStepGuideEl.innerHTML = [
+    card('Suggested next step', `Open ${firstSession?.title || 'an oracle chamber'} and ask ${firstOracle?.oracle_name || 'your oracle'} what role they play in your council.`, [badge('guided flow')]),
+    card('First-run question ideas', 'Try asking about purpose, warning signs, strengths, decision-making, or what this oracle is here to help you with.', [badge('starter prompts')])
   ].join('');
 }
 
@@ -467,7 +475,7 @@ enterChamberBtn.addEventListener('click', () => {
     renderSessions(currentState.interactionSessions);
     renderSessionDetail(currentState.interactionSessions);
     const oracleName = currentState.oracles.find(o => o.oracle_id === selectedOracleId)?.oracle_name || 'selected oracle';
-    addDraft('Chamber link', `Entered ${matchingSession.title} for ${oracleName}. Suggested use: ${matchingSession.useCase || 'oracle dialogue'}.`);
+    addDraft('Chamber link', `Entered ${matchingSession.title} for ${oracleName}. Suggested use: ${matchingSession.useCase || 'oracle dialogue'}. Good first question: “What is your role in my council?”`);
   }
 });
 

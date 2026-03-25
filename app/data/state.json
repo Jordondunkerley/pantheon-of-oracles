@@ -178,7 +178,14 @@
       "mode": "prototype-seeded",
       "targetMode": "birth-data-native",
       "validationSources": ["Astro-Seek", "Startek"],
-      "lastGeneratedAt": null
+      "lastGeneratedAt": null,
+      "workflow": [
+        "Collect birth date, time, and location",
+        "Generate chart internally from birth data",
+        "Validate against trusted references when needed",
+        "Build astrology profile",
+        "Awaken oracle council from resulting chart"
+      ]
     },
     "name": "Jordon Dunkerley",
     "dateOfBirth": "1993-04-21",

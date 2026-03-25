@@ -93,6 +93,7 @@ function renderOnboarding(state) {
 function renderCurrentUser(user) {
   currentUserEl.innerHTML = [
     card(user.username, `${user.birth_location} • ${user.birthday} ${user.birth_time}`, [badge(user.access_tier), badge(user.founder_status ? 'Founder' : 'Standard')]),
+    card('Immediate product framing', 'This seeded profile demonstrates how the product can preload a player\'s astrology and awaken a personalized oracle council from day one.', [badge('demo mode')]),
     card('Alignment', `Core: ${user.faction_alignment.core_faction} • Planetary: ${user.faction_alignment.planetary_faction} • Warband: ${user.faction_alignment.warband || '—'}`),
     card('Preferences', `Voice: ${user.preferences.oracle_voice_flavor} • Visual overlays: ${user.preferences.visual_overlays_enabled ? 'on' : 'off'} • Prompt tone: ${user.preferences.system_prompt_tone}`),
     card('Oracle sync', `Council initiated: ${user.oracle_sync_status.council_initiated ? 'yes' : 'no'} • Throne World: ${user.oracle_sync_status.throne_world_access ? 'yes' : 'no'} • Leviathan: ${user.oracle_sync_status.leviathan_unlocked ? 'yes' : 'no'}`)
@@ -171,6 +172,7 @@ function renderSessionDetail(sessions) {
 
   sessionDetailEl.innerHTML = [
     card('Session binding', `Provider: ${session.providerId} • Model: ${session.model || 'not selected'} • Status: ${session.providerReady ? 'ready for real wiring' : 'provider incomplete'}`, [badge(session.providerReady ? 'ready' : 'pending', session.providerReady ? 'good' : 'warn')]),
+    card('Why this matters', 'A user should be able to feel the distinct voice of an oracle quickly. Seeded session examples help demonstrate the promise even before live model inference is fully wired.', [badge('demo readiness')]),
     ...session.messages.map(message => `
       <div class="item session-message ${message.role}">
         <h3>${message.role === 'oracle' ? 'Oracle' : message.role === 'system' ? 'System' : 'You'}</h3>

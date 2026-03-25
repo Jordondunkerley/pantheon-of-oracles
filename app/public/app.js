@@ -131,12 +131,12 @@ function getCouncilLayerLabel(oracle, entitlements) {
   return 'High Council';
 }
 
-function getAwakeningRoleLabel(oracle) {
-  if (oracle.solar_ruler || oracle.oracle_id === 'oracle-solin-sun') return 'First Flame';
-  if (oracle.oracle_id === 'oracle-lunos-moon') return 'Second Tide';
-  if (oracle.anointed_ruler) return 'Chosen Crown';
-  if (oracle.council_type === 'Expanded Council') return 'Outer Veil';
-  return 'High Council Presence';
+function getAccountChamberRoleLabel(oracle) {
+  if (oracle.solar_ruler || oracle.oracle_id === 'oracle-solin-sun') return 'Sun position';
+  if (oracle.oracle_id === 'oracle-lunos-moon') return 'Moon position';
+  if (oracle.anointed_ruler) return 'Anointed Ruler';
+  if (oracle.council_type === 'Expanded Council') return 'Expanded Council position';
+  return 'High Council position';
 }
 
 function renderCouncilLayers(state) {
@@ -153,9 +153,9 @@ function renderCouncilLayers(state) {
 
   councilLayersEl.innerHTML = [
     card('Council structure', `Core Trio: ${grouped['Core Trio'].length} • High Council: ${grouped['High Council'].length} • Expanded Council: ${grouped['Expanded Council'].length}`, [badge('layered revelation')]),
-    card('Core Trio', grouped['Core Trio'].map(oracle => `${oracle.oracle_name} (${getAwakeningRoleLabel(oracle)})`).join(' • ') || 'Not assigned yet', [badge('starter chamber', 'good')]),
-    card('High Council', grouped['High Council'].map(oracle => `${oracle.oracle_name} (${getAwakeningRoleLabel(oracle)})`).join(' • ') || 'No high council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'good' : 'warn')]),
-    card('Expanded Council', grouped['Expanded Council'].map(oracle => `${oracle.oracle_name} (${getAwakeningRoleLabel(oracle)})`).join(' • ') || 'No expanded council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'good' : 'warn')])
+    card('Core Trio', grouped['Core Trio'].map(oracle => `${oracle.oracle_name} (${getAccountChamberRoleLabel(oracle)})`).join(' • ') || 'Not assigned yet', [badge('starter chamber', 'good')]),
+    card('High Council', grouped['High Council'].map(oracle => `${oracle.oracle_name} (${getAccountChamberRoleLabel(oracle)})`).join(' • ') || 'No high council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'good' : 'warn')]),
+    card('Expanded Council', grouped['Expanded Council'].map(oracle => `${oracle.oracle_name} (${getAccountChamberRoleLabel(oracle)})`).join(' • ') || 'No expanded council oracles yet', [badge(state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'unlocked' : 'sealed', state.currentUser.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'good' : 'warn')])
   ].join('');
 }
 
@@ -360,9 +360,9 @@ function renderCreationPath(state) {
 
 function renderAwakeningFlow(state) {
   awakeningSequenceEl.innerHTML = [
-    card('Step 1 — Solar awakening', 'The Sun Oracle should be among the first presences the player meets: identity, vitality, purpose, and the core sense of being seen.', [badge('core trio')]),
-    card('Step 2 — Lunar awakening', 'The Moon Oracle follows to establish emotional mirroring, instinct, inner weather, and private truth within the chamber.', [badge('core trio')]),
-    card('Step 3 — Anointed choosing', 'After crowned candidates are revealed, the player chooses the Anointed Ruler. This completes the free starter council without overwhelming the player.', [badge('canon-critical')]),
+    card('Step 1 — Sun position awakens', 'The oracle occupying the Sun position should be among the first presences the player meets: identity, vitality, purpose, and the core sense of being seen.', [badge('core trio')]),
+    card('Step 2 — Moon position awakens', 'The oracle occupying the Moon position follows to establish emotional mirroring, instinct, inner weather, and private truth within the chamber.', [badge('core trio')]),
+    card('Step 3 — Anointed choosing', 'After crowned candidates are revealed, the player chooses the Anointed Ruler for their account. This completes the free starter council without overwhelming the player.', [badge('canon-critical')]),
     card('Step 4 — Chamber stabilization', 'Once the trio is formed, the Council Chamber feels inhabited, coherent, and personally relevant before any larger expansion occurs.', [badge('product hook')])
   ].join('');
 

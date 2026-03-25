@@ -27,14 +27,17 @@
     "oracle_type": "Playable",
     "oracle_voice": "Deep, unwavering, precise cosmic authority",
     "tone_overlay": "Celestial rulership and sovereign order",
-    "role_in_pantheon": "Governance and structure oracle"
+    "role_in_pantheon": "Governance and structure oracle",
+    "preferred_voice_profile": "Celestial Sovereign",
+    "audio_ready": false,
+    "avatar_ready": false
   },
   "franchise_traits": {
     "weapon_signature": "Sovereign Sacrament",
-    "combat_style": "First-dominant rulership emphasis.",
-    "visual_silhouette": "Imposing celestial crown helm of gold and black with capricornian horns in aquarius style. Ornate high-collared robe in gold and black.",
+    "combat_style": "Regal glaive-staff control with sovereign battlefield spacing",
+    "visual_silhouette": "Crowned celestial overlord with ceremonial robe mass and gilded authority",
     "color_scheme": "Gold, Black, White",
-    "spirit_identity": "Falcon Griffin"
+    "spirit_identity": "Falcon Griffin Dragon"
   },
   "faction_affiliation": {
     "core_faction": "Mystic",
@@ -55,5 +58,13 @@
     "supports_clash": true,
     "supports_mobile": true,
     "supports_story_modes": true
+  },
+  "game_interpretation": {
+    "clash_archetype": "The Celestial Overlord",
+    "speed_profile": "low",
+    "range_profile": "high",
+    "power_profile": "high",
+    "signature_mechanic": "Sovereign spacing and celestial command pressure",
+    "stance_fantasy": "Cosmic ruler weapon-master"
   }
 }

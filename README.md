@@ -12,10 +12,15 @@ A founder-testable desktop-first prototype for entering a personal council chamb
 - structured oracle import/export pipeline
 - product foundation for future Pantheon franchise products
 
-## Modes
+## Fastest founder test path
 
-### 1. Browser mode
-Run the local web app:
+### 1. Install dependencies
+
+```bash
+npm install --include=dev
+```
+
+### 2. Run the chamber locally
 
 ```bash
 npm start
@@ -27,16 +32,8 @@ Then open:
 http://127.0.0.1:4317
 ```
 
-### 2. Desktop mode (Windows target)
+### 3. Optional desktop wrapper in development
 This project includes an Electron wrapper so the Pantheon of Oracles prototype can open like a normal desktop app.
-
-## Install
-
-```bash
-npm install
-```
-
-## Run desktop app in development
 
 ```bash
 npm run desktop

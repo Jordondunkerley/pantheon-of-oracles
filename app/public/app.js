@@ -143,7 +143,7 @@ function renderSessions(sessions) {
     .map(session => `
       <button class="item session-select ${session.id === currentSessionId ? 'selected' : ''}" data-session-id="${session.id}">
         <h3>${session.title}</h3>
-        <div class="badges">${badge(session.status)} ${badge(session.providerId)}</div>
+        <div class="badges">${badge(session.status)} ${badge(session.providerId)} ${badge(session.model || 'no model')} ${badge(session.providerReady ? 'provider ready' : 'provider pending', session.providerReady ? 'good' : 'warn')}</div>
         <p class="meta">Oracle: ${session.oracleId} • Last message: ${session.lastMessageAt ? formatDate(session.lastMessageAt) : 'none yet'}</p>
       </button>
     `)
@@ -158,13 +158,16 @@ function renderSessionDetail(sessions) {
     return;
   }
 
-  sessionDetailEl.innerHTML = session.messages.map(message => `
-    <div class="item session-message ${message.role}">
-      <h3>${message.role === 'oracle' ? 'Oracle' : message.role === 'system' ? 'System' : 'You'}</h3>
-      <p class="meta">${message.content}</p>
-      <p class="meta">${formatDate(message.timestamp)}</p>
-    </div>
-  `).join('');
+  sessionDetailEl.innerHTML = [
+    card('Session binding', `Provider: ${session.providerId} • Model: ${session.model || 'not selected'} • Status: ${session.providerReady ? 'ready for real wiring' : 'provider incomplete'}`, [badge(session.providerReady ? 'ready' : 'pending', session.providerReady ? 'good' : 'warn')]),
+    ...session.messages.map(message => `
+      <div class="item session-message ${message.role}">
+        <h3>${message.role === 'oracle' ? 'Oracle' : message.role === 'system' ? 'System' : 'You'}</h3>
+        <p class="meta">${message.content}</p>
+        <p class="meta">${formatDate(message.timestamp)}</p>
+      </div>
+    `)
+  ].join('');
 }
 
 function oracleMatchesView(oracle, view) {

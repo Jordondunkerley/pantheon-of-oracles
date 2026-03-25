@@ -154,7 +154,10 @@
       "status": "prototype-ready",
       "description": "Generic connector slot for OpenAI-style chat APIs.",
       "configNeeded": ["baseUrl", "apiKey", "model"],
-      "enabled": true
+      "enabled": true,
+      "baseUrl": "",
+      "model": "",
+      "apiKeyStatus": "missing"
     },
     {
       "id": "local-model",
@@ -162,7 +165,10 @@
       "status": "planned",
       "description": "Future connector for self-hosted inference or local runtimes.",
       "configNeeded": ["endpoint", "model"],
-      "enabled": false
+      "enabled": false,
+      "baseUrl": "",
+      "model": "",
+      "apiKeyStatus": "missing"
     }
   ],
   "astrologyProfile": {
@@ -200,6 +206,8 @@
       "status": "seeded",
       "lastMessageAt": null,
       "providerId": "openai-compatible",
+      "model": "",
+      "providerReady": false,
       "messages": [
         {
           "role": "system",
@@ -215,6 +223,8 @@
       "status": "seeded",
       "lastMessageAt": null,
       "providerId": "openai-compatible",
+      "model": "",
+      "providerReady": false,
       "messages": [
         {
           "role": "system",

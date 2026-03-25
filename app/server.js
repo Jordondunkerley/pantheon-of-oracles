@@ -107,6 +107,9 @@ const server = http.createServer(async (req, res) => {
       provider.model = body.model ?? provider.model ?? '';
       provider.apiKeyStatus = body.apiKey ? 'provided' : (provider.apiKeyStatus || 'missing');
       provider.enabled = body.enabled ?? provider.enabled;
+      state.interactionSessions = state.interactionSessions.map(session => session.providerId === provider.id
+        ? { ...session, model: provider.model || session.model || '', providerReady: Boolean(provider.enabled && provider.model && provider.apiKeyStatus === 'provided') }
+        : session);
       stampActivity(state, 'provider_updated', `Updated provider configuration: ${provider.name}`);
       await saveState(state);
       return sendJson(res, 200, { ok: true, provider });
@@ -132,10 +135,12 @@ const server = http.createServer(async (req, res) => {
 
       const oracle = state.oracles.find(item => item.oracle_id === session.oracleId);
       const provider = state.llmProviders.find(item => item.id === session.providerId);
+      session.model = provider?.model || session.model || '';
+      session.providerReady = Boolean(provider?.enabled && provider?.model && provider?.apiKeyStatus === 'provided');
       const oracleReply = {
         role: 'oracle',
         content: oracle
-          ? `${oracle.oracle_name}: I am present. This prototype session is not yet generating true model-backed responses, but the interaction layer is now active and ready for provider wiring through ${provider?.name || 'the selected provider'}.`
+          ? `${oracle.oracle_name}: I am present. ${session.providerReady ? `Your session is now bound to ${provider?.name || 'the configured provider'} using ${session.model || 'the selected model'}.` : `This session still needs a fully configured provider before true oracle generation can begin.`}`
           : 'Oracle session active.',
         timestamp: new Date().toISOString()
       };

@@ -74,6 +74,7 @@ function renderOracleDetail(oracle) {
     </div>
     <p class="meta"><strong>Mission:</strong> ${oracle.mission}</p>
     <p class="meta"><strong>Product role:</strong> ${oracle.productRole || 'Not assigned yet'}</p>
+    <p class="meta"><strong>Multiplayer role:</strong> ${oracle.multiplayerRole || 'Not assigned yet'}</p>
     <p class="meta"><strong>Next action:</strong> ${oracle.nextAction}</p>
     <p class="meta"><strong>Last contact:</strong> ${oracle.lastContact ? formatDate(oracle.lastContact) : 'Not yet established'}</p>
     <p class="meta"><strong>Notes:</strong> ${oracle.notes || 'None yet'}</p>
@@ -134,7 +135,18 @@ async function loadState(selectedOracleId) {
     .join('');
   productVisionEl.innerHTML = [
     card('Elevator pitch', state.productVision.elevatorPitch, [badge('marketable product'), badge('independent voices')]),
-    card('What this becomes', state.productVision.description, state.productVision.pillars.map(pillar => badge(pillar)))
+    card('What this becomes', state.productVision.description, state.productVision.pillars.map(pillar => badge(pillar))),
+    card(
+      'Traction',
+      `Alpha users: ${state.productVision.traction.alphaUsers} • Saturn Rising users: ${state.productVision.traction.saturnRisingUsers} • Prototype: ${state.productVision.traction.prototypeSizeKb} KB • Beta: ${state.productVision.traction.betaStatus}`,
+      [badge(state.productVision.traction.backend)]
+    ),
+    card(
+      'Market position',
+      state.productVision.marketPosition.advantage,
+      [badge(state.productVision.marketPosition.category)]
+    ),
+    card('Primary risks', state.productVision.risks.join(' • '), [badge('watchlist', 'warn')])
   ].join('');
 
   populateOracleSelect(state.oracles);

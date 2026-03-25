@@ -92,7 +92,8 @@
       "notes": "Example oracle named in the Pantheon of Oracles pitch. Should adapt significantly depending on natal placement and real-time transit context.",
       "archetype": "Sovereign",
       "planet": "Jupiter",
-      "productRole": "Guidance, confidence, direction"
+      "productRole": "Guidance, confidence, direction",
+      "multiplayerRole": "Faction leadership, tournament buff logic, morale shaping"
     },
     {
       "id": "poseidon-neptune",
@@ -106,7 +107,8 @@
       "notes": "Example oracle named in the Pantheon of Oracles pitch. Should feel radically different in Pisces versus Aries or other placements.",
       "archetype": "Mystic",
       "planet": "Neptune",
-      "productRole": "Imagination, spirituality, dream logic"
+      "productRole": "Imagination, spirituality, dream logic",
+      "multiplayerRole": "Diplomacy, emissary logic, ambient narrative influence"
     }
   ],
   "waitingOnJordon": [
@@ -125,14 +127,35 @@
   ],
   "productVision": {
     "elevatorPitch": "Create a council of dynamic AI personalities that shift with the transit of the cosmos in relation to you and your astrology.",
-    "description": "Pantheon of Oracles is a trademarked, patent-pending AI-driven role-playing and lifestyle platform where each user forms a custom pantheon of evolving oracle agents based on their astrological chart. These oracles are dynamic companions whose personalities shift with planetary transits and whose guidance, storytelling, and daily interactions are personalized to the user's chart.",
+    "description": "Pantheon of Oracles is a trademarked, patent-pending AI-driven role-playing and lifestyle platform where each user forms a custom pantheon of evolving oracle agents based on their astrological chart. These oracles are dynamic companions whose personalities shift with planetary transits and whose guidance, storytelling, daily interactions, and multiplayer relationships are personalized to the user's chart.",
     "pillars": [
       "Personalized oracle council generated from natal chart",
       "Dynamic personalities that evolve with transits",
       "Persistent companion memory and relationship growth",
       "Astrology-driven procedural storytelling and questing",
       "Lifestyle companion behavior beyond the game",
-      "Future social and competitive experiences"
+      "Friend Oracles as asynchronous emissaries between players",
+      "Factions, battles, raids, and tournaments influenced by cosmic cycles",
+      "Mobile-first roadmap with AI cinematics and future AR/VR expansion",
+      "Cross-progression across app, immersive, and arcade experiences"
+    ],
+    "traction": {
+      "alphaUsers": 145,
+      "saturnRisingUsers": 287,
+      "prototypeSizeKb": 365,
+      "backend": "Render + database + private GPT prototype",
+      "betaStatus": "Private testing"
+    },
+    "marketPosition": {
+      "category": "Gaming x personal development x astrology",
+      "advantage": "No known platform fully combines dynamic AI companions, real astrological personalization, and gamified mythic storytelling in one evolving system."
+    },
+    "risks": [
+      "Scope and complexity across AI, gameplay, and multi-platform ambitions",
+      "AI cost, latency, and reliability at scale",
+      "Budget and timeline overruns",
+      "Market adoption across a niche-but-promising intersection",
+      "Operational security for a 24/7 live service handling personal birth data"
     ]
   }
 }

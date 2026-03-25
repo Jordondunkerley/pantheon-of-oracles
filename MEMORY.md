@@ -12,3 +12,5 @@
 - Product direction updated: the desktop app should now be treated as a full Pantheon of Oracles-first marketable product, not just a Clawdbot operations dashboard with Pantheon support.
 - User explicitly wants sustained autonomous product work: after one task is complete, continue choosing and polishing the next highest-value task.
 - Latest clarification: keep iterating through the next most important task until the Pantheon of Oracles desktop product is marketable, without waiting after each small milestone.
+- Franchise rule: Oracles should persist across all Pantheon products. New games and apps should run in parallel to the core system rather than becoming isolated reinterpretations.
+- New game concept: Pantheon of Oracles: Clash — a Soulcalibur-style fighting game (or simpler 2D/Game Boy-like prototype first) using the player's personal oracles as generated playable characters derived from the core oracle system.

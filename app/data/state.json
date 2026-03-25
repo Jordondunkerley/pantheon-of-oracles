@@ -892,7 +892,8 @@
       "Factions, battles, raids, and tournaments influenced by cosmic cycles",
       "Mobile-first roadmap with AI cinematics and future AR/VR expansion",
       "Cross-progression across app, immersive, and arcade experiences",
-      "Prototype should remain model-agnostic and accept multiple LLM backends"
+      "Prototype should remain model-agnostic and accept multiple LLM backends",
+      "Oracles should persist across all Pantheon products and future game branches"
     ],
     "traction": {
       "alphaUsers": 145,
@@ -904,6 +905,16 @@
     "marketPosition": {
       "category": "Gaming x personal development x astrology",
       "advantage": "No known platform fully combines dynamic AI companions, real astrological personalization, and gamified mythic storytelling in one evolving system."
+    },
+    "franchiseDirection": {
+      "coreRule": "Oracles persist across all products",
+      "parallelProducts": [
+        "Desktop core app",
+        "Future mobile app",
+        "Pantheon of Oracles: Clash",
+        "Future simplified 2D / Game Boy-like test game"
+      ],
+      "strategy": "Treat the core app as the oracle source engine and let future products consume stable oracle identities and exports."
     },
     "risks": [
       "Scope and complexity across AI, gameplay, and multi-platform ambitions",

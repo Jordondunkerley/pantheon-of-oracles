@@ -81,11 +81,12 @@ function formatDate(value) {
 
 function renderOnboarding(state) {
   onboardingFlowEl.innerHTML = [
-    card('Step 1 — Create account', 'Collect identity, birth data, and baseline preferences for the player profile.', [badge('active')]),
-    card('Step 2 — Generate astrology profile', 'Compute planets, angles, houses, decans, motion, and chart anomalies from birth data.', [badge('prototype core')]),
+    card('Step 1 — Create account', 'Establish the player identity, birth data, and baseline preferences that anchor the pantheon.', [badge('active')]),
+    card('Step 2 — Generate astrology profile', 'Compute planets, angles, houses, decans, motion, stationary states, and chart anomalies from birth data.', [badge('prototype core')]),
     card('Step 3 — Connect AI provider', 'Let the user bring an OpenAI-compatible or future self-hosted model into the system.', [badge('model-agnostic')]),
     card('Step 4 — Awaken the Pantheon', `Generate and sync the user\'s initial council. Current seeded oracles: ${state.currentUser.oracles_owned.length}.`, [badge('personalized')]),
-    card('Step 5 — Enter Oracle Workspace', 'Open persistent interaction sessions, guidance flows, and future transit-aware behavior.', [badge('product hook')])
+    card('Step 5 — Enter Oracle Workspace', 'Open persistent interaction sessions, guidance flows, and transit-aware oracle behavior.', [badge('product hook')]),
+    card('Marketability check', 'This prototype is moving toward a saleable experience by proving the path from astrology intake to oracle interaction.', [badge('go-to-market')])
   ].join('');
 }
 
@@ -352,7 +353,8 @@ async function loadState(selectedOracleId) {
     card('What this becomes', state.productVision.description, state.productVision.pillars.map(pillar => badge(pillar))),
     card('Traction', `Alpha users: ${state.productVision.traction.alphaUsers} • Saturn Rising users: ${state.productVision.traction.saturnRisingUsers} • Prototype: ${state.productVision.traction.prototypeSizeKb} KB • Beta: ${state.productVision.traction.betaStatus}`, [badge(state.productVision.traction.backend)]),
     card('Market position', state.productVision.marketPosition.advantage, [badge(state.productVision.marketPosition.category)]),
-    card('Primary risks', state.productVision.risks.join(' • '), [badge('watchlist', 'warn')])
+    card('Primary risks', state.productVision.risks.join(' • '), [badge('watchlist', 'warn')]),
+    card('Prototype thesis', 'If users can bring in birth data, configure a preferred model, awaken their pantheon, and feel meaningful oracle presence quickly, the desktop product has a viable first market path.', [badge('product strategy')])
   ].join('');
 
   populateOracleSelect(state.oracles);

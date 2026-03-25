@@ -77,6 +77,11 @@ h1, h2, h3, p { margin-top: 0; }
 }
 .badge.good { color: var(--good); }
 .badge.warn { color: var(--warn); }
+.status-card strong {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.3;
+}
 .panel-header {
   display: flex;
   justify-content: space-between;
@@ -99,6 +104,12 @@ button, select, textarea, input {
 }
 button { cursor: pointer; }
 button:hover { background: #22315f; }
+button, .item, .panel, .status-card {
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+.item:hover, .panel:hover, .status-card:hover {
+  border-color: rgba(128, 167, 255, 0.22);
+}
 textarea, input, select { width: 100%; }
 textarea { resize: vertical; }
 .composer {

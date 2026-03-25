@@ -1,31 +1,30 @@
 :root {
   color-scheme: dark;
-  --bg: #0b1020;
-  --panel: #121933;
-  --panel-2: #0f1630;
-  --text: #ebf1ff;
-  --muted: #9fb0d1;
-  --accent: #81a8ff;
+  --bg: #07101c;
+  --panel: rgba(14, 22, 45, 0.92);
+  --panel-2: #101a36;
+  --panel-3: #18244b;
+  --text: #edf3ff;
+  --muted: #9db0d4;
+  --accent: #80a7ff;
+  --accent-2: #9f7cff;
   --border: rgba(255, 255, 255, 0.08);
+  --good: #58c195;
+  --warn: #f5b75f;
 }
 
-* {
-  box-sizing: border-box;
-}
-
+* { box-sizing: border-box; }
 body {
   margin: 0;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  background: linear-gradient(180deg, #09101f, #0f1730 40%, #0a1020);
+  background: radial-gradient(circle at top, #13214a, #08101d 42%, #050913 100%);
   color: var(--text);
 }
-
 .shell {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 32px 20px 56px;
 }
-
 .hero {
   display: flex;
   justify-content: space-between;
@@ -33,7 +32,12 @@ body {
   align-items: flex-start;
   margin-bottom: 24px;
 }
-
+.hero-side {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -41,66 +45,25 @@ body {
   font-size: 12px;
   margin: 0 0 8px;
 }
-
-h1, h2, p {
-  margin-top: 0;
-}
-
-.subcopy, .label, .meta {
-  color: var(--muted);
-}
-
-.grid {
-  display: grid;
-  gap: 20px;
-}
-
-.top-grid {
-  grid-template-columns: 1.2fr 0.8fr;
-  margin-bottom: 20px;
-}
-
-.bottom-grid {
-  grid-template-columns: 1fr 1fr;
-}
-
+h1, h2, h3, p { margin-top: 0; }
+.subcopy, .label, .meta { color: var(--muted); }
+.grid { display: grid; gap: 20px; }
+.top-grid, .bottom-grid, .footer-grid, .builder-grid { grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
+.middle-grid { grid-template-columns: 1.15fr 0.85fr; margin-bottom: 20px; }
 .panel, .status-card, .item {
-  background: rgba(18, 25, 51, 0.92);
+  background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.24);
+  border-radius: 20px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
 }
-
-.panel, .status-card {
-  padding: 18px;
-}
-
-.status-card {
-  min-width: 220px;
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.item {
-  padding: 14px;
-}
-
-.item h3 {
-  margin: 0 0 6px;
-  font-size: 16px;
-}
-
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0;
-}
-
+.panel, .status-card { padding: 18px; }
+.status-card { min-width: 220px; }
+.accent-card { border-color: rgba(159, 124, 255, 0.35); }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.compact { gap: 10px; }
+.item { padding: 14px; width: 100%; text-align: left; }
+.item h3 { margin: 0 0 6px; font-size: 16px; }
+.badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .badge {
   display: inline-flex;
   padding: 4px 8px;
@@ -110,34 +73,43 @@ h1, h2, p {
   border: 1px solid var(--border);
   font-size: 12px;
 }
-
+.badge.good { color: var(--good); }
+.badge.warn { color: var(--warn); }
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
 }
-
-button {
+button, select, textarea, input {
   border: 1px solid var(--border);
-  background: #182347;
+  background: var(--panel-3);
   color: var(--text);
-  border-radius: 10px;
-  padding: 8px 12px;
-  cursor: pointer;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
 }
-
-button:hover {
-  background: #22315f;
+button { cursor: pointer; }
+button:hover { background: #22315f; }
+textarea, input, select { width: 100%; }
+textarea { resize: vertical; }
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-
-@media (max-width: 900px) {
-  .hero, .top-grid, .bottom-grid {
+.oracle-card {
+  background: linear-gradient(180deg, rgba(18, 28, 60, 0.92), rgba(12, 19, 40, 0.92));
+}
+.oracle-select {
+  appearance: none;
+}
+.oracle-mission { margin-bottom: 10px; }
+.oracle-next { color: #c9d8ff; }
+@media (max-width: 1000px) {
+  .hero, .top-grid, .middle-grid, .bottom-grid, .footer-grid, .builder-grid {
     grid-template-columns: 1fr;
     display: grid;
   }
-
-  .hero {
-    align-items: stretch;
-  }
+  .hero-side { justify-content: flex-start; }
 }

@@ -32,7 +32,8 @@ async function saveState(state) {
 async function serveFile(res, filePath, contentType) {
   try {
     const data = await readFile(filePath);
-    sendText(res, 200, data, contentType);
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(data);
   } catch {
     sendText(res, 404, 'Not found');
   }
@@ -50,6 +51,15 @@ function collectBody(req) {
     });
     req.on('end', () => resolve(data));
     req.on('error', reject);
+  });
+}
+
+function stampActivity(state, type, message) {
+  state.activity.unshift({
+    id: `activity-${Date.now()}`,
+    type,
+    message,
+    timestamp: new Date().toISOString()
   });
 }
 
@@ -94,14 +104,50 @@ const server = http.createServer(async (req, res) => {
         updatedAt: new Date().toISOString()
       };
       state.tasks.unshift(task);
-      state.activity.unshift({
-        id: `activity-${Date.now()}`,
-        type: 'task_created',
-        message: `Created task: ${task.title}`,
-        timestamp: new Date().toISOString()
-      });
+      stampActivity(state, 'task_created', `Created task: ${task.title}`);
       await saveState(state);
       return sendJson(res, 200, { ok: true, task });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/oracle-note') {
+    try {
+      const state = await loadState();
+      const body = JSON.parse(await collectBody(req));
+      const oracle = state.oracles.find(item => item.id === body.oracleId);
+      if (!oracle) return sendJson(res, 404, { ok: false, error: 'Oracle not found' });
+      oracle.lastContact = new Date().toISOString();
+      oracle.notes = [oracle.notes, body.message].filter(Boolean).join(' | ');
+      oracle.updatedAt = new Date().toISOString();
+      stampActivity(state, 'oracle_note', `Logged oracle note for ${oracle.name}`);
+      await saveState(state);
+      return sendJson(res, 200, { ok: true, oracle });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/oracles') {
+    try {
+      const state = await loadState();
+      const body = JSON.parse(await collectBody(req));
+      const oracle = {
+        id: body.id || `oracle-${Date.now()}`,
+        name: body.name || 'Unnamed Oracle',
+        domain: body.domain || 'Unassigned',
+        status: body.status || 'concept',
+        voice: body.voice || 'Undefined',
+        mission: body.mission || '',
+        lastContact: null,
+        nextAction: body.nextAction || 'Define next action.',
+        notes: body.notes || ''
+      };
+      state.oracles.unshift(oracle);
+      stampActivity(state, 'oracle_created', `Created oracle profile: ${oracle.name}`);
+      await saveState(state);
+      return sendJson(res, 200, { ok: true, oracle });
     } catch (error) {
       return sendJson(res, 400, { ok: false, error: error.message });
     }
@@ -110,11 +156,9 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
     return serveFile(res, path.join(publicDir, 'index.html'), 'text/html; charset=utf-8');
   }
-
   if (req.method === 'GET' && url.pathname === '/styles.css') {
     return serveFile(res, path.join(publicDir, 'styles.css'), 'text/css; charset=utf-8');
   }
-
   if (req.method === 'GET' && url.pathname === '/app.js') {
     return serveFile(res, path.join(publicDir, 'app.js'), 'text/javascript; charset=utf-8');
   }

@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Clawdbot Console",
-    "updatedAt": null
+    "updatedAt": "2026-03-25T15:00:00.000Z"
   },
   "projects": [
     {
@@ -10,22 +10,46 @@
       "status": "active",
       "priority": "critical",
       "summary": "Core business and oracle-character ecosystem.",
-      "updatedAt": null
+      "updatedAt": "2026-03-25T15:00:00.000Z"
+    },
+    {
+      "id": "clawdbot-console",
+      "name": "Clawdbot Console",
+      "status": "active",
+      "priority": "high",
+      "summary": "Operator dashboard, desktop app, and control surface for ongoing work.",
+      "updatedAt": "2026-03-25T15:00:00.000Z"
     }
   ],
   "tasks": [
     {
-      "id": "build-dashboard-v1",
+      "id": "oracle-ops-design",
       "projectId": "pantheon-of-oracles",
+      "title": "Design oracle management and communication section",
+      "status": "in_progress",
+      "priority": "critical",
+      "owner": "Clawdbot",
+      "notes": "Add a dashboard view for individual oracle profiles, statuses, voices, and direct interaction surfaces.",
+      "updatedAt": "2026-03-25T15:00:00.000Z"
+    },
+    {
+      "id": "build-dashboard-v1",
+      "projectId": "clawdbot-console",
       "title": "Build Clawdbot ops dashboard v1",
       "status": "in_progress",
       "priority": "critical",
       "owner": "Clawdbot",
       "notes": "Scaffold a browser-accessible dashboard on the VPS with project, task, and activity tracking.",
-      "updatedAt": null
+      "updatedAt": "2026-03-25T14:45:00.000Z"
     }
   ],
   "activity": [
+    {
+      "id": "oracle-dashboard-study",
+      "type": "research",
+      "message": "Started studying Pantheon of Oracles material and redesigning the dashboard around oracle operations.",
+      "timestamp": "2026-03-25T15:00:00.000Z"
+    },
     {
       "id": "desktop-packaging",
       "type": "desktop_app",
@@ -36,7 +60,7 @@
       "id": "bootstrap-console",
       "type": "work_started",
       "message": "Started building the Clawdbot Console dashboard.",
-      "timestamp": null
+      "timestamp": "2026-03-25T14:45:00.000Z"
     }
   ],
   "schedule": [
@@ -46,6 +70,34 @@
       "cadence": "daily",
       "time": "09:00 UTC",
       "status": "proposed"
+    },
+    {
+      "id": "oracle-cadence-review",
+      "title": "Oracle cadence review",
+      "cadence": "daily",
+      "time": "17:00 UTC",
+      "status": "planned"
+    }
+  ],
+  "oracles": [
+    {
+      "id": "unassigned-01",
+      "name": "Oracle Seed Alpha",
+      "domain": "Unassigned",
+      "status": "concept",
+      "voice": "Undefined",
+      "mission": "First placeholder oracle slot for Pantheon design work.",
+      "lastContact": null,
+      "nextAction": "Define oracle identity, role, and communication rules.",
+      "notes": "Will be replaced once the real oracle roster is mapped from project materials."
+    }
+  ],
+  "waitingOnJordon": [
+    {
+      "id": "substack-link",
+      "title": "Pantheon of Oracles source material",
+      "detail": "Need the Substack article URL if web search continues to miss it, so the oracle system can match the original vision.",
+      "priority": "high"
     }
   ]
 }

@@ -12,11 +12,17 @@
         <div>
           <p class="eyebrow">Always-on operator dashboard</p>
           <h1>Clawdbot Console</h1>
-          <p class="subcopy">Projects, tasks, schedule, and activity — one place to see what I’m doing on your VPS.</p>
+          <p class="subcopy">Projects, tasks, schedule, oracle management, and live activity — your control surface for ongoing work.</p>
         </div>
-        <div class="status-card">
-          <span class="label">Last update</span>
-          <strong id="updatedAt">Loading…</strong>
+        <div class="hero-side">
+          <div class="status-card">
+            <span class="label">Last update</span>
+            <strong id="updatedAt">Loading…</strong>
+          </div>
+          <div class="status-card accent-card">
+            <span class="label">Current focus</span>
+            <strong>Oracle operations + dashboard polish</strong>
+          </div>
         </div>
       </header>
 
@@ -31,6 +37,48 @@
         </article>
       </section>
 
+      <section class="grid middle-grid">
+        <article class="panel oracle-panel">
+          <div class="panel-header">
+            <h2>Oracle Roster</h2>
+            <button id="oraclePromptBtn">Generate check-in prompt</button>
+          </div>
+          <div id="oracles" class="stack"></div>
+        </article>
+        <article class="panel comms-panel">
+          <h2>Oracle Comms</h2>
+          <div class="composer">
+            <label for="oracleSelect">Oracle</label>
+            <select id="oracleSelect"></select>
+            <label for="oracleMessage">Message</label>
+            <textarea id="oracleMessage" rows="7" placeholder="Draft a message, invocation, instruction, or test prompt for an oracle..."></textarea>
+            <button id="oracleDraftBtn">Create draft message</button>
+            <button id="oracleLogBtn">Log note to oracle</button>
+          </div>
+          <div id="oracleDrafts" class="stack compact"></div>
+        </article>
+      </section>
+
+      <section class="grid builder-grid">
+        <article class="panel">
+          <h2>Create Oracle</h2>
+          <div class="composer">
+            <input id="newOracleName" placeholder="Oracle name" />
+            <input id="newOracleDomain" placeholder="Domain" />
+            <input id="newOracleVoice" placeholder="Voice" />
+            <textarea id="newOracleMission" rows="4" placeholder="Mission / role"></textarea>
+            <input id="newOracleNextAction" placeholder="Next action" />
+            <button id="createOracleBtn">Add oracle profile</button>
+          </div>
+        </article>
+        <article class="panel oracle-detail-panel">
+          <h2>Oracle Detail</h2>
+          <div id="oracleDetail" class="item">
+            <p class="meta">Select or create an oracle to inspect its mission, state, and communication readiness.</p>
+          </div>
+        </article>
+      </section>
+
       <section class="grid bottom-grid">
         <article class="panel">
           <div class="panel-header">
@@ -42,6 +90,19 @@
         <article class="panel">
           <h2>Activity Feed</h2>
           <div id="activity" class="stack"></div>
+        </article>
+      </section>
+
+      <section class="grid footer-grid">
+        <article class="panel">
+          <h2>Waiting on Jordon</h2>
+          <div id="waitingOnJordon" class="stack"></div>
+        </article>
+        <article class="panel">
+          <h2>Operator Notes</h2>
+          <div class="item">
+            <p class="meta">This dashboard is being shaped into a real command center. Next phase is deeper oracle state, richer editing, and a proper workflow for me to keep it continuously updated.</p>
+          </div>
         </article>
       </section>
     </main>

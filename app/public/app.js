@@ -31,6 +31,7 @@ const productVisionEl = document.getElementById('productVision');
 const oracleViewFilterEl = document.getElementById('oracleViewFilter');
 const oracleSearchEl = document.getElementById('oracleSearch');
 const sourceEngineEl = document.getElementById('sourceEngine');
+const audioRoadmapEl = document.getElementById('audioRoadmap');
 const onboardingFlowEl = document.getElementById('onboardingFlow');
 const nextStepGuideEl = document.getElementById('nextStepGuide');
 const currentUserEl = document.getElementById('currentUser');
@@ -89,6 +90,16 @@ function renderSourceEngine(state) {
     card('What persists', 'Oracle identity, astrology mapping, voice profile, combat interpretation, visual silhouette, and exportable canon.', [badge('persistent canon')]),
     card('Where it goes next', `Parallel products should consume these same oracles: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}.`, [badge('parallel products')]),
     card('Why that matters commercially', 'The core product can be sold on its own while also increasing the long-term value of future standalone Pantheon games and experiences.', [badge('franchise leverage')])
+  ].join('');
+}
+
+function renderAudioRoadmap(state) {
+  const readyCount = state.oracles.filter(oracle => oracle.visual_attributes?.audio_ready).length;
+  audioRoadmapEl.innerHTML = [
+    card('Current phase', 'Text-first oracle communication with normalized voice profiles and audio-readiness hooks.', [badge('audio groundwork')]),
+    card('Next leap', 'Add oracle voice output so the chamber experience becomes spoken, not only written.', [badge('high-value milestone')]),
+    card('Later expansion', 'Voice input, conversational audio loops, then richer avatar/video embodiment — always grounded in the same oracle canon.', [badge('stepwise build')]),
+    card('Readiness snapshot', `${readyCount} oracles currently marked audio-ready. Voice profiles are being normalized now so audio can plug into stable identities later.`, [badge('canon-first')])
   ].join('');
 }
 
@@ -373,6 +384,7 @@ async function loadState(selectedOracleId) {
     .join('');
 
   renderSourceEngine(state);
+  renderAudioRoadmap(state);
   renderOnboarding(state);
   renderCurrentUser(state.currentUser);
   renderProviders(state.llmProviders);

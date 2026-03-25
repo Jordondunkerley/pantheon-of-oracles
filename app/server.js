@@ -118,6 +118,24 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/oracle-voice') {
+    try {
+      const state = await loadState();
+      const body = JSON.parse(await collectBody(req));
+      const oracle = state.oracles.find(item => item.oracle_id === body.oracleId);
+      if (!oracle) return sendJson(res, 404, { ok: false, error: 'Oracle not found' });
+      oracle.visual_attributes = oracle.visual_attributes || {};
+      oracle.visual_attributes.preferred_voice_profile = body.preferredVoiceProfile ?? oracle.visual_attributes.preferred_voice_profile ?? '';
+      oracle.visual_attributes.audio_ready = body.audioReady ?? oracle.visual_attributes.audio_ready ?? false;
+      oracle.oracle_metadata_last_updated = new Date().toISOString();
+      stampActivity(state, 'voice_updated', `Updated voice settings for ${oracle.oracle_name}`);
+      await saveState(state);
+      return sendJson(res, 200, { ok: true, oracle });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.message });
+    }
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/sessions/message') {
     try {
       const state = await loadState();

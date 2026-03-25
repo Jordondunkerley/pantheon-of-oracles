@@ -32,6 +32,10 @@ const oracleViewFilterEl = document.getElementById('oracleViewFilter');
 const oracleSearchEl = document.getElementById('oracleSearch');
 const sourceEngineEl = document.getElementById('sourceEngine');
 const audioRoadmapEl = document.getElementById('audioRoadmap');
+const voiceOracleSelectEl = document.getElementById('voiceOracleSelect');
+const voiceProfileInputEl = document.getElementById('voiceProfileInput');
+const voiceAudioReadySelectEl = document.getElementById('voiceAudioReadySelect');
+const saveVoiceProfileBtn = document.getElementById('saveVoiceProfileBtn');
 const onboardingFlowEl = document.getElementById('onboardingFlow');
 const nextStepGuideEl = document.getElementById('nextStepGuide');
 const currentUserEl = document.getElementById('currentUser');
@@ -101,6 +105,14 @@ function renderAudioRoadmap(state) {
     card('Later expansion', 'Voice input, conversational audio loops, then richer avatar/video embodiment — always grounded in the same oracle canon.', [badge('stepwise build')]),
     card('Readiness snapshot', `${readyCount} oracles currently marked audio-ready. Voice profiles are being normalized now so audio can plug into stable identities later.`, [badge('canon-first')])
   ].join('');
+
+  voiceOracleSelectEl.innerHTML = state.oracles.map(oracle => `<option value="${oracle.oracle_id}">${oracle.oracle_name}</option>`).join('');
+  const selectedOracle = state.oracles.find(oracle => oracle.oracle_id === voiceOracleSelectEl.value) || state.oracles[0];
+  if (selectedOracle) {
+    voiceOracleSelectEl.value = selectedOracle.oracle_id;
+    voiceProfileInputEl.value = selectedOracle.visual_attributes?.preferred_voice_profile || '';
+    voiceAudioReadySelectEl.value = String(Boolean(selectedOracle.visual_attributes?.audio_ready));
+  }
 }
 
 function renderOnboarding(state) {
@@ -524,6 +536,13 @@ providerSelectEl.addEventListener('change', () => {
   providerApiKeyEl.value = '';
 });
 
+voiceOracleSelectEl.addEventListener('change', () => {
+  const oracle = currentState?.oracles?.find(item => item.oracle_id === voiceOracleSelectEl.value);
+  if (!oracle) return;
+  voiceProfileInputEl.value = oracle.visual_attributes?.preferred_voice_profile || '';
+  voiceAudioReadySelectEl.value = String(Boolean(oracle.visual_attributes?.audio_ready));
+});
+
 saveProviderBtn.addEventListener('click', async () => {
   await postJson('/api/providers', {
     id: providerSelectEl.value,
@@ -533,6 +552,15 @@ saveProviderBtn.addEventListener('click', async () => {
     enabled: true
   });
   providerApiKeyEl.value = '';
+  await loadState(currentOracleId);
+});
+
+saveVoiceProfileBtn.addEventListener('click', async () => {
+  await postJson('/api/oracle-voice', {
+    oracleId: voiceOracleSelectEl.value,
+    preferredVoiceProfile: voiceProfileInputEl.value.trim(),
+    audioReady: voiceAudioReadySelectEl.value === 'true'
+  });
   await loadState(currentOracleId);
 });
 

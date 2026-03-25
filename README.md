@@ -2,6 +2,14 @@
 
 A desktop-first prototype for creating, managing, and interacting with astrology-shaped oracle agents.
 
+## What it currently demonstrates
+- player profile + astrology-driven setup
+- model-agnostic provider configuration
+- oracle registry and profile structure
+- oracle session workspace
+- structured oracle import pipeline
+- product foundation for a future mobile / expanded Pantheon ecosystem
+
 ## Modes
 
 ### 1. Browser mode
@@ -39,6 +47,14 @@ npm run dist:win
 ```
 
 The packaged app will be placed in the `dist/` directory.
+
+## Suggested demo order
+1. Open the product shell
+2. Show onboarding and astrology profile
+3. Show oracle registry
+4. Show oracle session workspace
+5. Show provider configuration
+6. Show import pipeline
 
 ## Import oracle data
 

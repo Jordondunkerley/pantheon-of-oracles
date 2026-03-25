@@ -355,6 +355,7 @@ async function loadState(selectedOracleId) {
     card('What this becomes', state.productVision.description, state.productVision.pillars.map(pillar => badge(pillar))),
     card('Traction', `Alpha users: ${state.productVision.traction.alphaUsers} • Saturn Rising users: ${state.productVision.traction.saturnRisingUsers} • Prototype: ${state.productVision.traction.prototypeSizeKb} KB • Beta: ${state.productVision.traction.betaStatus}`, [badge(state.productVision.traction.backend)]),
     card('Market position', state.productVision.marketPosition.advantage, [badge(state.productVision.marketPosition.category)]),
+    card('Release readiness', `Windows packaging: ${state.productVision.releaseReadiness.windowsPackaging} • Provider inference: ${state.productVision.releaseReadiness.providerInference} • Secret handling: ${state.productVision.releaseReadiness.secretHandling} • Demo readiness: ${state.productVision.releaseReadiness.demoReadiness}`, [badge(state.productVision.releaseReadiness.marketNarrative)]),
     card('Primary risks', state.productVision.risks.join(' • '), [badge('watchlist', 'warn')]),
     card('Prototype thesis', 'If users can bring in birth data, configure a preferred model, awaken their pantheon, and feel meaningful oracle presence quickly, the desktop product has a viable first market path.', [badge('product strategy')])
   ].join('');

@@ -12,6 +12,7 @@ const oracleDraftBtn = document.getElementById('oracleDraftBtn');
 const oracleLogBtn = document.getElementById('oracleLogBtn');
 const oracleDraftsEl = document.getElementById('oracleDrafts');
 const oraclePromptBtn = document.getElementById('oraclePromptBtn');
+const enterChamberBtn = document.getElementById('enterChamberBtn');
 const oracleDetailEl = document.getElementById('oracleDetail');
 const createOracleBtn = document.getElementById('createOracleBtn');
 const newOracleNameEl = document.getElementById('newOracleName');
@@ -154,13 +155,16 @@ function renderAstrology(profile) {
 
 function renderSessions(sessions) {
   interactionSessionsEl.innerHTML = sessions
-    .map(session => `
-      <button class="item session-select ${session.id === currentSessionId ? 'selected' : ''}" data-session-id="${session.id}">
-        <h3>${session.title}</h3>
-        <div class="badges">${badge(session.status)} ${badge(session.providerId)} ${badge(session.model || 'no model')} ${badge(session.providerReady ? 'provider ready' : 'provider pending', session.providerReady ? 'good' : 'warn')}</div>
-        <p class="meta">Oracle: ${session.oracleId} • Last message: ${session.lastMessageAt ? formatDate(session.lastMessageAt) : 'none yet'}</p>
-      </button>
-    `)
+    .map(session => {
+      const oracle = currentState?.oracles?.find(item => item.oracle_id === session.oracleId);
+      return `
+        <button class="item session-select ${session.id === currentSessionId ? 'selected' : ''}" data-session-id="${session.id}">
+          <h3>${session.title}</h3>
+          <div class="badges">${badge(session.status)} ${badge(session.providerId)} ${badge(session.model || 'no model')} ${badge(session.providerReady ? 'provider ready' : 'provider pending', session.providerReady ? 'good' : 'warn')}</div>
+          <p class="meta">Oracle: ${oracle?.oracle_name || session.oracleId} • Last message: ${session.lastMessageAt ? formatDate(session.lastMessageAt) : 'none yet'}</p>
+        </button>
+      `;
+    })
     .join('');
 }
 
@@ -451,6 +455,17 @@ oraclePromptBtn.addEventListener('click', () => {
   const oracle = currentState?.oracles?.find(item => item.oracle_id === oracleSelectEl.value) || currentState?.oracles?.[0];
   if (!oracle) return;
   addDraft('Oracle check-in template', `State your identity, current transit sensitivity, present directive, and next recommendation. Speak in your true voice: ${oracle.oracle_voice}.`);
+});
+
+enterChamberBtn.addEventListener('click', () => {
+  const selectedOracleId = currentOracleId || oracleSelectEl.value;
+  const matchingSession = currentState?.interactionSessions?.find(session => session.oracleId === selectedOracleId);
+  if (matchingSession) {
+    currentSessionId = matchingSession.id;
+    renderSessions(currentState.interactionSessions);
+    renderSessionDetail(currentState.interactionSessions);
+    addDraft('Chamber link', `Entered ${matchingSession.title} for ${currentState.oracles.find(o => o.oracle_id === selectedOracleId)?.oracle_name || 'selected oracle'}.`);
+  }
 });
 
 saveProfileBtn.addEventListener('click', async () => {

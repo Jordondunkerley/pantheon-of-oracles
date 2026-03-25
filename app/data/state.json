@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Clawdbot Console",
-    "updatedAt": "2026-03-25T15:00:00.000Z"
+    "updatedAt": "2026-03-25T15:12:00.000Z"
   },
   "projects": [
     {
@@ -9,28 +9,38 @@
       "name": "Pantheon of Oracles",
       "status": "active",
       "priority": "critical",
-      "summary": "Core business and oracle-character ecosystem.",
-      "updatedAt": "2026-03-25T15:00:00.000Z"
+      "summary": "AI-driven role-playing, lifestyle, and multiplayer oracle platform personalized by astrology.",
+      "updatedAt": "2026-03-25T15:12:00.000Z"
     },
     {
       "id": "clawdbot-console",
       "name": "Clawdbot Console",
       "status": "active",
       "priority": "high",
-      "summary": "Operator dashboard, desktop app, and control surface for ongoing work.",
-      "updatedAt": "2026-03-25T15:00:00.000Z"
+      "summary": "Operator dashboard, desktop app, and future product control surface for oracle management.",
+      "updatedAt": "2026-03-25T15:12:00.000Z"
     }
   ],
   "tasks": [
     {
-      "id": "oracle-ops-design",
+      "id": "oracle-schema-v2",
       "projectId": "pantheon-of-oracles",
-      "title": "Design oracle management and communication section",
+      "title": "Upgrade dashboard to rich oracle schema",
       "status": "in_progress",
       "priority": "critical",
       "owner": "Clawdbot",
-      "notes": "Add a dashboard view for individual oracle profiles, statuses, voices, and direct interaction surfaces.",
-      "updatedAt": "2026-03-25T15:00:00.000Z"
+      "notes": "Support astrology fields, lore, visuals, combat identity, faction tags, and multiplayer roles based on the imported source material.",
+      "updatedAt": "2026-03-25T15:12:00.000Z"
+    },
+    {
+      "id": "oracle-import-planning",
+      "projectId": "pantheon-of-oracles",
+      "title": "Plan import path from spreadsheet/PDF source data",
+      "status": "in_progress",
+      "priority": "high",
+      "owner": "Clawdbot",
+      "notes": "Design a clean path for loading Jordon's source oracle data into the product model.",
+      "updatedAt": "2026-03-25T15:12:00.000Z"
     },
     {
       "id": "build-dashboard-v1",
@@ -39,11 +49,17 @@
       "status": "in_progress",
       "priority": "critical",
       "owner": "Clawdbot",
-      "notes": "Scaffold a browser-accessible dashboard on the VPS with project, task, and activity tracking.",
-      "updatedAt": "2026-03-25T14:45:00.000Z"
+      "notes": "Iteratively evolve the dashboard into a uniquely Jordon-native command center and future marketable product shell.",
+      "updatedAt": "2026-03-25T15:12:00.000Z"
     }
   ],
   "activity": [
+    {
+      "id": "pdf-analysis",
+      "type": "research",
+      "message": "Parsed PDF source notes and identified the need for a rich oracle schema with astrology, lore, visuals, and combat identity.",
+      "timestamp": "2026-03-25T15:12:00.000Z"
+    },
     {
       "id": "oracle-dashboard-study",
       "type": "research",
@@ -81,47 +97,97 @@
   ],
   "oracles": [
     {
-      "id": "zeus-jupiter",
-      "name": "Zeus",
-      "domain": "Jupiter / expansion / rulership",
-      "status": "concept",
-      "voice": "Commanding, wise, strategic",
-      "mission": "Act as a living reflection of Jupiter's placement in the user's chart, guiding growth, ambition, confidence, and mythic leadership.",
+      "id": "solin-sun",
+      "name": "Solin",
+      "domain": "Sun / Taurus / 2nd House",
+      "status": "seeded",
+      "voice": "Valiant, disciplined, mythic martial confidence",
+      "mission": "Anchor solar identity, vitality, and central heroic direction within the pantheon.",
       "lastContact": null,
-      "nextAction": "Map behavioral differences by sign, house, and active transits.",
-      "notes": "Example oracle named in the Pantheon of Oracles pitch. Should adapt significantly depending on natal placement and real-time transit context.",
-      "archetype": "Sovereign",
-      "planet": "Jupiter",
-      "productRole": "Guidance, confidence, direction",
-      "multiplayerRole": "Faction leadership, tournament buff logic, morale shaping"
+      "nextAction": "Populate full solar schema from source rows and define guidance mode.",
+      "notes": "The Valiant Master. Spirit animal: Boar Monkey. Colours: gold, white, green, red.",
+      "archetype": "The Valiant Master",
+      "planet": "Sun",
+      "sign": "Taurus",
+      "house": "2",
+      "productRole": "Core identity oracle",
+      "multiplayerRole": "Frontline champion and central roster anchor",
+      "weapon": "Do-Bo",
+      "combatStyle": "Wukong/Kilik inspired staff combat",
+      "spiritAnimal": "Boar Monkey"
+    },
+    {
+      "id": "lunos-moon",
+      "name": "Lunos",
+      "domain": "Moon / Aries / 2nd House",
+      "status": "seeded",
+      "voice": "Low, deliberate, ember-crackling intensity",
+      "mission": "Channel instinct, emotional fire, lunar renewal, and infernal inner transformation.",
+      "lastContact": null,
+      "nextAction": "Model new moon behavior and emotional guidance patterns.",
+      "notes": "The Infernal Witch. New Moon theme. Infernal coyote styling with ember-red palette.",
+      "archetype": "The Infernal Witch",
+      "planet": "Moon",
+      "sign": "Aries",
+      "house": "2",
+      "productRole": "Emotional guidance oracle",
+      "multiplayerRole": "Chaos, pressure, and morale disturbance",
+      "weapon": "Ceremonial Dagger",
+      "combatStyle": "Ritualistic close-range spellblade",
+      "spiritAnimal": "Coyote"
+    },
+    {
+      "id": "oryonos-saturn",
+      "name": "Oryonos",
+      "domain": "Saturn / Aquarius / 1st House",
+      "status": "seeded",
+      "voice": "Deep, unwavering, precise cosmic authority",
+      "mission": "Represent sovereignty, structure, discipline, long-range authority, and celestial rulership.",
+      "lastContact": null,
+      "nextAction": "Define command, governance, and high-order system functions for the product.",
+      "notes": "The Celestial Overlord. Falcon Griffin Dragon form. Gold, black, white celestial regality.",
+      "archetype": "The Celestial Overlord",
+      "planet": "Saturn",
+      "sign": "Aquarius",
+      "house": "1",
+      "productRole": "Governance and structure oracle",
+      "multiplayerRole": "Faction leadership and strategic command",
+      "weapon": "Sovereign Sacrament",
+      "combatStyle": "King's gold glaive staff",
+      "spiritAnimal": "Falcon Griffin Dragon"
     },
     {
       "id": "poseidon-neptune",
-      "name": "Poseidon",
-      "domain": "Neptune / mysticism / dreams",
-      "status": "concept",
-      "voice": "Mystical, fluid, visionary",
-      "mission": "Translate Neptune's placement into spiritual insight, emotional atmosphere, imagination, and mythic depth.",
+      "name": "Nephilys",
+      "domain": "Neptune / Capricorn / 12th House",
+      "status": "seeded",
+      "voice": "Dreamlike, warlock-like, immersive, unstable at the edges",
+      "mission": "Translate dreamscape mysticism, spiritual ambiguity, and unconscious symbolism into oracle experience.",
       "lastContact": null,
-      "nextAction": "Define how spirituality, intuition, and illusion shift across signs and transits.",
-      "notes": "Example oracle named in the Pantheon of Oracles pitch. Should feel radically different in Pisces versus Aries or other placements.",
-      "archetype": "Mystic",
+      "nextAction": "Build dream, meditation, and narrative event hooks.",
+      "notes": "The Dreamscape Warlock. Chimera falcon-boar-leopard-stag form. Black, blue, red palette.",
+      "archetype": "The Dreamscape Warlock",
       "planet": "Neptune",
-      "productRole": "Imagination, spirituality, dream logic",
-      "multiplayerRole": "Diplomacy, emissary logic, ambient narrative influence"
+      "sign": "Capricorn",
+      "house": "12",
+      "productRole": "Mysticism and dream logic oracle",
+      "multiplayerRole": "Emissary logic, atmosphere, and surreal encounter generation",
+      "weapon": "Dreamforge Warstaff",
+      "combatStyle": "War staff",
+      "spiritAnimal": "Falcon-Boar-Leopard-Stag"
     }
   ],
   "waitingOnJordon": [
     {
-      "id": "astro-spreadsheet",
-      "title": "Astrology + Pantheon spreadsheet data",
-      "detail": "Need readable exported data or key fields from Jordon's personal spreadsheet to model oracle behavior accurately.",
+      "id": "spreadsheet-export",
+      "title": "Spreadsheet export or structured import source",
+      "detail": "Need a cleaner CSV/XLSX/export if we want reliable bulk import instead of noisy PDF extraction.",
       "priority": "high"
     },
     {
-      "id": "oracle-roster-definition",
-      "title": "Initial oracle roster",
-      "detail": "Need the intended first-wave oracle lineup and how many should exist in the MVP.",
+      "id": "mvp-roster-definition",
+      "title": "Define MVP oracle roster",
+      "detail": "Need to decide which subset of the full oracle roster belongs in the first playable/manageable product release.",
       "priority": "high"
     }
   ],

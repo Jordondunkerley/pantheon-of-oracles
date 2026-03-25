@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Clawdbot Console",
-    "updatedAt": "2026-03-25T15:12:00.000Z"
+    "updatedAt": "2026-03-25T15:32:00.000Z"
   },
   "projects": [
     {
@@ -10,7 +10,7 @@
       "status": "active",
       "priority": "critical",
       "summary": "AI-driven role-playing, lifestyle, and multiplayer oracle platform personalized by astrology.",
-      "updatedAt": "2026-03-25T15:12:00.000Z"
+      "updatedAt": "2026-03-25T15:32:00.000Z"
     },
     {
       "id": "clawdbot-console",
@@ -18,19 +18,19 @@
       "status": "active",
       "priority": "high",
       "summary": "Operator dashboard, desktop app, and future product control surface for oracle management.",
-      "updatedAt": "2026-03-25T15:12:00.000Z"
+      "updatedAt": "2026-03-25T15:32:00.000Z"
     }
   ],
   "tasks": [
     {
-      "id": "oracle-schema-v2",
+      "id": "prototype-architecture-pass",
       "projectId": "pantheon-of-oracles",
-      "title": "Upgrade dashboard to rich oracle schema",
+      "title": "Restructure app around real backend templates",
       "status": "in_progress",
       "priority": "critical",
       "owner": "Clawdbot",
-      "notes": "Support astrology fields, lore, visuals, combat identity, faction tags, and multiplayer roles based on the imported source material.",
-      "updatedAt": "2026-03-25T15:12:00.000Z"
+      "notes": "Align the prototype to player account, astrology profile, oracle profile, and model/provider settings using the supplied JSON templates.",
+      "updatedAt": "2026-03-25T15:32:00.000Z"
     },
     {
       "id": "oracle-import-planning",
@@ -40,7 +40,7 @@
       "priority": "high",
       "owner": "Clawdbot",
       "notes": "Design a clean path for loading Jordon's source oracle data into the product model.",
-      "updatedAt": "2026-03-25T15:12:00.000Z"
+      "updatedAt": "2026-03-25T15:32:00.000Z"
     },
     {
       "id": "build-dashboard-v1",
@@ -50,10 +50,16 @@
       "priority": "critical",
       "owner": "Clawdbot",
       "notes": "Iteratively evolve the dashboard into a uniquely Jordon-native command center and future marketable product shell.",
-      "updatedAt": "2026-03-25T15:12:00.000Z"
+      "updatedAt": "2026-03-25T15:32:00.000Z"
     }
   ],
   "activity": [
+    {
+      "id": "backend-template-analysis",
+      "type": "research",
+      "message": "Reviewed real backend templates and shifted the prototype toward player accounts, astrology profiles, oracle profiles, and model-agnostic provider settings.",
+      "timestamp": "2026-03-25T15:32:00.000Z"
+    },
     {
       "id": "pdf-analysis",
       "type": "research",
@@ -65,18 +71,6 @@
       "type": "research",
       "message": "Started studying Pantheon of Oracles material and redesigning the dashboard around oracle operations.",
       "timestamp": "2026-03-25T15:00:00.000Z"
-    },
-    {
-      "id": "desktop-packaging",
-      "type": "desktop_app",
-      "message": "Started adapting Clawdbot Console into a Windows desktop app.",
-      "timestamp": "2026-03-25T14:55:00.000Z"
-    },
-    {
-      "id": "bootstrap-console",
-      "type": "work_started",
-      "message": "Started building the Clawdbot Console dashboard.",
-      "timestamp": "2026-03-25T14:45:00.000Z"
     }
   ],
   "schedule": [
@@ -95,100 +89,497 @@
       "status": "planned"
     }
   ],
+  "currentUser": {
+    "player_id": "player-jordon-local",
+    "username": "Jordon",
+    "email": "",
+    "gender": "Male",
+    "gaze": "Masculine",
+    "birthday": "1993-04-21",
+    "birth_time": "03:41",
+    "birth_location": "Brampton, ON, Canada",
+    "created_at": "2026-03-25T15:32:00.000Z",
+    "platform_links": {
+      "discord_id": "",
+      "openai_id": "",
+      "youtube_id": ""
+    },
+    "faction_alignment": {
+      "core_faction": "Mystic",
+      "planetary_faction": "Uranus",
+      "guild": "",
+      "warband": "Dust"
+    },
+    "access_tier": "Founder",
+    "founder_status": true,
+    "season_pass": {
+      "active": true,
+      "season_name": "Prototype Season",
+      "season_number": 0
+    },
+    "oracles_owned": [
+      "oracle-solin-sun",
+      "oracle-lunos-moon",
+      "oracle-oryonos-saturn",
+      "oracle-nephilys-neptune"
+    ],
+    "token_balances": {
+      "fire": 0,
+      "water": 0,
+      "air": 0,
+      "earth": 0,
+      "uranus": 0
+    },
+    "oracle_sync_status": {
+      "council_initiated": true,
+      "throne_world_access": false,
+      "leviathan_unlocked": false,
+      "ascended_fusion_enabled": false
+    },
+    "notifications": {
+      "system_messages_enabled": true,
+      "promotional_messages_opt_in": false,
+      "daily_reset_time": "03:41:00Z"
+    },
+    "preferences": {
+      "oracle_voice_flavor": "Mythic",
+      "visual_overlays_enabled": false,
+      "system_prompt_tone": "Soft Cosmic"
+    }
+  },
+  "llmProviders": [
+    {
+      "id": "openai-compatible",
+      "name": "OpenAI-Compatible API",
+      "status": "prototype-ready",
+      "description": "Generic connector slot for OpenAI-style chat APIs.",
+      "configNeeded": ["baseUrl", "apiKey", "model"],
+      "enabled": true
+    },
+    {
+      "id": "local-model",
+      "name": "Local / Self-Hosted Model",
+      "status": "planned",
+      "description": "Future connector for self-hosted inference or local runtimes.",
+      "configNeeded": ["endpoint", "model"],
+      "enabled": false
+    }
+  ],
+  "astrologyProfile": {
+    "name": "Jordon Dunkerley",
+    "dateOfBirth": "1993-04-21",
+    "timeOfBirth": "03:41",
+    "locationOfBirth": "Brampton, ON, Canada",
+    "gender": "Male",
+    "angles": {
+      "Ascendant": { "sign": "Aquarius", "degree": "16°42'53\"" },
+      "Descendant": { "sign": "Leo", "degree": "16°42'53\"" },
+      "Midheaven": { "sign": "Sagittarius", "degree": "6°43'17\"" },
+      "IC": { "sign": "Gemini", "degree": "6°43'17\"" }
+    },
+    "planets": {
+      "Sun": { "sign": "Taurus", "degree": "1°12'53\"", "house": 2, "motion": "Direct" },
+      "Moon": { "sign": "Aries", "degree": "23°42'32\"", "house": 2, "motion": "Direct" },
+      "Mercury": { "sign": "Aries", "degree": "8°16'30\"", "house": 2, "motion": "Direct" },
+      "Venus": { "sign": "Aries", "degree": "3°46'22\"", "house": 1, "motion": "Retrograde", "stationary": "Emerging" },
+      "Mars": { "sign": "Cancer", "degree": "26°53'36\"", "house": 6, "motion": "Direct" },
+      "Jupiter": { "sign": "Libra", "degree": "7°08'01\"", "house": 7, "motion": "Retrograde" },
+      "Saturn": { "sign": "Aquarius", "degree": "28°21'51\"", "house": 1, "motion": "Direct" },
+      "Uranus": { "sign": "Capricorn", "degree": "22°10'50\"", "house": 12, "motion": "Direct" },
+      "Neptune": { "sign": "Capricorn", "degree": "21°09'06\"", "house": 12, "motion": "Direct", "stationary": "Entering" },
+      "Pluto": { "sign": "Scorpio", "degree": "24°46'29\"", "house": 9, "motion": "Retrograde" }
+    },
+    "interceptions": ["Pisces in 1st", "Virgo in 7th"],
+    "duplications": ["Gemini in 5th", "Sagittarius in 11th"]
+  },
+  "interactionSessions": [
+    {
+      "id": "session-oryonos-001",
+      "oracleId": "oracle-oryonos-saturn",
+      "title": "Governance and structure dialogue",
+      "status": "seeded",
+      "lastMessageAt": null,
+      "providerId": "openai-compatible"
+    }
+  ],
   "oracles": [
     {
-      "id": "solin-sun",
-      "name": "Solin",
-      "domain": "Sun / Taurus / 2nd House",
-      "status": "seeded",
-      "voice": "Valiant, disciplined, mythic martial confidence",
-      "mission": "Anchor solar identity, vitality, and central heroic direction within the pantheon.",
-      "lastContact": null,
-      "nextAction": "Populate full solar schema from source rows and define guidance mode.",
-      "notes": "The Valiant Master. Spirit animal: Boar Monkey. Colours: gold, white, green, red.",
+      "oracle_id": "oracle-solin-sun",
+      "oracle_name": "Solin",
       "archetype": "The Valiant Master",
-      "planet": "Sun",
-      "sign": "Taurus",
-      "house": "2",
-      "productRole": "Core identity oracle",
-      "multiplayerRole": "Frontline champion and central roster anchor",
-      "weapon": "Do-Bo",
-      "combatStyle": "Wukong/Kilik inspired staff combat",
-      "spiritAnimal": "Boar Monkey"
+      "oracle_type": "Playable",
+      "astrology_profile": {
+        "ruling_planet": "Sun",
+        "dominant_sign": "Taurus",
+        "house_placement": "2",
+        "motion": "Direct",
+        "stationary": "",
+        "shadow": "",
+        "degree": "1°12'53\"",
+        "degree_mark": "",
+        "decan": {
+          "method": "Modern",
+          "decan_ruler": "Venus",
+          "decan_ruler_sign": "Aries",
+          "flavor": "Full"
+        },
+        "rising_sign": "Aquarius",
+        "rising_decan_sign": "Aquarius flavored through Mercury in Aries"
+      },
+      "faction_affiliation": {
+        "core_faction": "Mystic",
+        "planetary_faction": "Sun",
+        "tribe": "Air",
+        "guild": ""
+      },
+      "hardcore_status": true,
+      "level": 0,
+      "tier": "Tier 1",
+      "ascended_rank": 0,
+      "oracle_form": "Base",
+      "council_type": "Solar Council",
+      "descendant_relationship_state": "Dormant",
+      "oracle_locked": false,
+      "oracle_voice": "Valiant, disciplined, mythic martial confidence",
+      "tone_overlay": "Solar mastery through Taurus stability and Aries-flavored rulership",
+      "oracle_metadata_last_updated": "2026-03-25T15:32:00.000Z",
+      "anointed_ruler": false,
+      "modern_ruler": false,
+      "traditional_ruler": false,
+      "dominant_ruler": false,
+      "solar_ruler": true,
+      "has_shapeshift": false,
+      "shapeshift_description": "",
+      "has_pet": true,
+      "pet_name": "Raging Boar",
+      "pet_description": "Deferred to future game systems.",
+      "has_apprentice": false,
+      "apprentice_name": "",
+      "apprentice_description": "",
+      "has_disciple": false,
+      "disciple_name": "",
+      "disciple_description": "",
+      "has_legion": false,
+      "legion_name": "",
+      "legion_description": "",
+      "has_legion_captain": false,
+      "legion_captain_name": "",
+      "legion_captain_description": "",
+      "has_behemoth": true,
+      "behemoth_name": "Babarong",
+      "behemoth_description": "Deferred to future game systems.",
+      "has_behemoth_fusion": false,
+      "behemoth_fusion_name": "",
+      "behemoth_fusion_crown": false,
+      "behemoth_fusion_aura": false,
+      "behemoth_fusion_description": "",
+      "visual_attributes": {
+        "visual_description": {
+          "head": "Apprentice male solar styling; future render needed.",
+          "torso": "Martial ceremonial solar armor.",
+          "arms": "Combat-trained disciplined presentation.",
+          "legs": "Mythic martial movement styling.",
+          "aura": "Solar vitality.",
+          "ambient_flavor": "Gold, white, green, and red mythic atmosphere.",
+          "visual_style_notes": "Wukong/Kilik inspired heroic solar combatant.",
+          "color_scheme": "Gold, White, Green, Red"
+        },
+        "weapons": {
+          "weapon_1": "Do-Bo",
+          "weapon_2": ""
+        },
+        "oracle_avatar_url": "",
+        "voice_style": "Mythic martial",
+        "role_in_pantheon": "Core identity oracle",
+        "additional_notes": "Spirit animal: Boar Monkey."
+      }
     },
     {
-      "id": "lunos-moon",
-      "name": "Lunos",
-      "domain": "Moon / Aries / 2nd House",
-      "status": "seeded",
-      "voice": "Low, deliberate, ember-crackling intensity",
-      "mission": "Channel instinct, emotional fire, lunar renewal, and infernal inner transformation.",
-      "lastContact": null,
-      "nextAction": "Model new moon behavior and emotional guidance patterns.",
-      "notes": "The Infernal Witch. New Moon theme. Infernal coyote styling with ember-red palette.",
+      "oracle_id": "oracle-lunos-moon",
+      "oracle_name": "Lunos",
       "archetype": "The Infernal Witch",
-      "planet": "Moon",
-      "sign": "Aries",
-      "house": "2",
-      "productRole": "Emotional guidance oracle",
-      "multiplayerRole": "Chaos, pressure, and morale disturbance",
-      "weapon": "Ceremonial Dagger",
-      "combatStyle": "Ritualistic close-range spellblade",
-      "spiritAnimal": "Coyote"
+      "oracle_type": "Playable",
+      "astrology_profile": {
+        "ruling_planet": "Moon",
+        "dominant_sign": "Aries",
+        "house_placement": "2",
+        "motion": "Direct",
+        "stationary": "",
+        "shadow": "",
+        "degree": "23°42'32\"",
+        "degree_mark": "",
+        "decan": {
+          "method": "Modern",
+          "decan_ruler": "Jupiter",
+          "decan_ruler_sign": "Libra",
+          "flavor": "Full"
+        },
+        "rising_sign": "Aquarius",
+        "rising_decan_sign": "Aquarius flavored through Mercury in Aries"
+      },
+      "faction_affiliation": {
+        "core_faction": "Mystic",
+        "planetary_faction": "Moon",
+        "tribe": "Air",
+        "guild": ""
+      },
+      "hardcore_status": true,
+      "level": 0,
+      "tier": "Tier 1",
+      "ascended_rank": 0,
+      "oracle_form": "Base",
+      "council_type": "Lunar Council",
+      "descendant_relationship_state": "Dormant",
+      "oracle_locked": false,
+      "oracle_voice": "Low, deliberate, ember-crackling intensity",
+      "tone_overlay": "New Moon infernal lunar fire",
+      "oracle_metadata_last_updated": "2026-03-25T15:32:00.000Z",
+      "anointed_ruler": false,
+      "modern_ruler": false,
+      "traditional_ruler": false,
+      "dominant_ruler": false,
+      "solar_ruler": false,
+      "has_shapeshift": false,
+      "shapeshift_description": "",
+      "has_pet": true,
+      "pet_name": "Infernal Coyote",
+      "pet_description": "Deferred to future game systems.",
+      "has_apprentice": false,
+      "apprentice_name": "",
+      "apprentice_description": "",
+      "has_disciple": false,
+      "disciple_name": "",
+      "disciple_description": "",
+      "has_legion": false,
+      "legion_name": "",
+      "legion_description": "",
+      "has_legion_captain": false,
+      "legion_captain_name": "",
+      "legion_captain_description": "",
+      "has_behemoth": true,
+      "behemoth_name": "Yotecoyo",
+      "behemoth_description": "Deferred to future game systems.",
+      "has_behemoth_fusion": false,
+      "behemoth_fusion_name": "",
+      "behemoth_fusion_crown": false,
+      "behemoth_fusion_aura": false,
+      "behemoth_fusion_description": "",
+      "visual_attributes": {
+        "visual_description": {
+          "head": "Charred black hair shifting like rising ash beneath a scorched black hood.",
+          "torso": "Light armor beneath battle-worn robes scorched at the edges.",
+          "arms": "Dark weathered sleeves and ember-lit motion.",
+          "legs": "Robed infernal mobility styling.",
+          "aura": "Embers drift like dying stars.",
+          "ambient_flavor": "Black and ember red infernal lunar atmosphere.",
+          "visual_style_notes": "New Moon theme; infernal witch aesthetic.",
+          "color_scheme": "Black, Ember Red"
+        },
+        "weapons": {
+          "weapon_1": "Ceremonial Dagger",
+          "weapon_2": ""
+        },
+        "oracle_avatar_url": "",
+        "voice_style": "Low, deliberate, crackling",
+        "role_in_pantheon": "Emotional guidance oracle",
+        "additional_notes": "Born on New Moon day theme." 
+      }
     },
     {
-      "id": "oryonos-saturn",
-      "name": "Oryonos",
-      "domain": "Saturn / Aquarius / 1st House",
-      "status": "seeded",
-      "voice": "Deep, unwavering, precise cosmic authority",
-      "mission": "Represent sovereignty, structure, discipline, long-range authority, and celestial rulership.",
-      "lastContact": null,
-      "nextAction": "Define command, governance, and high-order system functions for the product.",
-      "notes": "The Celestial Overlord. Falcon Griffin Dragon form. Gold, black, white celestial regality.",
+      "oracle_id": "oracle-oryonos-saturn",
+      "oracle_name": "Oryonos",
       "archetype": "The Celestial Overlord",
-      "planet": "Saturn",
-      "sign": "Aquarius",
-      "house": "1",
-      "productRole": "Governance and structure oracle",
-      "multiplayerRole": "Faction leadership and strategic command",
-      "weapon": "Sovereign Sacrament",
-      "combatStyle": "King's gold glaive staff",
-      "spiritAnimal": "Falcon Griffin Dragon"
+      "oracle_type": "Playable",
+      "astrology_profile": {
+        "ruling_planet": "Saturn",
+        "dominant_sign": "Aquarius",
+        "house_placement": "1",
+        "motion": "Direct",
+        "stationary": "",
+        "shadow": "",
+        "degree": "28°21'51\"",
+        "degree_mark": "",
+        "decan": {
+          "method": "Modern",
+          "decan_ruler": "Venus",
+          "decan_ruler_sign": "Aries",
+          "flavor": "Full"
+        },
+        "rising_sign": "Aquarius",
+        "rising_decan_sign": "Aquarius flavored through Mercury in Aries"
+      },
+      "faction_affiliation": {
+        "core_faction": "Mystic",
+        "planetary_faction": "Saturn",
+        "tribe": "Air",
+        "guild": "Aquarius Dolphin Guild"
+      },
+      "hardcore_status": true,
+      "level": 0,
+      "tier": "Tier 1",
+      "ascended_rank": 0,
+      "oracle_form": "Base",
+      "council_type": "Royal / Governance",
+      "descendant_relationship_state": "Dormant",
+      "oracle_locked": false,
+      "oracle_voice": "Deep, unwavering, precise cosmic authority",
+      "tone_overlay": "Celestial rulership and sovereign order",
+      "oracle_metadata_last_updated": "2026-03-25T15:32:00.000Z",
+      "anointed_ruler": true,
+      "modern_ruler": false,
+      "traditional_ruler": true,
+      "dominant_ruler": true,
+      "solar_ruler": false,
+      "has_shapeshift": false,
+      "shapeshift_description": "",
+      "has_pet": true,
+      "pet_name": "Falcon Griffin",
+      "pet_description": "Deferred to future game systems.",
+      "has_apprentice": false,
+      "apprentice_name": "",
+      "apprentice_description": "",
+      "has_disciple": false,
+      "disciple_name": "",
+      "disciple_description": "",
+      "has_legion": false,
+      "legion_name": "",
+      "legion_description": "",
+      "has_legion_captain": false,
+      "legion_captain_name": "",
+      "legion_captain_description": "",
+      "has_behemoth": true,
+      "behemoth_name": "Falcon Griffin Dragon",
+      "behemoth_description": "Deferred to future game systems.",
+      "has_behemoth_fusion": false,
+      "behemoth_fusion_name": "",
+      "behemoth_fusion_crown": false,
+      "behemoth_fusion_aura": false,
+      "behemoth_fusion_description": "",
+      "visual_attributes": {
+        "visual_description": {
+          "head": "Imposing celestial crown helm of gold and black with capricornian horns in aquarius style.",
+          "torso": "Ornate high-collared robe in gold and black.",
+          "arms": "Gold bracers.",
+          "legs": "Robed lower half with ceremonial layers.",
+          "aura": "Subtle white-gold rays radiating timeless authority.",
+          "ambient_flavor": "Cosmic blend of gold, black, deep navy and purple.",
+          "visual_style_notes": "Traditional and dominant rulership infused.",
+          "color_scheme": "Gold, Black, White"
+        },
+        "weapons": {
+          "weapon_1": "Sovereign Sacrament",
+          "weapon_2": "King's Gold Glaive Staff"
+        },
+        "oracle_avatar_url": "",
+        "voice_style": "Measured cosmic authority",
+        "role_in_pantheon": "Governance and structure oracle",
+        "additional_notes": "First-dominant rulership emphasis."
+      }
     },
     {
-      "id": "poseidon-neptune",
-      "name": "Nephilys",
-      "domain": "Neptune / Capricorn / 12th House",
-      "status": "seeded",
-      "voice": "Dreamlike, warlock-like, immersive, unstable at the edges",
-      "mission": "Translate dreamscape mysticism, spiritual ambiguity, and unconscious symbolism into oracle experience.",
-      "lastContact": null,
-      "nextAction": "Build dream, meditation, and narrative event hooks.",
-      "notes": "The Dreamscape Warlock. Chimera falcon-boar-leopard-stag form. Black, blue, red palette.",
+      "oracle_id": "oracle-nephilys-neptune",
+      "oracle_name": "Nephilys",
       "archetype": "The Dreamscape Warlock",
-      "planet": "Neptune",
-      "sign": "Capricorn",
-      "house": "12",
-      "productRole": "Mysticism and dream logic oracle",
-      "multiplayerRole": "Emissary logic, atmosphere, and surreal encounter generation",
-      "weapon": "Dreamforge Warstaff",
-      "combatStyle": "War staff",
-      "spiritAnimal": "Falcon-Boar-Leopard-Stag"
+      "oracle_type": "Playable",
+      "astrology_profile": {
+        "ruling_planet": "Neptune",
+        "dominant_sign": "Capricorn",
+        "house_placement": "12",
+        "motion": "Direct",
+        "stationary": "Entering Retrograde",
+        "shadow": "",
+        "degree": "21°09'06\"",
+        "degree_mark": "",
+        "decan": {
+          "method": "Modern",
+          "decan_ruler": "Mercury",
+          "decan_ruler_sign": "Aries",
+          "flavor": "Full"
+        },
+        "rising_sign": "Aquarius",
+        "rising_decan_sign": "Aquarius flavored through Mercury in Aries"
+      },
+      "faction_affiliation": {
+        "core_faction": "Mystic",
+        "planetary_faction": "Neptune",
+        "tribe": "Air",
+        "guild": ""
+      },
+      "hardcore_status": true,
+      "level": 0,
+      "tier": "Tier 1",
+      "ascended_rank": 0,
+      "oracle_form": "Base",
+      "council_type": "Mystic Council",
+      "descendant_relationship_state": "Dormant",
+      "oracle_locked": false,
+      "oracle_voice": "Dreamlike, warlock-like, immersive, unstable at the edges",
+      "tone_overlay": "Neptunian mysticism and subconscious atmospheric distortion",
+      "oracle_metadata_last_updated": "2026-03-25T15:32:00.000Z",
+      "anointed_ruler": false,
+      "modern_ruler": false,
+      "traditional_ruler": false,
+      "dominant_ruler": false,
+      "solar_ruler": false,
+      "has_shapeshift": false,
+      "shapeshift_description": "",
+      "has_pet": false,
+      "pet_name": "",
+      "pet_description": "",
+      "has_apprentice": false,
+      "apprentice_name": "",
+      "apprentice_description": "",
+      "has_disciple": false,
+      "disciple_name": "",
+      "disciple_description": "",
+      "has_legion": false,
+      "legion_name": "",
+      "legion_description": "",
+      "has_legion_captain": false,
+      "legion_captain_name": "",
+      "legion_captain_description": "",
+      "has_behemoth": true,
+      "behemoth_name": "Chimera Falcon-Boar-Leopard-Stag",
+      "behemoth_description": "Deferred to future game systems.",
+      "has_behemoth_fusion": false,
+      "behemoth_fusion_name": "",
+      "behemoth_fusion_crown": false,
+      "behemoth_fusion_aura": false,
+      "behemoth_fusion_description": "",
+      "visual_attributes": {
+        "visual_description": {
+          "head": "Future render needed.",
+          "torso": "Dream-forged warlock ceremonial attire.",
+          "arms": "Mystic warstaff-bearing silhouette.",
+          "legs": "Occult traveler styling.",
+          "aura": "Dreamlike distortions and unstable edges.",
+          "ambient_flavor": "Black, blue, red atmosphere.",
+          "visual_style_notes": "Dreamscape warlock aesthetic.",
+          "color_scheme": "Black, Blue, Red"
+        },
+        "weapons": {
+          "weapon_1": "Dreamforge Warstaff",
+          "weapon_2": ""
+        },
+        "oracle_avatar_url": "",
+        "voice_style": "Mystic immersion",
+        "role_in_pantheon": "Mysticism and dream logic oracle",
+        "additional_notes": "Stationary entering state relevant to ritual and dialogue tone."
+      }
     }
   ],
   "waitingOnJordon": [
     {
-      "id": "spreadsheet-export",
-      "title": "Spreadsheet export or structured import source",
-      "detail": "Need a cleaner CSV/XLSX/export if we want reliable bulk import instead of noisy PDF extraction.",
+      "id": "clean-json-exports",
+      "title": "Cleaner canonical backend exports",
+      "detail": "The templates and patches are enough to structure the prototype, but some files are malformed and some lore-heavy patches still need canonical explanation later.",
       "priority": "high"
     },
     {
-      "id": "mvp-roster-definition",
-      "title": "Define MVP oracle roster",
-      "detail": "Need to decide which subset of the full oracle roster belongs in the first playable/manageable product release.",
-      "priority": "high"
+      "id": "provider-integration-preferences",
+      "title": "Preferred first LLM connector path",
+      "detail": "Need to decide whether the first working oracle connector should target an OpenAI-compatible endpoint, local model, or another provider abstraction.",
+      "priority": "medium"
     }
   ],
   "productVision": {
@@ -203,7 +594,8 @@
       "Friend Oracles as asynchronous emissaries between players",
       "Factions, battles, raids, and tournaments influenced by cosmic cycles",
       "Mobile-first roadmap with AI cinematics and future AR/VR expansion",
-      "Cross-progression across app, immersive, and arcade experiences"
+      "Cross-progression across app, immersive, and arcade experiences",
+      "Prototype should remain model-agnostic and accept multiple LLM backends"
     ],
     "traction": {
       "alphaUsers": 145,

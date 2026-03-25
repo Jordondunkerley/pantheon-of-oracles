@@ -8,3 +8,4 @@
 - Core Pantheon concept: each user gets a unique council of AI oracle companions derived from their astrological chart; each oracle maps to a placement/force and changes over time with planetary transits.
 - Expanded Pantheon vision includes asynchronous friend-oracle interactions between players, faction-based multiplayer, cosmic-cycle tournaments/raids, and a mobile-first path toward AR/VR and arcade experiences with cross-progression.
 - Source PDF revealed a much richer oracle ontology than initially assumed: many named oracles with astrology, archetype, creature, combat, visual, and voice metadata. The dashboard/product needs a rich oracle schema, not simple persona cards.
+- Backend templates confirm the prototype should be structured around player accounts, astrology profiles, oracle profiles, interaction sessions, and model/provider abstraction rather than only lightweight dashboard cards.

@@ -53,5 +53,13 @@
     "supports_clash": true,
     "supports_mobile": true,
     "supports_story_modes": true
+  },
+  "game_interpretation": {
+    "clash_archetype": "",
+    "speed_profile": "",
+    "range_profile": "",
+    "power_profile": "",
+    "signature_mechanic": "",
+    "stance_fantasy": ""
   }
 }

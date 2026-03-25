@@ -57,6 +57,14 @@ const pkg = {
     supports_clash: true,
     supports_mobile: true,
     supports_story_modes: true
+  },
+  game_interpretation: {
+    clash_archetype: oracle.archetype || '',
+    speed_profile: oracle.visual_attributes?.speed_profile || '',
+    range_profile: oracle.visual_attributes?.range_profile || '',
+    power_profile: oracle.visual_attributes?.power_profile || '',
+    signature_mechanic: oracle.visual_attributes?.signature_mechanic || '',
+    stance_fantasy: oracle.visual_attributes?.stance_fantasy || ''
   }
 };
 

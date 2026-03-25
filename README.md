@@ -89,6 +89,8 @@ Starter package shape:
 app/data/oracle-package-template.json
 ```
 
+These packages are intended to help future Pantheon products (like Clash) consume stable oracle identity, combat interpretation, and visual metadata from the core app.
+
 ## Notes
 - State is stored locally in `app/data/state.json`
 - The dashboard auto-refreshes every 5 seconds

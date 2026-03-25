@@ -404,6 +404,11 @@
         "combat_style": "Dual throwing-knife assassin pressure and ignition speed",
         "visual_silhouette": "Light assassin armor, falcon precision helm, knife-first posture",
         "spirit_identity": "Assassin Peregrine Falcon / Harpy",
+        "speed_profile": "high",
+        "range_profile": "mid",
+        "power_profile": "medium",
+        "signature_mechanic": "Ignition blades and evasive precision",
+        "stance_fantasy": "Knife-led assassin duelist",
         "role_in_pantheon": "Strategy, wit, precision, execution",
         "additional_notes": "Burning and igniting everything they touch."
       }
@@ -501,6 +506,11 @@
         "combat_style": "Close-range seduction and dagger pressure with consuming heat",
         "visual_silhouette": "Predatory feminine silhouette, ember aura, dagger-led posture",
         "spirit_identity": "Smoldering Leopard",
+        "speed_profile": "high",
+        "range_profile": "low",
+        "power_profile": "medium",
+        "signature_mechanic": "Charm pressure and consuming ember strikes",
+        "stance_fantasy": "Smoldering close-quarters temptress",
         "role_in_pantheon": "Attraction, desire, confidence, consuming beauty",
         "additional_notes": "Retrograde-emerging Venus expression."
       }
@@ -598,6 +608,11 @@
         "combat_style": "Heroic staff combat with disciplined forward pressure",
         "visual_silhouette": "Solar martial champion with staff-bearing master posture",
         "spirit_identity": "Boar Monkey / Babarong",
+        "speed_profile": "medium",
+        "range_profile": "mid",
+        "power_profile": "high",
+        "signature_mechanic": "Disciplined mastery and mythic momentum",
+        "stance_fantasy": "Heroic staff master",
         "role_in_pantheon": "Core identity oracle",
         "additional_notes": "Spirit animal: Boar Monkey."
       }
@@ -695,6 +710,11 @@
         "combat_style": "Ceremonial dagger casting with infernal lunar ritual pressure",
         "visual_silhouette": "Hooded ember-witch silhouette with scorched lunar flame",
         "spirit_identity": "Infernal Coyote / Yotecoyo",
+        "speed_profile": "medium",
+        "range_profile": "mid",
+        "power_profile": "medium",
+        "signature_mechanic": "Lunar ritual pressure and ember curse timing",
+        "stance_fantasy": "Infernal ritual duelist",
         "role_in_pantheon": "Emotional guidance oracle",
         "additional_notes": "Born on New Moon day theme." 
       }
@@ -792,6 +812,11 @@
         "combat_style": "Regal glaive-staff control with sovereign battlefield spacing",
         "visual_silhouette": "Crowned celestial overlord with ceremonial robe mass and gilded authority",
         "spirit_identity": "Falcon Griffin Dragon",
+        "speed_profile": "low",
+        "range_profile": "high",
+        "power_profile": "high",
+        "signature_mechanic": "Sovereign spacing and celestial command pressure",
+        "stance_fantasy": "Cosmic ruler weapon-master",
         "role_in_pantheon": "Governance and structure oracle",
         "additional_notes": "First-dominant rulership emphasis."
       }
@@ -889,6 +914,11 @@
         "combat_style": "Warstaff mysticism and dream-pressure battlefield distortion",
         "visual_silhouette": "Dream-warped warlock silhouette with occult staff focus",
         "spirit_identity": "Chimera Falcon-Boar-Leopard-Stag",
+        "speed_profile": "medium",
+        "range_profile": "high",
+        "power_profile": "medium",
+        "signature_mechanic": "Dream-pressure distortions and mystic reach",
+        "stance_fantasy": "Occult spacing warlock",
         "role_in_pantheon": "Mysticism and dream logic oracle",
         "additional_notes": "Stationary entering state relevant to ritual and dialogue tone."
       }

@@ -270,6 +270,8 @@ function renderOracleDetail(oracle) {
       <p class="meta"><strong>Guild:</strong> ${oracle.faction_affiliation?.guild || '—'}</p>
       <p class="meta"><strong>Weapons:</strong> ${weapons.weapon_1 || '—'}${weapons.weapon_2 ? ` / ${weapons.weapon_2}` : ''}</p>
       <p class="meta"><strong>Combat style:</strong> ${visuals.combat_style || visuals.additional_notes || 'Not defined yet'}</p>
+      <p class="meta"><strong>Clash profiles:</strong> Speed ${visuals.speed_profile || '—'} • Range ${visuals.range_profile || '—'} • Power ${visuals.power_profile || '—'}</p>
+      <p class="meta"><strong>Signature mechanic:</strong> ${visuals.signature_mechanic || 'Not defined yet'}</p>
     `,
     guidance: `
       <h3>${oracle.oracle_name} — Guidance</h3>

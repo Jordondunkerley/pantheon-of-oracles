@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "title": "Clawdbot Console",
+    "updatedAt": null
+  },
+  "projects": [
+    {
+      "id": "pantheon-of-oracles",
+      "name": "Pantheon of Oracles",
+      "status": "active",
+      "priority": "critical",
+      "summary": "Core business and oracle-character ecosystem.",
+      "updatedAt": null
+    }
+  ],
+  "tasks": [
+    {
+      "id": "build-dashboard-v1",
+      "projectId": "pantheon-of-oracles",
+      "title": "Build Clawdbot ops dashboard v1",
+      "status": "in_progress",
+      "priority": "critical",
+      "owner": "Clawdbot",
+      "notes": "Scaffold a browser-accessible dashboard on the VPS with project, task, and activity tracking.",
+      "updatedAt": null
+    }
+  ],
+  "activity": [
+    {
+      "id": "bootstrap-console",
+      "type": "work_started",
+      "message": "Started building the Clawdbot Console dashboard.",
+      "timestamp": null
+    }
+  ],
+  "schedule": [
+    {
+      "id": "daily-ops-review",
+      "title": "Daily ops review",
+      "cadence": "daily",
+      "time": "09:00 UTC",
+      "status": "proposed"
+    }
+  ]
+}

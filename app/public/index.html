@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clawdbot Console</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Always-on operator dashboard</p>
+          <h1>Clawdbot Console</h1>
+          <p class="subcopy">Projects, tasks, schedule, and activity — one place to see what I’m doing on your VPS.</p>
+        </div>
+        <div class="status-card">
+          <span class="label">Last update</span>
+          <strong id="updatedAt">Loading…</strong>
+        </div>
+      </header>
+
+      <section class="grid top-grid">
+        <article class="panel">
+          <h2>Projects</h2>
+          <div id="projects" class="stack"></div>
+        </article>
+        <article class="panel">
+          <h2>Schedule</h2>
+          <div id="schedule" class="stack"></div>
+        </article>
+      </section>
+
+      <section class="grid bottom-grid">
+        <article class="panel">
+          <div class="panel-header">
+            <h2>Tasks</h2>
+            <button id="refreshBtn">Refresh</button>
+          </div>
+          <div id="tasks" class="stack"></div>
+        </article>
+        <article class="panel">
+          <h2>Activity Feed</h2>
+          <div id="activity" class="stack"></div>
+        </article>
+      </section>
+    </main>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

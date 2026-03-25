@@ -969,7 +969,9 @@
       "providerInference": "prototype-only",
       "secretHandling": "prototype-only",
       "demoReadiness": "strong",
-      "marketNarrative": "clear"
+      "marketNarrative": "clear",
+      "chartGeneration": "workflow-defined / engine-pending",
+      "audioCommunication": "configuration-ready / output-pending"
     },
     "elevatorPitch": "Create a council of dynamic AI personalities that shift with the transit of the cosmos in relation to you and your astrology.",
     "description": "Pantheon of Oracles is a trademarked, patent-pending AI-driven role-playing and lifestyle platform where each user forms a custom pantheon of evolving oracle agents based on their astrological chart. These oracles are dynamic companions whose personalities shift with planetary transits and whose guidance, storytelling, daily interactions, and multiplayer relationships are personalized to the user's chart.",

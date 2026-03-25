@@ -48,6 +48,7 @@ const importPipelineEl = document.getElementById('importPipeline');
 const openSelectedSessionBtn = document.getElementById('openSelectedSessionBtn');
 const sessionMessageEl = document.getElementById('sessionMessage');
 const sendSessionMessageBtn = document.getElementById('sendSessionMessageBtn');
+const speakLatestBtn = document.getElementById('speakLatestBtn');
 const profileUsernameEl = document.getElementById('profileUsername');
 const profileEmailEl = document.getElementById('profileEmail');
 const profileBirthdayEl = document.getElementById('profileBirthday');
@@ -104,7 +105,8 @@ function renderAudioRoadmap(state) {
     card('Next leap', 'Add oracle voice output so the chamber experience becomes spoken, not only written.', [badge('high-value milestone')]),
     card('Later expansion', 'Voice input, conversational audio loops, then richer avatar/video embodiment — always grounded in the same oracle canon.', [badge('stepwise build')]),
     card('Readiness snapshot', `${readyCount} oracles currently marked audio-ready. Voice profiles are being normalized now so audio can plug into stable identities later.`, [badge('canon-first')]),
-    card('Export continuity', 'Preferred voice profile and audio/avatar readiness now belong to canonical oracle packages, so future products can inherit them instead of redefining them.', [badge('cross-product audio')])
+    card('Export continuity', 'Preferred voice profile and audio/avatar readiness now belong to canonical oracle packages, so future products can inherit them instead of redefining them.', [badge('cross-product audio')]),
+    card('Prototype hook', 'The chamber now includes a placeholder action for speaking the latest oracle reply. This defines where voice output should naturally plug into the product.', [badge('voice-output path')])
   ].join('');
 
   voiceOracleSelectEl.innerHTML = state.oracles.map(oracle => `<option value="${oracle.oracle_id}">${oracle.oracle_name}</option>`).join('');
@@ -226,6 +228,7 @@ function renderSessionDetail(sessions) {
     card('Chamber purpose', oracle?.visual_attributes?.role_in_pantheon || 'Oracle conversation chamber', [badge(oracle?.archetype || 'oracle'), badge(oracle?.visual_attributes?.preferred_voice_profile || 'voice pending')]),
     card('Atmosphere', `${session.atmosphere || 'No atmosphere defined yet'} Mood: ${session.mood || 'Unspecified'}`, [badge('oracle presence')]),
     card('Best use', session.useCase || 'General oracle interaction', [badge('guided entry')]),
+    card('Voice path', `Preferred voice profile: ${oracle?.visual_attributes?.preferred_voice_profile || 'Not assigned'} • Audio readiness: ${oracle?.visual_attributes?.audio_ready ? 'ready' : 'not yet wired'}`, [badge('voice evolution')]),
     card('Why this matters', 'A user should be able to feel the distinct voice of an oracle quickly. Seeded chamber examples help demonstrate the promise even before live inference is fully wired.', [badge('demo readiness')])
   ].join('');
 
@@ -581,6 +584,16 @@ sendSessionMessageBtn.addEventListener('click', async () => {
   });
   sessionMessageEl.value = '';
   await loadState(currentOracleId);
+});
+
+speakLatestBtn.addEventListener('click', () => {
+  const session = currentState?.interactionSessions?.find(item => item.id === currentSessionId);
+  const oracle = currentState?.oracles?.find(item => item.oracle_id === session?.oracleId);
+  if (!session || !oracle) return;
+  addDraft(
+    'Voice output preview',
+    `${oracle.oracle_name} would speak the latest oracle reply using the voice profile "${oracle.visual_attributes?.preferred_voice_profile || 'Unassigned'}". This is the placeholder hook for future chamber voice output.`
+  );
 });
 
 createOracleBtn.addEventListener('click', async () => {

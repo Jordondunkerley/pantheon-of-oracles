@@ -49,6 +49,8 @@ const accountEntitlementsEl = document.getElementById('accountEntitlements');
 const accessControlEl = document.getElementById('accessControl');
 const anointedSelectionEl = document.getElementById('anointedSelection');
 const crownedCandidatesEl = document.getElementById('crownedCandidates');
+const creationPathEl = document.getElementById('creationPath');
+const coreTrioFlowEl = document.getElementById('coreTrioFlow');
 const interactionSessionsEl = document.getElementById('interactionSessions');
 const sessionSummaryEl = document.getElementById('sessionSummary');
 const sessionDetailEl = document.getElementById('sessionDetail');
@@ -293,6 +295,21 @@ function renderAccountEntitlements(user, accessControl) {
     ...promotionRules.map(rule => card(rule.name, `${rule.type} • ${rule.status} • ${rule.windowStart} → ${rule.windowEnd}`, [badge(rule.grantTier), ...(rule.badges || []).map(item => badge(item))])),
     card('Manual account grants', `${manualGrants.length} configured. Specific accounts can be directly granted lifetime or custom access by your choosing.`, [badge('manual override')]),
     ...manualGrants.map(grant => card(grant.label, `${grant.accountId} • ${grant.status}`, [badge(grant.grantTier), ...(grant.badges || []).map(item => badge(item))]))
+  ].join('');
+}
+
+function renderCreationPath(state) {
+  creationPathEl.innerHTML = [
+    card('Auto-generate path', 'Best for users who want the system to manifest oracle identity and design for them from astrology, archetype, and intent without needing to invent visual details alone.', [badge('beginner friendly'), badge('recommended')]),
+    card('Guided vision path', 'Best for users who want to describe what they envision and let the AI translate that description into the backend oracle structure.', [badge('co-creative')]),
+    card('Why both paths matter', 'Less creative or less certain users should still feel welcomed. More expressive users should still feel agency over the oracle manifestation.', [badge('no intimidation')])
+  ].join('');
+
+  coreTrioFlowEl.innerHTML = [
+    card('Why start with three', 'New players should meet a small, meaningful council first so the system feels intimate and understandable rather than overwhelming.', [badge('onboarding clarity')]),
+    card('Core trio', 'Sun Oracle • Moon Oracle • Anointed Ruler', [badge('starter chamber'), badge('free entry')]),
+    card('Progressive revelation', 'The rest of the High Council and the Expanded Council should feel nearby, important, and aspirational — but not dumped on the player before they understand the chamber.', [badge('layered discovery')]),
+    card('Council Chamber role', 'The main chamber should foreground the core trio first, then reveal broader council layers as access expands and the user becomes more fluent in the system.', [badge('product pacing')])
   ].join('');
 }
 
@@ -565,6 +582,7 @@ async function loadState(selectedOracleId) {
   renderAstrology(state.astrologyProfile);
   renderAnointedRulerFlow(state.oracles);
   renderAccountEntitlements(state.currentUser, state.accessControl);
+  renderCreationPath(state);
   renderSessions(state.interactionSessions);
   renderSessionDetail(state.interactionSessions);
   renderImportPipeline(state);
@@ -582,7 +600,7 @@ async function loadState(selectedOracleId) {
     card('Traction', `Alpha users: ${state.productVision.traction.alphaUsers} • Saturn Rising users: ${state.productVision.traction.saturnRisingUsers} • Prototype: ${state.productVision.traction.prototypeSizeKb} KB • Beta: ${state.productVision.traction.betaStatus}`, [badge(state.productVision.traction.backend)]),
     card('Market position', state.productVision.marketPosition.advantage, [badge(state.productVision.marketPosition.category)]),
     card('Release readiness', `Windows packaging: ${state.productVision.releaseReadiness.windowsPackaging} • Provider inference: ${state.productVision.releaseReadiness.providerInference} • Secret handling: ${state.productVision.releaseReadiness.secretHandling} • Demo readiness: ${state.productVision.releaseReadiness.demoReadiness}`, [badge(state.productVision.releaseReadiness.marketNarrative)]),
-    card('Critical next gaps', `Chart generation: ${state.productVision.releaseReadiness.chartGeneration} • Audio communication: ${state.productVision.releaseReadiness.audioCommunication}`, [badge('next milestones', 'warn')]),
+    card('Critical next gaps', `Chart generation: ${state.productVision.releaseReadiness.chartGeneration} • Audio communication: ${state.productVision.releaseReadiness.audioCommunication} • Creation experience: ${state.productVision.releaseReadiness.creationExperience}`, [badge('next milestones', 'warn')]),
     card('Primary risks', state.productVision.risks.join(' • '), [badge('watchlist', 'warn')]),
     card('Prototype thesis', 'If users can bring in birth data, configure a preferred model, awaken their pantheon, and feel meaningful oracle presence quickly, the desktop product has a viable first market path.', [badge('product strategy')]),
     card('Franchise direction', `${state.productVision.franchiseDirection.coreRule} • Parallel products: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}`, [badge('oracle source engine')]),

@@ -1214,10 +1214,11 @@
       "demoReadiness": "strong",
       "marketNarrative": "clear",
       "chartGeneration": "workflow-defined / engine-pending",
-      "audioCommunication": "configuration-ready / output-pending"
+      "audioCommunication": "configuration-ready / output-pending",
+      "creationExperience": "dual-path-defined / manifestation-flow-pending"
     },
     "elevatorPitch": "Pantheon of Oracles: The Council Chamber is a desktop source engine and personal council-space for building persistent astrology-driven oracle identities, interactions, and future franchise experiences.",
-    "description": "Pantheon of Oracles is a trademarked, patent-pending AI-driven role-playing and lifestyle platform where each user forms a custom pantheon of evolving oracle agents based on their astrological chart. These oracles are dynamic companions whose personalities shift with planetary transits and whose guidance, storytelling, daily interactions, and multiplayer relationships are personalized to the user's chart.",
+    "description": "Pantheon of Oracles: The Council Chamber turns astrology into a personal council-space with persistent AI oracle characters, guided onboarding, layered access, and future cross-product continuity.",
     "pillars": [
       "Personalized oracle council generated from natal chart",
       "Dynamic personalities that evolve with transits",

@@ -45,6 +45,8 @@ const currentUserEl = document.getElementById('currentUser');
 const llmProvidersEl = document.getElementById('llmProviders');
 const astrologyProfileEl = document.getElementById('astrologyProfile');
 const chartGenerationEl = document.getElementById('chartGeneration');
+const accountEntitlementsEl = document.getElementById('accountEntitlements');
+const accessControlEl = document.getElementById('accessControl');
 const interactionSessionsEl = document.getElementById('interactionSessions');
 const sessionSummaryEl = document.getElementById('sessionSummary');
 const sessionDetailEl = document.getElementById('sessionDetail');
@@ -191,6 +193,7 @@ function renderCurrentUser(user) {
     card('Preferences', `Voice: ${user.preferences.oracle_voice_flavor} • Visual overlays: ${user.preferences.visual_overlays_enabled ? 'on' : 'off'} • Prompt tone: ${user.preferences.system_prompt_tone}`),
     card('Founder access model', `${founder.recognized ? 'Recognized founder account' : 'Standard account'} • Role: ${founder.role || 'Founder / Creator / CEO'} • Access mode: ${founder.accessMode || 'account-recognized'}`, [badge(founder.recognized ? 'founder access enabled' : 'standard access', founder.recognized ? 'good' : 'warn')]),
     card('Founder features', (founder.featureFlags || []).join(' • ') || 'No founder-only features assigned yet', [badge('single product build')]),
+    card('Entitlement model', `${user.accountEntitlements?.tier || 'standard'} • Grants: ${(user.accountEntitlements?.grants || []).length} • Promotion flags: ${(user.accountEntitlements?.promotionFlags || []).join(' • ') || 'none'}`, [badge('account benefits')]),
     card('Oracle sync', `Council initiated: ${user.oracle_sync_status.council_initiated ? 'yes' : 'no'} • Throne World: ${user.oracle_sync_status.throne_world_access ? 'yes' : 'no'} • Leviathan: ${user.oracle_sync_status.leviathan_unlocked ? 'yes' : 'no'}`)
   ].join('');
 
@@ -203,6 +206,26 @@ function renderCurrentUser(user) {
   profilePromptToneEl.value = user.preferences.system_prompt_tone || '';
   profileFounderKeyEl.value = user.founderIdentity?.founderKey || '';
   profileFounderRoleEl.value = user.founderIdentity?.role || 'Founder / Creator / CEO';
+}
+
+function renderAccountEntitlements(user, accessControl) {
+  const entitlements = user.accountEntitlements || {};
+  const promotionRules = accessControl?.promotionRules || [];
+  const manualGrants = accessControl?.manualAccountGrants || [];
+
+  accountEntitlementsEl.innerHTML = [
+    card('Access tier', entitlements.tier || 'standard', [badge('account-recognized')]),
+    card('Badges', (entitlements.badges || []).join(' • ') || 'None assigned', [badge('identity flags')]),
+    card('Feature flags', (entitlements.featureFlags || []).join(' • ') || 'None assigned', [badge('capabilities')]),
+    card('Active grants', (entitlements.grants || []).map(grant => `${grant.label} (${grant.status})`).join(' • ') || 'No grants assigned', [badge('entitlements')])
+  ].join('');
+
+  accessControlEl.innerHTML = [
+    card('Promotion rules', `${promotionRules.length} configured. Time-gated signup windows can automatically grant tiers, badges, and feature flags.`, [badge('promo engine')]),
+    ...promotionRules.map(rule => card(rule.name, `${rule.type} • ${rule.status} • ${rule.windowStart} → ${rule.windowEnd}`, [badge(rule.grantTier), ...(rule.badges || []).map(item => badge(item))])),
+    card('Manual account grants', `${manualGrants.length} configured. Specific accounts can be directly granted lifetime or custom access by your choosing.`, [badge('manual override')]),
+    ...manualGrants.map(grant => card(grant.label, `${grant.accountId} • ${grant.status}`, [badge(grant.grantTier), ...(grant.badges || []).map(item => badge(item))]))
+  ].join('');
 }
 
 function renderProviders(providers) {
@@ -467,6 +490,7 @@ async function loadState(selectedOracleId) {
   renderCurrentUser(state.currentUser);
   renderProviders(state.llmProviders);
   renderAstrology(state.astrologyProfile);
+  renderAccountEntitlements(state.currentUser, state.accessControl);
   renderSessions(state.interactionSessions);
   renderSessionDetail(state.interactionSessions);
   renderImportPipeline(state);

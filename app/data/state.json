@@ -168,7 +168,11 @@
       "name": "OpenAI-Compatible API",
       "status": "prototype-ready",
       "description": "Generic connector slot for OpenAI-style chat APIs.",
-      "configNeeded": ["baseUrl", "apiKey", "model"],
+      "configNeeded": [
+        "baseUrl",
+        "apiKey",
+        "model"
+      ],
       "enabled": true,
       "baseUrl": "",
       "model": "",
@@ -179,7 +183,10 @@
       "name": "Local / Self-Hosted Model",
       "status": "planned",
       "description": "Future connector for self-hosted inference or local runtimes.",
-      "configNeeded": ["endpoint", "model"],
+      "configNeeded": [
+        "endpoint",
+        "model"
+      ],
       "enabled": false,
       "baseUrl": "",
       "model": "",
@@ -190,7 +197,10 @@
     "generation": {
       "mode": "prototype-seeded",
       "targetMode": "birth-data-native",
-      "validationSources": ["Astro-Seek", "Startek"],
+      "validationSources": [
+        "Astro-Seek",
+        "Startek"
+      ],
       "lastGeneratedAt": null,
       "status": {
         "birthDataCollected": true,
@@ -213,25 +223,95 @@
     "locationOfBirth": "Brampton, ON, Canada",
     "gender": "Male",
     "angles": {
-      "Ascendant": { "sign": "Aquarius", "degree": "16°42'53\"" },
-      "Descendant": { "sign": "Leo", "degree": "16°42'53\"" },
-      "Midheaven": { "sign": "Sagittarius", "degree": "6°43'17\"" },
-      "IC": { "sign": "Gemini", "degree": "6°43'17\"" }
+      "Ascendant": {
+        "sign": "Aquarius",
+        "degree": "16\u00b042'53\""
+      },
+      "Descendant": {
+        "sign": "Leo",
+        "degree": "16\u00b042'53\""
+      },
+      "Midheaven": {
+        "sign": "Sagittarius",
+        "degree": "6\u00b043'17\""
+      },
+      "IC": {
+        "sign": "Gemini",
+        "degree": "6\u00b043'17\""
+      }
     },
     "planets": {
-      "Sun": { "sign": "Taurus", "degree": "1°12'53\"", "house": 2, "motion": "Direct" },
-      "Moon": { "sign": "Aries", "degree": "23°42'32\"", "house": 2, "motion": "Direct" },
-      "Mercury": { "sign": "Aries", "degree": "8°16'30\"", "house": 2, "motion": "Direct" },
-      "Venus": { "sign": "Aries", "degree": "3°46'22\"", "house": 1, "motion": "Retrograde", "stationary": "Emerging" },
-      "Mars": { "sign": "Cancer", "degree": "26°53'36\"", "house": 6, "motion": "Direct" },
-      "Jupiter": { "sign": "Libra", "degree": "7°08'01\"", "house": 7, "motion": "Retrograde" },
-      "Saturn": { "sign": "Aquarius", "degree": "28°21'51\"", "house": 1, "motion": "Direct" },
-      "Uranus": { "sign": "Capricorn", "degree": "22°10'50\"", "house": 12, "motion": "Direct" },
-      "Neptune": { "sign": "Capricorn", "degree": "21°09'06\"", "house": 12, "motion": "Direct", "stationary": "Entering" },
-      "Pluto": { "sign": "Scorpio", "degree": "24°46'29\"", "house": 9, "motion": "Retrograde" }
+      "Sun": {
+        "sign": "Taurus",
+        "degree": "1\u00b012'53\"",
+        "house": 2,
+        "motion": "Direct"
+      },
+      "Moon": {
+        "sign": "Aries",
+        "degree": "23\u00b042'32\"",
+        "house": 2,
+        "motion": "Direct"
+      },
+      "Mercury": {
+        "sign": "Aries",
+        "degree": "8\u00b016'30\"",
+        "house": 2,
+        "motion": "Direct"
+      },
+      "Venus": {
+        "sign": "Aries",
+        "degree": "3\u00b046'22\"",
+        "house": 1,
+        "motion": "Retrograde",
+        "stationary": "Emerging"
+      },
+      "Mars": {
+        "sign": "Cancer",
+        "degree": "26\u00b053'36\"",
+        "house": 6,
+        "motion": "Direct"
+      },
+      "Jupiter": {
+        "sign": "Libra",
+        "degree": "7\u00b008'01\"",
+        "house": 7,
+        "motion": "Retrograde"
+      },
+      "Saturn": {
+        "sign": "Aquarius",
+        "degree": "28\u00b021'51\"",
+        "house": 1,
+        "motion": "Direct"
+      },
+      "Uranus": {
+        "sign": "Capricorn",
+        "degree": "22\u00b010'50\"",
+        "house": 12,
+        "motion": "Direct"
+      },
+      "Neptune": {
+        "sign": "Capricorn",
+        "degree": "21\u00b009'06\"",
+        "house": 12,
+        "motion": "Direct",
+        "stationary": "Entering"
+      },
+      "Pluto": {
+        "sign": "Scorpio",
+        "degree": "24\u00b046'29\"",
+        "house": 9,
+        "motion": "Retrograde"
+      }
     },
-    "interceptions": ["Pisces in 1st", "Virgo in 7th"],
-    "duplications": ["Gemini in 5th", "Sagittarius in 11th"]
+    "interceptions": [
+      "Pisces in 1st",
+      "Virgo in 7th"
+    ],
+    "duplications": [
+      "Gemini in 5th",
+      "Sagittarius in 11th"
+    ]
   },
   "interactionSessions": [
     {
@@ -319,7 +399,7 @@
         },
         {
           "role": "oracle",
-          "content": "Arcures: It wins where curiosity outruns skepticism. Give them a fast path from birth data to a distinct voice they can feel. The first victory is not the whole system — it is a sharp, undeniable moment of recognition.",
+          "content": "Arcures: It wins where curiosity outruns skepticism. Give them a fast path from birth data to a distinct voice they can feel. The first victory is not the whole system \u2014 it is a sharp, undeniable moment of recognition.",
           "timestamp": "2026-03-25T15:57:00.000Z"
         }
       ]
@@ -368,7 +448,7 @@
         "motion": "Direct",
         "stationary": "",
         "shadow": "",
-        "degree": "8°16'30\"",
+        "degree": "8\u00b016'30\"",
         "degree_mark": "",
         "decan": {
           "method": "Modern",
@@ -470,7 +550,7 @@
         "motion": "Retrograde",
         "stationary": "Emerging",
         "shadow": "",
-        "degree": "3°46'22\"",
+        "degree": "3\u00b046'22\"",
         "degree_mark": "",
         "decan": {
           "method": "Modern",
@@ -572,7 +652,7 @@
         "motion": "Direct",
         "stationary": "",
         "shadow": "",
-        "degree": "1°12'53\"",
+        "degree": "1\u00b012'53\"",
         "degree_mark": "",
         "decan": {
           "method": "Modern",
@@ -674,7 +754,7 @@
         "motion": "Direct",
         "stationary": "",
         "shadow": "",
-        "degree": "23°42'32\"",
+        "degree": "23\u00b042'32\"",
         "degree_mark": "",
         "decan": {
           "method": "Modern",
@@ -761,7 +841,7 @@
         "signature_mechanic": "Lunar ritual pressure and ember curse timing",
         "stance_fantasy": "Infernal ritual duelist",
         "role_in_pantheon": "Emotional guidance oracle",
-        "additional_notes": "Born on New Moon day theme." 
+        "additional_notes": "Born on New Moon day theme."
       }
     },
     {
@@ -776,7 +856,7 @@
         "motion": "Direct",
         "stationary": "",
         "shadow": "",
-        "degree": "28°21'51\"",
+        "degree": "28\u00b021'51\"",
         "degree_mark": "",
         "decan": {
           "method": "Modern",
@@ -878,7 +958,7 @@
         "motion": "Direct",
         "stationary": "Entering Retrograde",
         "shadow": "",
-        "degree": "21°09'06\"",
+        "degree": "21\u00b009'06\"",
         "degree_mark": "",
         "decan": {
           "method": "Modern",
@@ -993,7 +1073,7 @@
       "chartGeneration": "workflow-defined / engine-pending",
       "audioCommunication": "configuration-ready / output-pending"
     },
-    "elevatorPitch": "Create a council of dynamic AI personalities that shift with the transit of the cosmos in relation to you and your astrology.",
+    "elevatorPitch": "Pantheon of Oracles: The Council Chamber is a desktop source engine and personal council-space for building persistent astrology-driven oracle identities, interactions, and future franchise experiences.",
     "description": "Pantheon of Oracles is a trademarked, patent-pending AI-driven role-playing and lifestyle platform where each user forms a custom pantheon of evolving oracle agents based on their astrological chart. These oracles are dynamic companions whose personalities shift with planetary transits and whose guidance, storytelling, daily interactions, and multiplayer relationships are personalized to the user's chart.",
     "pillars": [
       "Personalized oracle council generated from natal chart",

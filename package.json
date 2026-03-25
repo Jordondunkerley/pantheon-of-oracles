@@ -2,6 +2,8 @@
   "name": "pantheon-of-oracles-desktop",
   "version": "0.1.0",
   "private": true,
+  "description": "Founder-testable desktop prototype for Pantheon of Oracles: The Council Chamber.",
+  "author": "Pantheon of Oracles",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -16,8 +18,8 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "ai.clawdbot.console",
-    "productName": "Pantheon of Oracles",
+    "appId": "ai.pantheon.councilchamber",
+    "productName": "Pantheon of Oracles: The Council Chamber",
     "directories": {
       "output": "dist"
     },

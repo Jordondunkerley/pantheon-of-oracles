@@ -50,6 +50,16 @@ npm run dist:win
 
 The packaged app will be placed in the `dist/` directory.
 
+### Current packaging note
+
+The Windows packaging pipeline now reaches Electron Builder packaging successfully, but on this Linux host it stops at the native Windows-build requirement:
+
+- `wine is required`
+
+So the founder-testable repo/build path is now much closer, but final Windows artifact generation should be run either:
+- on a Windows machine, or
+- on a Linux machine with Wine configured for Electron Builder
+
 ## Suggested founder test flow
 1. Launch the app and confirm the Council Chamber shell loads
 2. Walk through First Entrance Ritual and birth profile

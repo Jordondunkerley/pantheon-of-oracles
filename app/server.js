@@ -100,12 +100,19 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && url.pathname === '/api/chart/generate') {
     try {
       const state = await loadState();
-      stampActivity(state, 'chart_generation', 'Triggered chart generation flow from birth data. This prototype still uses seeded astrology data while native chart generation is being prepared.');
+      state.astrologyProfile.generation = {
+        ...state.astrologyProfile.generation,
+        mode: 'prototype-seeded',
+        targetMode: 'birth-data-native',
+        validationSources: ['Astro-Seek', 'Startek'],
+        lastGeneratedAt: new Date().toISOString()
+      };
+      stampActivity(state, 'chart_generation', 'Triggered chart generation flow from birth data. This prototype still uses seeded astrology data while native chart generation is being prepared and validation references are being aligned.');
       await saveState(state);
       return sendJson(res, 200, {
         ok: true,
         mode: 'prototype-seeded',
-        message: 'Chart generation flow triggered. Native calculation and external validation path will plug into this endpoint.'
+        message: 'Chart generation flow triggered. Native calculation and validation/fallback references will plug into this endpoint.'
       });
     } catch (error) {
       return sendJson(res, 400, { ok: false, error: error.message });

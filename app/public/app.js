@@ -41,6 +41,7 @@ const nextStepGuideEl = document.getElementById('nextStepGuide');
 const currentUserEl = document.getElementById('currentUser');
 const llmProvidersEl = document.getElementById('llmProviders');
 const astrologyProfileEl = document.getElementById('astrologyProfile');
+const chartGenerationEl = document.getElementById('chartGeneration');
 const interactionSessionsEl = document.getElementById('interactionSessions');
 const sessionSummaryEl = document.getElementById('sessionSummary');
 const sessionDetailEl = document.getElementById('sessionDetail');
@@ -196,6 +197,13 @@ function renderAstrology(profile) {
     card('Angles', angleSummary),
     card('Primary planets', planetSummary),
     card('House anomalies', `Interceptions: ${profile.interceptions.join(', ') || 'None'} • Duplications: ${profile.duplications.join(', ') || 'None'}`)
+  ].join('');
+
+  chartGenerationEl.innerHTML = [
+    card('Current mode', `${profile.generation?.mode || 'unknown'} → target: ${profile.generation?.targetMode || 'unknown'}`, [badge('generation pipeline')]),
+    card('Validation references', (profile.generation?.validationSources || []).join(' • ') || 'None', [badge('accuracy path')]),
+    card('Last triggered', profile.generation?.lastGeneratedAt ? formatDate(profile.generation.lastGeneratedAt) : 'Not triggered yet', [badge('prototype state')]),
+    card('Product intent', 'Users should be able to enter birth data and receive an accurate chart inside the product. Imports remain optional, not required.', [badge('streamlined UX')])
   ].join('');
 }
 

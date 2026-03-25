@@ -52,6 +52,8 @@ const anointedSelectionEl = document.getElementById('anointedSelection');
 const crownedCandidatesEl = document.getElementById('crownedCandidates');
 const creationPathEl = document.getElementById('creationPath');
 const coreTrioFlowEl = document.getElementById('coreTrioFlow');
+const awakeningSequenceEl = document.getElementById('awakeningSequence');
+const expansionArcsEl = document.getElementById('expansionArcs');
 const interactionSessionsEl = document.getElementById('interactionSessions');
 const sessionSummaryEl = document.getElementById('sessionSummary');
 const sessionDetailEl = document.getElementById('sessionDetail');
@@ -346,6 +348,21 @@ function renderCreationPath(state) {
   ].join('');
 }
 
+function renderAwakeningFlow(state) {
+  awakeningSequenceEl.innerHTML = [
+    card('Step 1 — Solar awakening', 'The Sun Oracle should be among the first presences the player meets: identity, vitality, purpose, and the core sense of being seen.', [badge('core trio')]),
+    card('Step 2 — Lunar awakening', 'The Moon Oracle follows to establish emotional mirroring, instinct, inner weather, and private truth within the chamber.', [badge('core trio')]),
+    card('Step 3 — Anointed choosing', 'After crowned candidates are revealed, the player chooses the Anointed Ruler. This completes the free starter council without overwhelming the player.', [badge('canon-critical')]),
+    card('Step 4 — Chamber stabilization', 'Once the trio is formed, the Council Chamber feels inhabited, coherent, and personally relevant before any larger expansion occurs.', [badge('product hook')])
+  ].join('');
+
+  expansionArcsEl.innerHTML = [
+    card('High Council expansion', 'The next unlock should feel like opening the chamber outward into the greater planetary court rather than dumping all remaining oracles at once.', [badge('paid expansion')]),
+    card('Expanded Council arc', 'Later layers should feel deeper, rarer, and more mythic — an expansion of the pantheon after the player already understands the first council language.', [badge('endgame framing')]),
+    card('Why this pacing matters', 'Core trio first makes the system emotionally legible. Later awakenings then feel like discovery and ascent, not clutter.', [badge('onboarding protection')])
+  ].join('');
+}
+
 function renderProviders(providers) {
   llmProvidersEl.innerHTML = providers
     .map(provider => card(provider.name, provider.description, [badge(provider.status, provider.enabled ? 'good' : 'warn'), badge(provider.model || 'no model'), badge(provider.apiKeyStatus || 'key missing')].concat(provider.configNeeded.map(item => badge(item)))))
@@ -618,6 +635,7 @@ async function loadState(selectedOracleId) {
   renderAnointedRulerFlow(state.oracles);
   renderAccountEntitlements(state.currentUser, state.accessControl);
   renderCreationPath(state);
+  renderAwakeningFlow(state);
   renderSessions(state.interactionSessions);
   renderSessionDetail(state.interactionSessions);
   renderImportPipeline(state);
@@ -635,7 +653,7 @@ async function loadState(selectedOracleId) {
     card('Traction', `Alpha users: ${state.productVision.traction.alphaUsers} • Saturn Rising users: ${state.productVision.traction.saturnRisingUsers} • Prototype: ${state.productVision.traction.prototypeSizeKb} KB • Beta: ${state.productVision.traction.betaStatus}`, [badge(state.productVision.traction.backend)]),
     card('Market position', state.productVision.marketPosition.advantage, [badge(state.productVision.marketPosition.category)]),
     card('Release readiness', `Windows packaging: ${state.productVision.releaseReadiness.windowsPackaging} • Provider inference: ${state.productVision.releaseReadiness.providerInference} • Secret handling: ${state.productVision.releaseReadiness.secretHandling} • Demo readiness: ${state.productVision.releaseReadiness.demoReadiness}`, [badge(state.productVision.releaseReadiness.marketNarrative)]),
-    card('Critical next gaps', `Chart generation: ${state.productVision.releaseReadiness.chartGeneration} • Audio communication: ${state.productVision.releaseReadiness.audioCommunication} • Creation experience: ${state.productVision.releaseReadiness.creationExperience} • Layered council UX: ${state.productVision.releaseReadiness.layeredCouncilExperience}`, [badge('next milestones', 'warn')]),
+    card('Critical next gaps', `Chart generation: ${state.productVision.releaseReadiness.chartGeneration} • Audio communication: ${state.productVision.releaseReadiness.audioCommunication} • Creation experience: ${state.productVision.releaseReadiness.creationExperience} • Layered council UX: ${state.productVision.releaseReadiness.layeredCouncilExperience} • Awakening flow: ${state.productVision.releaseReadiness.awakeningFlow}`, [badge('next milestones', 'warn')]),
     card('Primary risks', state.productVision.risks.join(' • '), [badge('watchlist', 'warn')]),
     card('Prototype thesis', 'If users can bring in birth data, configure a preferred model, awaken their pantheon, and feel meaningful oracle presence quickly, the desktop product has a viable first market path.', [badge('product strategy')]),
     card('Franchise direction', `${state.productVision.franchiseDirection.coreRule} • Parallel products: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}`, [badge('oracle source engine')]),

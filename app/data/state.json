@@ -355,9 +355,12 @@
         "Generate chart internally from birth data",
         "Validate against trusted references when needed",
         "Build astrology profile",
+        "Awaken Sun Oracle",
+        "Awaken Moon Oracle",
         "Determine crowned rulership candidates",
         "Let player choose the Anointed Ruler from crowned candidates",
-        "Awaken oracle council from resulting chart"
+        "Stabilize the core trio chamber",
+        "Offer later High Council and Expanded Council awakening arcs"
       ]
     },
     "name": "Jordon Dunkerley",
@@ -1216,7 +1219,8 @@
       "chartGeneration": "workflow-defined / engine-pending",
       "audioCommunication": "configuration-ready / output-pending",
       "creationExperience": "dual-path-defined / manifestation-flow-pending",
-      "layeredCouncilExperience": "structure-visible / chamber-staging-improving"
+      "layeredCouncilExperience": "structure-visible / chamber-staging-improving",
+      "awakeningFlow": "core-trio-sequenced / expansion-arc-defined"
     },
     "elevatorPitch": "Pantheon of Oracles: The Council Chamber is a desktop source engine and personal council-space for building persistent astrology-driven oracle identities, interactions, and future franchise experiences.",
     "description": "Pantheon of Oracles: The Council Chamber turns astrology into a personal council-space with persistent AI oracle characters, guided onboarding, layered access, and future cross-product continuity.",

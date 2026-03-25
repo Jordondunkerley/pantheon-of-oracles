@@ -13,7 +13,7 @@ This roadmap is grounded in the Pantheon of Oracles backend files and patch hist
 ## What the first marketable product must prove
 The first product is worth selling when a user can:
 1. create or load a player profile
-2. generate or import their astrology profile
+2. generate their astrology profile directly from birth data (with import as a secondary path, not the primary requirement)
 3. awaken a meaningful oracle council
 4. configure a preferred AI provider/model
 5. interact with distinct oracle personalities in a persistent way
@@ -26,7 +26,7 @@ This is the minimum commercial proof loop.
 ## What belongs in scope for the first marketable product
 ### Core in-scope systems
 - Player account/profile layer
-- Astrology profile ingestion + structured display
+- Astrology chart generation from birth data + structured display
 - Oracle profile registry
 - Oracle awakening / creation flow
 - Oracle interaction workspace

@@ -121,7 +121,7 @@ function renderAudioRoadmap(state) {
 function renderOnboarding(state) {
   onboardingFlowEl.innerHTML = [
     card('Step 1 — Create account', 'Establish the player identity, birth data, and baseline preferences that anchor the pantheon.', [badge('active')]),
-    card('Step 2 — Generate astrology profile', 'Compute planets, angles, houses, decans, motion, stationary states, and chart anomalies from birth data.', [badge('prototype core')]),
+    card('Step 2 — Generate astrology profile', 'Compute planets, angles, houses, decans, motion, stationary states, and chart anomalies directly from birth data — without forcing the user to bring a chart.', [badge('prototype core')]),
     card('Step 3 — Connect AI provider', 'Let the user bring an OpenAI-compatible or future self-hosted model into the system.', [badge('model-agnostic')]),
     card('Step 4 — Awaken the Pantheon', `Generate and sync the user\'s initial council. Current seeded oracles: ${state.currentUser.oracles_owned.length}.`, [badge('personalized')]),
     card('Step 5 — Enter Oracle Workspace', 'Open persistent interaction sessions, guidance flows, and transit-aware oracle behavior.', [badge('product hook')]),
@@ -131,7 +131,7 @@ function renderOnboarding(state) {
   const firstSession = state.interactionSessions?.[0];
   const firstOracle = state.oracles?.[0];
   nextStepGuideEl.innerHTML = [
-    card('Suggested next step', `Open ${firstSession?.title || 'an oracle chamber'} and ask ${firstOracle?.oracle_name || 'your oracle'} what role they play in your council.`, [badge('guided flow')]),
+    card('Suggested next step', `Open ${firstSession?.title || 'an oracle chamber'} and ask ${firstOracle?.oracle_name || 'your oracle'} what role they play in your council. The long-term ideal flow is birth data → chart generation → awakened council → chamber dialogue.`, [badge('guided flow')]),
     card('First-run question ideas', 'Try asking about purpose, warning signs, strengths, decision-making, or what this oracle is here to help you with.', [badge('starter prompts')])
   ].join('');
 }

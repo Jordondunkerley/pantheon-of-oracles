@@ -40,7 +40,21 @@ npm run dist:win
 
 The packaged app will be placed in the `dist/` directory.
 
+## Import oracle data
+
+You can import oracle records into the prototype with:
+
+```bash
+npm run import:oracles -- ./path/to/oracles.json
+```
+
+A starter import shape is available at:
+
+```text
+app/data/import-template.json
+```
+
 ## Notes
 - State is stored locally in `app/data/state.json`
 - The dashboard auto-refreshes every 5 seconds
-- This is v1 and should later gain auth, richer task editing, and background service support
+- This is still prototype-stage and should later gain auth, true provider-backed inference, and stronger secret handling

@@ -35,6 +35,7 @@ const llmProvidersEl = document.getElementById('llmProviders');
 const astrologyProfileEl = document.getElementById('astrologyProfile');
 const interactionSessionsEl = document.getElementById('interactionSessions');
 const sessionDetailEl = document.getElementById('sessionDetail');
+const importPipelineEl = document.getElementById('importPipeline');
 const openSelectedSessionBtn = document.getElementById('openSelectedSessionBtn');
 const sessionMessageEl = document.getElementById('sessionMessage');
 const sendSessionMessageBtn = document.getElementById('sendSessionMessageBtn');
@@ -118,6 +119,15 @@ function renderProviders(providers) {
     providerModelEl.value = selected.model || '';
     providerApiKeyEl.value = '';
   }
+}
+
+function renderImportPipeline(state) {
+  importPipelineEl.innerHTML = [
+    card('Structured oracle import', 'The prototype can now ingest structured JSON oracle records using the CLI import pipeline.', [badge('prototype utility'), badge('json import')]),
+    card('Command', 'npm run import:oracles -- ./path/to/oracles.json', [badge('workspace CLI')]),
+    card('Template path', 'app/data/import-template.json', [badge('starter schema')]),
+    card('Why it matters', `Current oracle count in state: ${state.oracles.length}. This is the bridge between Jordon\'s source material and a scalable user-facing pantheon builder.`, [badge('marketability')])
+  ].join('');
 }
 
 function renderAstrology(profile) {
@@ -328,6 +338,7 @@ async function loadState(selectedOracleId) {
   renderAstrology(state.astrologyProfile);
   renderSessions(state.interactionSessions);
   renderSessionDetail(state.interactionSessions);
+  renderImportPipeline(state);
 
   const visibleOracles = getVisibleOracles(state.oracles);
   oraclesEl.innerHTML = visibleOracles.map(oracleCard).join('');

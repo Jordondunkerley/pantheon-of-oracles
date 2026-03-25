@@ -105,7 +105,14 @@ const server = http.createServer(async (req, res) => {
         mode: 'prototype-seeded',
         targetMode: 'birth-data-native',
         validationSources: ['Astro-Seek', 'Startek'],
-        lastGeneratedAt: new Date().toISOString()
+        lastGeneratedAt: new Date().toISOString(),
+        status: {
+          birthDataCollected: Boolean(body.birthday && body.birth_time && body.birth_location),
+          nativeEngineReady: false,
+          validationPathReady: true,
+          profileAssemblyReady: true,
+          oracleAwakeningReady: true
+        }
       };
       stampActivity(state, 'chart_generation', 'Triggered chart generation flow from birth data. This prototype still uses seeded astrology data while native chart generation is being prepared and validation references are being aligned.');
       await saveState(state);

@@ -179,6 +179,13 @@
       "targetMode": "birth-data-native",
       "validationSources": ["Astro-Seek", "Startek"],
       "lastGeneratedAt": null,
+      "status": {
+        "birthDataCollected": true,
+        "nativeEngineReady": false,
+        "validationPathReady": true,
+        "profileAssemblyReady": true,
+        "oracleAwakeningReady": true
+      },
       "workflow": [
         "Collect birth date, time, and location",
         "Generate chart internally from birth data",

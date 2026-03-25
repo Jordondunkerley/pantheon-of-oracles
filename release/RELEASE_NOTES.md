@@ -1,7 +1,7 @@
-# Pantheon of Oracles Desktop Prototype – Release Notes
+# Pantheon of Oracles: The Council Chamber – Release Notes
 
 ## Current snapshot
-This release is a market-oriented desktop prototype focused on the first usable Pantheon loop:
+This release is a founder-testable desktop prototype focused on the first usable Pantheon loop:
 - player profile
 - astrology profile structure
 - oracle registry
@@ -10,12 +10,13 @@ This release is a market-oriented desktop prototype focused on the first usable 
 - structured import pipeline
 
 ## Included in this snapshot
-- Pantheon-first branding and product language
-- editable onboarding/profile setup
-- provider configuration surface
-- oracle awakening flow
+- Pantheon-first branding and Council Chamber product identity
+- first-entrance ritual framing for onboarding
+- editable birth profile and provider setup
+- core trio / High Council / Expanded Council chamber structure
+- oracle awakening and Anointed selection surfaces
 - seeded oracle roster and sessions
-- oracle import tooling
+- oracle import/export tooling
 - release/demo/positioning documentation
 
 ## Known gaps

@@ -1,7 +1,7 @@
-# Pantheon of Oracles Desktop Prototype – Handoff Guide
+# Pantheon of Oracles: The Council Chamber – Handoff Guide
 
 ## What this is
-A desktop-first product prototype for Pantheon of Oracles.
+A founder-testable desktop-first product prototype for Pantheon of Oracles: The Council Chamber.
 
 ## Primary run modes
 ### Browser mode
@@ -32,7 +32,8 @@ Starter schema:
 ## Important current limitations
 - prototype provider config stores readiness/status, not production-grade secrets
 - live oracle inference is not yet wired
-- intended as a polished prototype / pre-release product shell
+- native chart generation is still prototype-backed rather than fully implemented
+- intended as a founder-testable prototype / pre-release product shell
 
 ## Best demo path
 1. Open product shell

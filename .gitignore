@@ -2,3 +2,12 @@ node_modules/
 dist/
 release/
 *.log
+.openclaw/
+AGENTS.md
+HEARTBEAT.md
+IDENTITY.md
+MEMORY.md
+SOUL.md
+TOOLS.md
+USER.md
+memory/

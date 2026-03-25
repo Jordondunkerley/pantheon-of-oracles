@@ -10,3 +10,4 @@
 - Source PDF revealed a much richer oracle ontology than initially assumed: many named oracles with astrology, archetype, creature, combat, visual, and voice metadata. The dashboard/product needs a rich oracle schema, not simple persona cards.
 - Backend templates confirm the prototype should be structured around player accounts, astrology profiles, oracle profiles, interaction sessions, and model/provider abstraction rather than only lightweight dashboard cards.
 - Product direction updated: the desktop app should now be treated as a full Pantheon of Oracles-first marketable product, not just a Clawdbot operations dashboard with Pantheon support.
+- User explicitly wants sustained autonomous product work: after one task is complete, continue choosing and polishing the next highest-value task.

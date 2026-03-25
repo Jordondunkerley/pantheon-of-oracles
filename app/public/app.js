@@ -15,10 +15,17 @@ const oraclePromptBtn = document.getElementById('oraclePromptBtn');
 const oracleDetailEl = document.getElementById('oracleDetail');
 const createOracleBtn = document.getElementById('createOracleBtn');
 const newOracleNameEl = document.getElementById('newOracleName');
-const newOracleDomainEl = document.getElementById('newOracleDomain');
+const newOracleArchetypeEl = document.getElementById('newOracleArchetype');
+const newOraclePlanetEl = document.getElementById('newOraclePlanet');
+const newOracleSignEl = document.getElementById('newOracleSign');
+const newOracleHouseEl = document.getElementById('newOracleHouse');
 const newOracleVoiceEl = document.getElementById('newOracleVoice');
+const newOracleFactionEl = document.getElementById('newOracleFaction');
+const newOraclePlanetaryFactionEl = document.getElementById('newOraclePlanetaryFaction');
+const newOracleWeaponEl = document.getElementById('newOracleWeapon');
+const newOracleColorEl = document.getElementById('newOracleColor');
 const newOracleMissionEl = document.getElementById('newOracleMission');
-const newOracleNextActionEl = document.getElementById('newOracleNextAction');
+const newOracleNotesEl = document.getElementById('newOracleNotes');
 const productVisionEl = document.getElementById('productVision');
 const oracleViewFilterEl = document.getElementById('oracleViewFilter');
 const oracleSearchEl = document.getElementById('oracleSearch');
@@ -349,19 +356,34 @@ oraclePromptBtn.addEventListener('click', () => {
 createOracleBtn.addEventListener('click', async () => {
   const payload = {
     name: newOracleNameEl.value.trim(),
-    domain: newOracleDomainEl.value.trim(),
+    archetype: newOracleArchetypeEl.value.trim(),
+    ruling_planet: newOraclePlanetEl.value.trim(),
+    dominant_sign: newOracleSignEl.value.trim(),
+    house_placement: newOracleHouseEl.value.trim(),
     voice: newOracleVoiceEl.value.trim(),
     mission: newOracleMissionEl.value.trim(),
-    nextAction: newOracleNextActionEl.value.trim(),
-    status: 'concept'
+    core_faction: newOracleFactionEl.value.trim(),
+    planetary_faction: newOraclePlanetaryFactionEl.value.trim(),
+    weapon_1: newOracleWeaponEl.value.trim(),
+    color_scheme: newOracleColorEl.value.trim(),
+    notes: newOracleNotesEl.value.trim(),
+    council_type: 'User Awakened',
+    role_in_pantheon: newOracleMissionEl.value.trim()
   };
   if (!payload.name) return;
   const result = await postJson('/api/oracles', payload);
   newOracleNameEl.value = '';
-  newOracleDomainEl.value = '';
+  newOracleArchetypeEl.value = '';
+  newOraclePlanetEl.value = '';
+  newOracleSignEl.value = '';
+  newOracleHouseEl.value = '';
   newOracleVoiceEl.value = '';
+  newOracleFactionEl.value = '';
+  newOraclePlanetaryFactionEl.value = '';
+  newOracleWeaponEl.value = '';
+  newOracleColorEl.value = '';
   newOracleMissionEl.value = '';
-  newOracleNextActionEl.value = '';
+  newOracleNotesEl.value = '';
   await loadState(result.oracle?.oracle_id || result.oracle?.id);
 });
 

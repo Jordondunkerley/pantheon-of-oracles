@@ -105,6 +105,15 @@ textarea { resize: vertical; }
   flex-direction: column;
   gap: 10px;
 }
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.two-col textarea,
+.two-col button {
+  grid-column: 1 / -1;
+}
 .oracle-card {
   background: linear-gradient(180deg, rgba(18, 28, 60, 0.92), rgba(12, 19, 40, 0.92));
 }
@@ -131,6 +140,9 @@ textarea { resize: vertical; }
   .hero, .top-grid, .onboarding-grid, .registry-grid, .middle-grid, .bottom-grid, .footer-grid {
     grid-template-columns: 1fr;
     display: grid;
+  }
+  .two-col {
+    grid-template-columns: 1fr;
   }
   .hero-side { justify-content: flex-start; }
   .toolbar { grid-template-columns: 1fr; }

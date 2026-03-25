@@ -133,19 +133,100 @@ const server = http.createServer(async (req, res) => {
     try {
       const state = await loadState();
       const body = JSON.parse(await collectBody(req));
+      const now = new Date().toISOString();
       const oracle = {
-        id: body.id || `oracle-${Date.now()}`,
-        name: body.name || 'Unnamed Oracle',
-        domain: body.domain || 'Unassigned',
-        status: body.status || 'concept',
-        voice: body.voice || 'Undefined',
-        mission: body.mission || '',
-        lastContact: null,
-        nextAction: body.nextAction || 'Define next action.',
-        notes: body.notes || ''
+        oracle_id: body.oracle_id || `oracle-${Date.now()}`,
+        oracle_name: body.name || body.oracle_name || 'Unnamed Oracle',
+        archetype: body.archetype || 'Unformed Oracle',
+        oracle_type: body.oracle_type || 'Playable',
+        astrology_profile: {
+          ruling_planet: body.ruling_planet || '',
+          dominant_sign: body.dominant_sign || '',
+          house_placement: body.house_placement || '',
+          motion: body.motion || 'Direct',
+          stationary: body.stationary || '',
+          shadow: body.shadow || '',
+          degree: body.degree || '',
+          degree_mark: body.degree_mark || '',
+          decan: {
+            method: body.decan_method || 'Modern',
+            decan_ruler: body.decan_ruler || '',
+            decan_ruler_sign: body.decan_ruler_sign || '',
+            flavor: body.decan_flavor || 'Full'
+          },
+          rising_sign: body.rising_sign || '',
+          rising_decan_sign: body.rising_decan_sign || ''
+        },
+        faction_affiliation: {
+          core_faction: body.core_faction || '',
+          planetary_faction: body.planetary_faction || '',
+          tribe: body.tribe || '',
+          guild: body.guild || ''
+        },
+        hardcore_status: body.hardcore_status ?? true,
+        level: body.level || 0,
+        tier: body.tier || 'Tier 1',
+        ascended_rank: body.ascended_rank || 0,
+        oracle_form: body.oracle_form || 'Base',
+        council_type: body.council_type || 'Unassigned',
+        descendant_relationship_state: body.descendant_relationship_state || 'Dormant',
+        oracle_locked: false,
+        oracle_voice: body.voice || body.oracle_voice || 'Undefined',
+        tone_overlay: body.tone_overlay || body.mission || '',
+        oracle_metadata_last_updated: now,
+        anointed_ruler: false,
+        modern_ruler: false,
+        traditional_ruler: false,
+        dominant_ruler: false,
+        solar_ruler: false,
+        has_shapeshift: false,
+        shapeshift_description: '',
+        has_pet: false,
+        pet_name: '',
+        pet_description: '',
+        has_apprentice: false,
+        apprentice_name: '',
+        apprentice_description: '',
+        has_disciple: false,
+        disciple_name: '',
+        disciple_description: '',
+        has_legion: false,
+        legion_name: '',
+        legion_description: '',
+        has_legion_captain: false,
+        legion_captain_name: '',
+        legion_captain_description: '',
+        has_behemoth: false,
+        behemoth_name: '',
+        behemoth_description: '',
+        has_behemoth_fusion: false,
+        behemoth_fusion_name: '',
+        behemoth_fusion_crown: false,
+        behemoth_fusion_aura: false,
+        behemoth_fusion_description: '',
+        visual_attributes: {
+          visual_description: {
+            head: body.head || '',
+            torso: body.torso || '',
+            arms: body.arms || '',
+            legs: body.legs || '',
+            aura: body.aura || '',
+            ambient_flavor: body.ambient_flavor || '',
+            visual_style_notes: body.visual_style_notes || '',
+            color_scheme: body.color_scheme || ''
+          },
+          weapons: {
+            weapon_1: body.weapon_1 || '',
+            weapon_2: body.weapon_2 || ''
+          },
+          oracle_avatar_url: body.oracle_avatar_url || '',
+          voice_style: body.voice_style || body.voice || '',
+          role_in_pantheon: body.role_in_pantheon || body.mission || '',
+          additional_notes: body.additional_notes || body.notes || ''
+        }
       };
       state.oracles.unshift(oracle);
-      stampActivity(state, 'oracle_created', `Created oracle profile: ${oracle.name}`);
+      stampActivity(state, 'oracle_created', `Created oracle profile: ${oracle.oracle_name}`);
       await saveState(state);
       return sendJson(res, 200, { ok: true, oracle });
     } catch (error) {

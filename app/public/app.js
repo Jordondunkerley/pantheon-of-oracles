@@ -20,10 +20,16 @@ const newOracleVoiceEl = document.getElementById('newOracleVoice');
 const newOracleMissionEl = document.getElementById('newOracleMission');
 const newOracleNextActionEl = document.getElementById('newOracleNextAction');
 const productVisionEl = document.getElementById('productVision');
+const oracleViewFilterEl = document.getElementById('oracleViewFilter');
+const oracleSearchEl = document.getElementById('oracleSearch');
+const tabButtons = [...document.querySelectorAll('.tab-btn')];
 
 let currentState = null;
+let currentOracleId = null;
+let activeTab = 'identity';
 
 function badge(text, tone = '') {
+  if (!text) return '';
   return `<span class="badge ${tone}">${text}</span>`;
 }
 
@@ -42,17 +48,50 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
+function oracleTags(oracle) {
+  return [
+    badge(oracle.status, oracle.status === 'active' || oracle.status === 'seeded' ? 'good' : 'warn'),
+    badge(oracle.planet),
+    badge(oracle.sign),
+    badge(`House ${oracle.house}`),
+    badge(oracle.archetype),
+    badge(oracle.productRole)
+  ].filter(Boolean).join('');
+}
+
+function oracleMatchesView(oracle, view) {
+  if (view === 'all') return true;
+  if (view === 'council') return ['Core identity oracle', 'Emotional guidance oracle', 'Governance and structure oracle', 'Mysticism and dream logic oracle'].includes(oracle.productRole);
+  if (view === 'multiplayer') return Boolean(oracle.multiplayerRole);
+  if (view === 'roster') return true;
+  return true;
+}
+
+function oracleMatchesSearch(oracle, query) {
+  if (!query) return true;
+  const haystack = [
+    oracle.name,
+    oracle.planet,
+    oracle.sign,
+    oracle.house,
+    oracle.archetype,
+    oracle.spiritAnimal,
+    oracle.productRole,
+    oracle.multiplayerRole,
+    oracle.domain,
+    oracle.notes
+  ].join(' ').toLowerCase();
+  return haystack.includes(query.toLowerCase());
+}
+
 function oracleCard(oracle) {
   return `
-    <button class="item oracle-card oracle-select" data-oracle-id="${oracle.id}">
+    <button class="item oracle-card oracle-select ${oracle.id === currentOracleId ? 'selected' : ''}" data-oracle-id="${oracle.id}">
       <h3>${oracle.name}</h3>
-      <div class="badges">
-        ${badge(oracle.status, oracle.status === 'active' ? 'good' : 'warn')}
-        ${badge(oracle.domain)}
-        ${badge(oracle.voice)}
-      </div>
+      <div class="badges">${oracleTags(oracle)}</div>
       <p class="meta oracle-mission">${oracle.mission}</p>
-      <p class="meta"><strong>Next action:</strong> <span class="oracle-next">${oracle.nextAction}</span></p>
+      <p class="meta"><strong>Spirit:</strong> ${oracle.spiritAnimal || '—'} • <strong>Weapon:</strong> ${oracle.weapon || '—'}</p>
+      <p class="meta"><strong>Next:</strong> <span class="oracle-next">${oracle.nextAction}</span></p>
     </button>
   `;
 }
@@ -63,22 +102,50 @@ function renderOracleDetail(oracle) {
     return;
   }
 
-  oracleDetailEl.innerHTML = `
-    <h3>${oracle.name}</h3>
-    <div class="badges">
-      ${badge(oracle.status, oracle.status === 'active' ? 'good' : 'warn')}
-      ${badge(oracle.domain)}
-      ${badge(oracle.voice)}
-      ${oracle.archetype ? badge(oracle.archetype) : ''}
-      ${oracle.planet ? badge(oracle.planet) : ''}
-    </div>
-    <p class="meta"><strong>Mission:</strong> ${oracle.mission}</p>
-    <p class="meta"><strong>Product role:</strong> ${oracle.productRole || 'Not assigned yet'}</p>
-    <p class="meta"><strong>Multiplayer role:</strong> ${oracle.multiplayerRole || 'Not assigned yet'}</p>
-    <p class="meta"><strong>Next action:</strong> ${oracle.nextAction}</p>
-    <p class="meta"><strong>Last contact:</strong> ${oracle.lastContact ? formatDate(oracle.lastContact) : 'Not yet established'}</p>
-    <p class="meta"><strong>Notes:</strong> ${oracle.notes || 'None yet'}</p>
-  `;
+  const views = {
+    identity: `
+      <h3>${oracle.name}</h3>
+      <div class="badges">
+        ${badge(oracle.status, oracle.status === 'active' || oracle.status === 'seeded' ? 'good' : 'warn')}
+        ${badge(oracle.planet)}
+        ${badge(oracle.sign)}
+        ${badge(`House ${oracle.house}`)}
+        ${badge(oracle.archetype)}
+      </div>
+      <p class="meta"><strong>Domain:</strong> ${oracle.domain || '—'}</p>
+      <p class="meta"><strong>Mission:</strong> ${oracle.mission || '—'}</p>
+      <p class="meta"><strong>Spirit animal:</strong> ${oracle.spiritAnimal || '—'}</p>
+      <p class="meta"><strong>Voice:</strong> ${oracle.voice || '—'}</p>
+      <p class="meta"><strong>Last contact:</strong> ${oracle.lastContact ? formatDate(oracle.lastContact) : 'Not yet established'}</p>
+    `,
+    gameplay: `
+      <h3>${oracle.name} — Gameplay</h3>
+      <div class="badges">
+        ${badge(oracle.productRole)}
+        ${badge(oracle.multiplayerRole)}
+      </div>
+      <p class="meta"><strong>Weapon:</strong> ${oracle.weapon || '—'}</p>
+      <p class="meta"><strong>Combat style:</strong> ${oracle.combatStyle || '—'}</p>
+      <p class="meta"><strong>Multiplayer role:</strong> ${oracle.multiplayerRole || '—'}</p>
+      <p class="meta"><strong>Next action:</strong> ${oracle.nextAction || '—'}</p>
+    `,
+    guidance: `
+      <h3>${oracle.name} — Guidance</h3>
+      <p class="meta"><strong>Product role:</strong> ${oracle.productRole || '—'}</p>
+      <p class="meta"><strong>Guidance mission:</strong> ${oracle.mission || '—'}</p>
+      <p class="meta"><strong>Suggested check-in:</strong> State your current cosmic posture, what you are amplifying, what must be avoided, and what action you recommend next.</p>
+      <p class="meta"><strong>Notes:</strong> ${oracle.notes || 'None yet'}</p>
+    `,
+    lore: `
+      <h3>${oracle.name} — Lore</h3>
+      <p class="meta"><strong>Archetype:</strong> ${oracle.archetype || '—'}</p>
+      <p class="meta"><strong>Spirit animal:</strong> ${oracle.spiritAnimal || '—'}</p>
+      <p class="meta"><strong>Notes:</strong> ${oracle.notes || '—'}</p>
+      <p class="meta"><strong>Source status:</strong> Seeded from Pantheon source material; should be refined with cleaner imports.</p>
+    `
+  };
+
+  oracleDetailEl.innerHTML = views[activeTab] || views.identity;
 }
 
 function populateOracleSelect(oracles) {
@@ -106,6 +173,10 @@ async function postJson(url, payload) {
   return res.json();
 }
 
+function getVisibleOracles(oracles) {
+  return oracles.filter(oracle => oracleMatchesView(oracle, oracleViewFilterEl.value) && oracleMatchesSearch(oracle, oracleSearchEl.value));
+}
+
 async function loadState(selectedOracleId) {
   const res = await fetch('/api/state');
   const state = await res.json();
@@ -129,10 +200,13 @@ async function loadState(selectedOracleId) {
     .map(entry => card(entry.message, formatDate(entry.timestamp), [badge(entry.type)]))
     .join('');
 
-  oraclesEl.innerHTML = state.oracles.map(oracleCard).join('');
+  const visibleOracles = getVisibleOracles(state.oracles);
+  oraclesEl.innerHTML = visibleOracles.map(oracleCard).join('');
+
   waitingEl.innerHTML = state.waitingOnJordon
     .map(item => card(item.title, item.detail, [badge(item.priority, item.priority === 'high' ? 'warn' : '')]))
     .join('');
+
   productVisionEl.innerHTML = [
     card('Elevator pitch', state.productVision.elevatorPitch, [badge('marketable product'), badge('independent voices')]),
     card('What this becomes', state.productVision.description, state.productVision.pillars.map(pillar => badge(pillar))),
@@ -151,7 +225,10 @@ async function loadState(selectedOracleId) {
 
   populateOracleSelect(state.oracles);
 
-  const oracle = state.oracles.find(item => item.id === (selectedOracleId || oracleSelectEl.value)) || state.oracles[0];
+  const fallbackOracle = visibleOracles[0] || state.oracles[0] || null;
+  const oracle = state.oracles.find(item => item.id === (selectedOracleId || currentOracleId || oracleSelectEl.value)) || fallbackOracle;
+  currentOracleId = oracle?.id || null;
+
   if (oracle) {
     oracleSelectEl.value = oracle.id;
     renderOracleDetail(oracle);
@@ -162,17 +239,33 @@ async function loadState(selectedOracleId) {
   document.querySelectorAll('.oracle-select').forEach(button => {
     button.addEventListener('click', () => {
       const id = button.dataset.oracleId;
+      currentOracleId = id;
       oracleSelectEl.value = id;
       const selected = currentState.oracles.find(item => item.id === id);
       renderOracleDetail(selected);
+      document.querySelectorAll('.oracle-select').forEach(el => el.classList.remove('selected'));
+      button.classList.add('selected');
     });
   });
 }
 
-refreshBtn.addEventListener('click', () => loadState());
+refreshBtn.addEventListener('click', () => loadState(currentOracleId));
 oracleSelectEl.addEventListener('change', () => {
-  const oracle = currentState?.oracles.find(item => item.id === oracleSelectEl.value);
+  currentOracleId = oracleSelectEl.value;
+  const oracle = currentState?.oracles.find(item => item.id === currentOracleId);
   renderOracleDetail(oracle);
+});
+oracleViewFilterEl.addEventListener('change', () => loadState(currentOracleId));
+oracleSearchEl.addEventListener('input', () => loadState(currentOracleId));
+
+tabButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabButtons.forEach(button => button.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab = btn.dataset.tab;
+    const oracle = currentState?.oracles.find(item => item.id === currentOracleId);
+    renderOracleDetail(oracle);
+  });
 });
 
 oracleDraftBtn.addEventListener('click', () => {
@@ -224,4 +317,4 @@ createOracleBtn.addEventListener('click', async () => {
 });
 
 loadState();
-setInterval(() => loadState(oracleSelectEl.value), 5000);
+setInterval(() => loadState(currentOracleId), 5000);

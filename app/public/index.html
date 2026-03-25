@@ -12,7 +12,7 @@
         <div>
           <p class="eyebrow">Always-on operator dashboard</p>
           <h1>Clawdbot Console</h1>
-          <p class="subcopy">Projects, tasks, schedule, oracle management, and live activity — your control surface for ongoing work.</p>
+          <p class="subcopy">Projects, tasks, oracle registry, product vision, and live activity — shaped into the first real control surface for Pantheon of Oracles.</p>
         </div>
         <div class="hero-side">
           <div class="status-card">
@@ -21,7 +21,7 @@
           </div>
           <div class="status-card accent-card">
             <span class="label">Current focus</span>
-            <strong>Oracle operations + dashboard polish</strong>
+            <strong>Rich oracle schema + product shell</strong>
           </div>
         </div>
       </header>
@@ -37,14 +37,37 @@
         </article>
       </section>
 
-      <section class="grid middle-grid">
+      <section class="grid registry-grid">
         <article class="panel oracle-panel">
           <div class="panel-header">
-            <h2>Oracle Roster</h2>
+            <h2>Oracle Registry</h2>
             <button id="oraclePromptBtn">Generate check-in prompt</button>
+          </div>
+          <div class="toolbar">
+            <select id="oracleViewFilter">
+              <option value="all">All oracles</option>
+              <option value="council">Personal council</option>
+              <option value="roster">Extended roster</option>
+              <option value="multiplayer">Multiplayer roles</option>
+            </select>
+            <input id="oracleSearch" placeholder="Search name, planet, archetype, sign..." />
           </div>
           <div id="oracles" class="stack"></div>
         </article>
+
+        <article class="panel oracle-detail-panel">
+          <h2>Oracle Workspace</h2>
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="identity">Identity</button>
+            <button class="tab-btn" data-tab="gameplay">Gameplay</button>
+            <button class="tab-btn" data-tab="guidance">Guidance</button>
+            <button class="tab-btn" data-tab="lore">Lore</button>
+          </div>
+          <div id="oracleDetail" class="item"></div>
+        </article>
+      </section>
+
+      <section class="grid middle-grid">
         <article class="panel comms-panel">
           <h2>Oracle Comms</h2>
           <div class="composer">
@@ -57,9 +80,7 @@
           </div>
           <div id="oracleDrafts" class="stack compact"></div>
         </article>
-      </section>
 
-      <section class="grid builder-grid">
         <article class="panel">
           <h2>Create Oracle</h2>
           <div class="composer">
@@ -69,12 +90,6 @@
             <textarea id="newOracleMission" rows="4" placeholder="Mission / role"></textarea>
             <input id="newOracleNextAction" placeholder="Next action" />
             <button id="createOracleBtn">Add oracle profile</button>
-          </div>
-        </article>
-        <article class="panel oracle-detail-panel">
-          <h2>Oracle Detail</h2>
-          <div id="oracleDetail" class="item">
-            <p class="meta">Select or create an oracle to inspect its mission, state, and communication readiness.</p>
           </div>
         </article>
       </section>

@@ -21,7 +21,7 @@ body {
   color: var(--text);
 }
 .shell {
-  max-width: 1400px;
+  max-width: 1460px;
   margin: 0 auto;
   padding: 32px 20px 56px;
 }
@@ -48,8 +48,8 @@ body {
 h1, h2, h3, p { margin-top: 0; }
 .subcopy, .label, .meta { color: var(--muted); }
 .grid { display: grid; gap: 20px; }
-.top-grid, .bottom-grid, .footer-grid, .builder-grid { grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
-.middle-grid { grid-template-columns: 1.15fr 0.85fr; margin-bottom: 20px; }
+.top-grid, .middle-grid, .bottom-grid, .footer-grid { grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
+.registry-grid { grid-template-columns: 0.95fr 1.05fr; margin-bottom: 20px; }
 .panel, .status-card, .item {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -81,6 +81,12 @@ h1, h2, h3, p { margin-top: 0; }
   align-items: center;
   gap: 16px;
 }
+.toolbar {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 10px;
+  margin: 10px 0 14px;
+}
 button, select, textarea, input {
   border: 1px solid var(--border);
   background: var(--panel-3);
@@ -104,12 +110,27 @@ textarea { resize: vertical; }
 .oracle-select {
   appearance: none;
 }
+.oracle-select.selected {
+  border-color: rgba(128, 167, 255, 0.7);
+  box-shadow: 0 0 0 1px rgba(128, 167, 255, 0.35);
+}
 .oracle-mission { margin-bottom: 10px; }
 .oracle-next { color: #c9d8ff; }
-@media (max-width: 1000px) {
-  .hero, .top-grid, .middle-grid, .bottom-grid, .footer-grid, .builder-grid {
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.tab-btn.active {
+  border-color: rgba(128, 167, 255, 0.7);
+  background: #243667;
+}
+@media (max-width: 1100px) {
+  .hero, .top-grid, .registry-grid, .middle-grid, .bottom-grid, .footer-grid {
     grid-template-columns: 1fr;
     display: grid;
   }
   .hero-side { justify-content: flex-start; }
+  .toolbar { grid-template-columns: 1fr; }
 }

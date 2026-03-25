@@ -139,7 +139,8 @@
         "provider-lab",
         "lifetime-access",
         "full-high-council",
-        "expanded-council"
+        "expanded-council",
+        "anointed-selection"
       ],
       "promotionFlags": [
         "founder-seed"
@@ -160,7 +161,8 @@
           "oracle-lunos-moon",
           "oracle-oryonos-saturn"
         ],
-        "lockedCollections": []
+        "lockedCollections": [],
+        "selectionNote": "Free plan intends Sun, Moon, and Anointed Ruler as the core trio, with overlap fallback still to be formalized."
       },
       "paymentAccess": {
         "plan": "founder-lifetime",
@@ -265,7 +267,7 @@
         "featureFlags": [
           "trial-access"
         ],
-        "notes": "Free entry plan limited to Sun, Moon, and Anointed Ruler for initial release."
+        "notes": "Free entry plan limited to Sun, Moon, and Anointed Ruler for initial release. If Anointed overlaps with Sun or Moon, a fallback unique crowned oracle should preserve three distinct presences."
       },
       {
         "id": "plan-paid-high-council",
@@ -345,13 +347,16 @@
         "nativeEngineReady": false,
         "validationPathReady": true,
         "profileAssemblyReady": true,
-        "oracleAwakeningReady": true
+        "oracleAwakeningReady": true,
+        "anointedSelectionReady": true
       },
       "workflow": [
         "Collect birth date, time, and location",
         "Generate chart internally from birth data",
         "Validate against trusted references when needed",
         "Build astrology profile",
+        "Determine crowned rulership candidates",
+        "Let player choose the Anointed Ruler from crowned candidates",
         "Awaken oracle council from resulting chart"
       ]
     },
@@ -1254,7 +1259,8 @@
       "Market adoption across a niche-but-promising intersection",
       "Operational security for a 24/7 live service handling personal birth data",
       "Account entitlement automation is not yet backed by persistent auth infrastructure",
-      "Payment-plan gating for free core trio vs paid councils is not yet enforced in live chamber flows"
+      "Payment-plan gating for free core trio vs paid councils is not yet enforced in live chamber flows",
+      "Anointed Ruler candidate computation and player-choice flow are modeled in UI but not yet wired to live chart-derived crown logic"
     ]
   }
 }

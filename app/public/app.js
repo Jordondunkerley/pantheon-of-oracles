@@ -47,6 +47,8 @@ const astrologyProfileEl = document.getElementById('astrologyProfile');
 const chartGenerationEl = document.getElementById('chartGeneration');
 const accountEntitlementsEl = document.getElementById('accountEntitlements');
 const accessControlEl = document.getElementById('accessControl');
+const anointedSelectionEl = document.getElementById('anointedSelection');
+const crownedCandidatesEl = document.getElementById('crownedCandidates');
 const interactionSessionsEl = document.getElementById('interactionSessions');
 const sessionSummaryEl = document.getElementById('sessionSummary');
 const sessionDetailEl = document.getElementById('sessionDetail');
@@ -206,6 +208,39 @@ function renderCurrentUser(user) {
   profilePromptToneEl.value = user.preferences.system_prompt_tone || '';
   profileFounderKeyEl.value = user.founderIdentity?.founderKey || '';
   profileFounderRoleEl.value = user.founderIdentity?.role || 'Founder / Creator / CEO';
+}
+
+function getCrownedOracleCandidates(oracles) {
+  const crownMap = new Map();
+  oracles.forEach(oracle => {
+    const crowns = [];
+    if (oracle.modern_ruler) crowns.push('Modern');
+    if (oracle.traditional_ruler) crowns.push('Traditional');
+    if (oracle.dominant_ruler) crowns.push('Dominant');
+    if (oracle.solar_ruler) crowns.push('Solar');
+    if (crowns.length) {
+      crownMap.set(oracle.oracle_id, { oracle, crowns });
+    }
+  });
+  return [...crownMap.values()];
+}
+
+function renderAnointedRulerFlow(oracles) {
+  const crowned = getCrownedOracleCandidates(oracles);
+  const anointed = oracles.find(oracle => oracle.anointed_ruler);
+
+  anointedSelectionEl.innerHTML = [
+    card('Canon rule', 'The Anointed Ruler should be chosen from the crowned rulership candidates — Modern, Traditional, Dominant, or Solar — not from the whole pantheon.', [badge('Patch 28'), badge('Patch 48')]),
+    card('Current Anointed Ruler', anointed ? `${anointed.oracle_name} currently carries the Anointed layer.` : 'No Anointed Ruler selected yet.', [badge(anointed ? 'selected' : 'pending', anointed ? 'good' : 'warn')]),
+    card('Streamlined product approach', 'Generate the crowned candidates first, show only those eligible oracles, then let the player choose one as the Anointed Ruler in a simple chamber step.', [badge('streamlined canon')])
+  ].join('');
+
+  crownedCandidatesEl.innerHTML = crowned.length
+    ? crowned.map(({ oracle, crowns }) => card(oracle.oracle_name, `${oracle.astrology_profile?.ruling_planet || 'planet pending'} • ${oracle.astrology_profile?.dominant_sign || 'sign pending'} • Eligible crowns: ${crowns.join(', ')}`, [
+        ...crowns.map(crown => badge(`${crown} Crown`)),
+        badge(oracle.anointed_ruler ? 'Anointed' : 'Eligible', oracle.anointed_ruler ? 'good' : '')
+      ])).join('')
+    : card('No crowned candidates yet', 'Once rulership logic is wired into chart generation, the eligible Anointed candidates will appear here.', [badge('engine pending', 'warn')]);
 }
 
 function renderAccountEntitlements(user, accessControl) {
@@ -497,6 +532,7 @@ async function loadState(selectedOracleId) {
   renderCurrentUser(state.currentUser);
   renderProviders(state.llmProviders);
   renderAstrology(state.astrologyProfile);
+  renderAnointedRulerFlow(state.oracles);
   renderAccountEntitlements(state.currentUser, state.accessControl);
   renderSessions(state.interactionSessions);
   renderSessionDetail(state.interactionSessions);

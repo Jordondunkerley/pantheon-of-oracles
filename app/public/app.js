@@ -30,6 +30,7 @@ const newOracleNotesEl = document.getElementById('newOracleNotes');
 const productVisionEl = document.getElementById('productVision');
 const oracleViewFilterEl = document.getElementById('oracleViewFilter');
 const oracleSearchEl = document.getElementById('oracleSearch');
+const sourceEngineEl = document.getElementById('sourceEngine');
 const onboardingFlowEl = document.getElementById('onboardingFlow');
 const nextStepGuideEl = document.getElementById('nextStepGuide');
 const currentUserEl = document.getElementById('currentUser');
@@ -80,6 +81,14 @@ function card(title, body, meta = []) {
 function formatDate(value) {
   if (!value) return 'No updates yet';
   return new Date(value).toLocaleString();
+}
+
+function renderSourceEngine(state) {
+  sourceEngineEl.innerHTML = [
+    card('What this product really is', 'Pantheon of Oracles is not only a desktop app. It is becoming the canonical source engine for persistent oracle identity across future Pantheon products.', [badge('franchise core')]),
+    card('What persists', 'Oracle identity, astrology mapping, voice profile, combat interpretation, visual silhouette, and exportable canon.', [badge('persistent canon')]),
+    card('Where it goes next', `Parallel products should consume these same oracles: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}.`, [badge('parallel products')])
+  ].join('');
 }
 
 function renderOnboarding(state) {
@@ -361,6 +370,7 @@ async function loadState(selectedOracleId) {
     .map(entry => card(entry.message, formatDate(entry.timestamp), [badge(entry.type)]))
     .join('');
 
+  renderSourceEngine(state);
   renderOnboarding(state);
   renderCurrentUser(state.currentUser);
   renderProviders(state.llmProviders);

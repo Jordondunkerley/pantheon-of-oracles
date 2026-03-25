@@ -45,10 +45,27 @@
         <article class="panel">
           <h2>Current User</h2>
           <div id="currentUser" class="stack"></div>
+          <div class="composer two-col top-gap">
+            <input id="profileUsername" placeholder="Username" />
+            <input id="profileEmail" placeholder="Email" />
+            <input id="profileBirthday" placeholder="Birthday (YYYY-MM-DD)" />
+            <input id="profileBirthTime" placeholder="Birth time (HH:MM)" />
+            <input id="profileBirthLocation" placeholder="Birth location" />
+            <input id="profileVoiceFlavor" placeholder="Oracle voice flavor" />
+            <input id="profilePromptTone" placeholder="System prompt tone" />
+            <button id="saveProfileBtn">Save profile</button>
+          </div>
         </article>
         <article class="panel">
           <h2>LLM Providers</h2>
           <div id="llmProviders" class="stack"></div>
+          <div class="composer top-gap">
+            <select id="providerSelect"></select>
+            <input id="providerBaseUrl" placeholder="Provider base URL" />
+            <input id="providerModel" placeholder="Model name" />
+            <input id="providerApiKey" placeholder="API key (stored as status only in this prototype)" />
+            <button id="saveProviderBtn">Save provider config</button>
+          </div>
         </article>
       </section>
 

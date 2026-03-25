@@ -11,3 +11,4 @@
 - Backend templates confirm the prototype should be structured around player accounts, astrology profiles, oracle profiles, interaction sessions, and model/provider abstraction rather than only lightweight dashboard cards.
 - Product direction updated: the desktop app should now be treated as a full Pantheon of Oracles-first marketable product, not just a Clawdbot operations dashboard with Pantheon support.
 - User explicitly wants sustained autonomous product work: after one task is complete, continue choosing and polishing the next highest-value task.
+- Latest clarification: keep iterating through the next most important task until the Pantheon of Oracles desktop product is marketable, without waiting after each small milestone.

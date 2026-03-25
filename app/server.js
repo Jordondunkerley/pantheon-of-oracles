@@ -71,6 +71,50 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, state);
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/current-user') {
+    try {
+      const state = await loadState();
+      const body = JSON.parse(await collectBody(req));
+      state.currentUser = {
+        ...state.currentUser,
+        username: body.username ?? state.currentUser.username,
+        email: body.email ?? state.currentUser.email,
+        gender: body.gender ?? state.currentUser.gender,
+        birthday: body.birthday ?? state.currentUser.birthday,
+        birth_time: body.birth_time ?? state.currentUser.birth_time,
+        birth_location: body.birth_location ?? state.currentUser.birth_location,
+        preferences: {
+          ...state.currentUser.preferences,
+          oracle_voice_flavor: body.oracle_voice_flavor ?? state.currentUser.preferences.oracle_voice_flavor,
+          system_prompt_tone: body.system_prompt_tone ?? state.currentUser.preferences.system_prompt_tone
+        }
+      };
+      stampActivity(state, 'profile_updated', 'Updated current user profile for Pantheon onboarding.');
+      await saveState(state);
+      return sendJson(res, 200, { ok: true, currentUser: state.currentUser });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/providers') {
+    try {
+      const state = await loadState();
+      const body = JSON.parse(await collectBody(req));
+      const provider = state.llmProviders.find(item => item.id === body.id);
+      if (!provider) return sendJson(res, 404, { ok: false, error: 'Provider not found' });
+      provider.baseUrl = body.baseUrl ?? provider.baseUrl ?? '';
+      provider.model = body.model ?? provider.model ?? '';
+      provider.apiKeyStatus = body.apiKey ? 'provided' : (provider.apiKeyStatus || 'missing');
+      provider.enabled = body.enabled ?? provider.enabled;
+      stampActivity(state, 'provider_updated', `Updated provider configuration: ${provider.name}`);
+      await saveState(state);
+      return sendJson(res, 200, { ok: true, provider });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.message });
+    }
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/activity') {
     try {
       const state = await loadState();
@@ -116,12 +160,17 @@ const server = http.createServer(async (req, res) => {
     try {
       const state = await loadState();
       const body = JSON.parse(await collectBody(req));
-      const oracle = state.oracles.find(item => item.id === body.oracleId);
+      const oracle = state.oracles.find(item => item.oracle_id === body.oracleId || item.id === body.oracleId);
       if (!oracle) return sendJson(res, 404, { ok: false, error: 'Oracle not found' });
       oracle.lastContact = new Date().toISOString();
-      oracle.notes = [oracle.notes, body.message].filter(Boolean).join(' | ');
-      oracle.updatedAt = new Date().toISOString();
-      stampActivity(state, 'oracle_note', `Logged oracle note for ${oracle.name}`);
+      const existingNotes = oracle.visual_attributes?.additional_notes || oracle.notes || '';
+      if (oracle.visual_attributes) {
+        oracle.visual_attributes.additional_notes = [existingNotes, body.message].filter(Boolean).join(' | ');
+      } else {
+        oracle.notes = [existingNotes, body.message].filter(Boolean).join(' | ');
+      }
+      oracle.oracle_metadata_last_updated = new Date().toISOString();
+      stampActivity(state, 'oracle_note', `Logged oracle note for ${oracle.oracle_name || oracle.name}`);
       await saveState(state);
       return sendJson(res, 200, { ok: true, oracle });
     } catch (error) {

@@ -34,6 +34,19 @@ const currentUserEl = document.getElementById('currentUser');
 const llmProvidersEl = document.getElementById('llmProviders');
 const astrologyProfileEl = document.getElementById('astrologyProfile');
 const interactionSessionsEl = document.getElementById('interactionSessions');
+const profileUsernameEl = document.getElementById('profileUsername');
+const profileEmailEl = document.getElementById('profileEmail');
+const profileBirthdayEl = document.getElementById('profileBirthday');
+const profileBirthTimeEl = document.getElementById('profileBirthTime');
+const profileBirthLocationEl = document.getElementById('profileBirthLocation');
+const profileVoiceFlavorEl = document.getElementById('profileVoiceFlavor');
+const profilePromptToneEl = document.getElementById('profilePromptTone');
+const saveProfileBtn = document.getElementById('saveProfileBtn');
+const providerSelectEl = document.getElementById('providerSelect');
+const providerBaseUrlEl = document.getElementById('providerBaseUrl');
+const providerModelEl = document.getElementById('providerModel');
+const providerApiKeyEl = document.getElementById('providerApiKey');
+const saveProviderBtn = document.getElementById('saveProviderBtn');
 const tabButtons = [...document.querySelectorAll('.tab-btn')];
 
 let currentState = null;
@@ -77,12 +90,29 @@ function renderCurrentUser(user) {
     card('Preferences', `Voice: ${user.preferences.oracle_voice_flavor} • Visual overlays: ${user.preferences.visual_overlays_enabled ? 'on' : 'off'} • Prompt tone: ${user.preferences.system_prompt_tone}`),
     card('Oracle sync', `Council initiated: ${user.oracle_sync_status.council_initiated ? 'yes' : 'no'} • Throne World: ${user.oracle_sync_status.throne_world_access ? 'yes' : 'no'} • Leviathan: ${user.oracle_sync_status.leviathan_unlocked ? 'yes' : 'no'}`)
   ].join('');
+
+  profileUsernameEl.value = user.username || '';
+  profileEmailEl.value = user.email || '';
+  profileBirthdayEl.value = user.birthday || '';
+  profileBirthTimeEl.value = user.birth_time || '';
+  profileBirthLocationEl.value = user.birth_location || '';
+  profileVoiceFlavorEl.value = user.preferences.oracle_voice_flavor || '';
+  profilePromptToneEl.value = user.preferences.system_prompt_tone || '';
 }
 
 function renderProviders(providers) {
   llmProvidersEl.innerHTML = providers
-    .map(provider => card(provider.name, provider.description, [badge(provider.status, provider.enabled ? 'good' : 'warn'), ...provider.configNeeded.map(item => badge(item))]))
+    .map(provider => card(provider.name, provider.description, [badge(provider.status, provider.enabled ? 'good' : 'warn'), badge(provider.model || 'no model'), badge(provider.apiKeyStatus || 'key missing')].concat(provider.configNeeded.map(item => badge(item)))))
     .join('');
+
+  providerSelectEl.innerHTML = providers.map(provider => `<option value="${provider.id}">${provider.name}</option>`).join('');
+  const selected = providers.find(provider => provider.id === providerSelectEl.value) || providers[0];
+  if (selected) {
+    providerSelectEl.value = selected.id;
+    providerBaseUrlEl.value = selected.baseUrl || '';
+    providerModelEl.value = selected.model || '';
+    providerApiKeyEl.value = '';
+  }
 }
 
 function renderAstrology(profile) {
@@ -351,6 +381,39 @@ oraclePromptBtn.addEventListener('click', () => {
   const oracle = currentState?.oracles?.find(item => item.oracle_id === oracleSelectEl.value) || currentState?.oracles?.[0];
   if (!oracle) return;
   addDraft('Oracle check-in template', `State your identity, current transit sensitivity, present directive, and next recommendation. Speak in your true voice: ${oracle.oracle_voice}.`);
+});
+
+saveProfileBtn.addEventListener('click', async () => {
+  await postJson('/api/current-user', {
+    username: profileUsernameEl.value.trim(),
+    email: profileEmailEl.value.trim(),
+    birthday: profileBirthdayEl.value.trim(),
+    birth_time: profileBirthTimeEl.value.trim(),
+    birth_location: profileBirthLocationEl.value.trim(),
+    oracle_voice_flavor: profileVoiceFlavorEl.value.trim(),
+    system_prompt_tone: profilePromptToneEl.value.trim()
+  });
+  await loadState(currentOracleId);
+});
+
+providerSelectEl.addEventListener('change', () => {
+  const provider = currentState?.llmProviders?.find(item => item.id === providerSelectEl.value);
+  if (!provider) return;
+  providerBaseUrlEl.value = provider.baseUrl || '';
+  providerModelEl.value = provider.model || '';
+  providerApiKeyEl.value = '';
+});
+
+saveProviderBtn.addEventListener('click', async () => {
+  await postJson('/api/providers', {
+    id: providerSelectEl.value,
+    baseUrl: providerBaseUrlEl.value.trim(),
+    model: providerModelEl.value.trim(),
+    apiKey: providerApiKeyEl.value.trim(),
+    enabled: true
+  });
+  providerApiKeyEl.value = '';
+  await loadState(currentOracleId);
 });
 
 createOracleBtn.addEventListener('click', async () => {

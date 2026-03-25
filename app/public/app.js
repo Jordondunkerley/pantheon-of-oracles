@@ -19,6 +19,7 @@ const newOracleDomainEl = document.getElementById('newOracleDomain');
 const newOracleVoiceEl = document.getElementById('newOracleVoice');
 const newOracleMissionEl = document.getElementById('newOracleMission');
 const newOracleNextActionEl = document.getElementById('newOracleNextAction');
+const productVisionEl = document.getElementById('productVision');
 
 let currentState = null;
 
@@ -68,8 +69,11 @@ function renderOracleDetail(oracle) {
       ${badge(oracle.status, oracle.status === 'active' ? 'good' : 'warn')}
       ${badge(oracle.domain)}
       ${badge(oracle.voice)}
+      ${oracle.archetype ? badge(oracle.archetype) : ''}
+      ${oracle.planet ? badge(oracle.planet) : ''}
     </div>
     <p class="meta"><strong>Mission:</strong> ${oracle.mission}</p>
+    <p class="meta"><strong>Product role:</strong> ${oracle.productRole || 'Not assigned yet'}</p>
     <p class="meta"><strong>Next action:</strong> ${oracle.nextAction}</p>
     <p class="meta"><strong>Last contact:</strong> ${oracle.lastContact ? formatDate(oracle.lastContact) : 'Not yet established'}</p>
     <p class="meta"><strong>Notes:</strong> ${oracle.notes || 'None yet'}</p>
@@ -128,6 +132,10 @@ async function loadState(selectedOracleId) {
   waitingEl.innerHTML = state.waitingOnJordon
     .map(item => card(item.title, item.detail, [badge(item.priority, item.priority === 'high' ? 'warn' : '')]))
     .join('');
+  productVisionEl.innerHTML = [
+    card('Elevator pitch', state.productVision.elevatorPitch, [badge('marketable product'), badge('independent voices')]),
+    card('What this becomes', state.productVision.description, state.productVision.pillars.map(pillar => badge(pillar)))
+  ].join('');
 
   populateOracleSelect(state.oracles);
 

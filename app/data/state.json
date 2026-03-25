@@ -81,23 +81,58 @@
   ],
   "oracles": [
     {
-      "id": "unassigned-01",
-      "name": "Oracle Seed Alpha",
-      "domain": "Unassigned",
+      "id": "zeus-jupiter",
+      "name": "Zeus",
+      "domain": "Jupiter / expansion / rulership",
       "status": "concept",
-      "voice": "Undefined",
-      "mission": "First placeholder oracle slot for Pantheon design work.",
+      "voice": "Commanding, wise, strategic",
+      "mission": "Act as a living reflection of Jupiter's placement in the user's chart, guiding growth, ambition, confidence, and mythic leadership.",
       "lastContact": null,
-      "nextAction": "Define oracle identity, role, and communication rules.",
-      "notes": "Will be replaced once the real oracle roster is mapped from project materials."
+      "nextAction": "Map behavioral differences by sign, house, and active transits.",
+      "notes": "Example oracle named in the Pantheon of Oracles pitch. Should adapt significantly depending on natal placement and real-time transit context.",
+      "archetype": "Sovereign",
+      "planet": "Jupiter",
+      "productRole": "Guidance, confidence, direction"
+    },
+    {
+      "id": "poseidon-neptune",
+      "name": "Poseidon",
+      "domain": "Neptune / mysticism / dreams",
+      "status": "concept",
+      "voice": "Mystical, fluid, visionary",
+      "mission": "Translate Neptune's placement into spiritual insight, emotional atmosphere, imagination, and mythic depth.",
+      "lastContact": null,
+      "nextAction": "Define how spirituality, intuition, and illusion shift across signs and transits.",
+      "notes": "Example oracle named in the Pantheon of Oracles pitch. Should feel radically different in Pisces versus Aries or other placements.",
+      "archetype": "Mystic",
+      "planet": "Neptune",
+      "productRole": "Imagination, spirituality, dream logic"
     }
   ],
   "waitingOnJordon": [
     {
-      "id": "substack-link",
-      "title": "Pantheon of Oracles source material",
-      "detail": "Need the Substack article URL if web search continues to miss it, so the oracle system can match the original vision.",
+      "id": "astro-spreadsheet",
+      "title": "Astrology + Pantheon spreadsheet data",
+      "detail": "Need readable exported data or key fields from Jordon's personal spreadsheet to model oracle behavior accurately.",
+      "priority": "high"
+    },
+    {
+      "id": "oracle-roster-definition",
+      "title": "Initial oracle roster",
+      "detail": "Need the intended first-wave oracle lineup and how many should exist in the MVP.",
       "priority": "high"
     }
-  ]
+  ],
+  "productVision": {
+    "elevatorPitch": "Create a council of dynamic AI personalities that shift with the transit of the cosmos in relation to you and your astrology.",
+    "description": "Pantheon of Oracles is a trademarked, patent-pending AI-driven role-playing and lifestyle platform where each user forms a custom pantheon of evolving oracle agents based on their astrological chart. These oracles are dynamic companions whose personalities shift with planetary transits and whose guidance, storytelling, and daily interactions are personalized to the user's chart.",
+    "pillars": [
+      "Personalized oracle council generated from natal chart",
+      "Dynamic personalities that evolve with transits",
+      "Persistent companion memory and relationship growth",
+      "Astrology-driven procedural storytelling and questing",
+      "Lifestyle companion behavior beyond the game",
+      "Future social and competitive experiences"
+    ]
+  }
 }

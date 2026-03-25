@@ -182,6 +182,9 @@ textarea { resize: vertical; }
   .two-col {
     grid-template-columns: 1fr;
   }
-  .hero-side { justify-content: flex-start; }
+  .hero-side {
+    justify-content: flex-start;
+    grid-template-columns: 1fr;
+  }
   .toolbar { grid-template-columns: 1fr; }
 }

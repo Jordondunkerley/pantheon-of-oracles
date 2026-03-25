@@ -87,7 +87,8 @@ function renderSourceEngine(state) {
   sourceEngineEl.innerHTML = [
     card('What this product really is', 'Pantheon of Oracles is not only a desktop app. It is becoming the canonical source engine for persistent oracle identity across future Pantheon products.', [badge('franchise core')]),
     card('What persists', 'Oracle identity, astrology mapping, voice profile, combat interpretation, visual silhouette, and exportable canon.', [badge('persistent canon')]),
-    card('Where it goes next', `Parallel products should consume these same oracles: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}.`, [badge('parallel products')])
+    card('Where it goes next', `Parallel products should consume these same oracles: ${state.productVision.franchiseDirection.parallelProducts.join(', ')}.`, [badge('parallel products')]),
+    card('Why that matters commercially', 'The core product can be sold on its own while also increasing the long-term value of future standalone Pantheon games and experiences.', [badge('franchise leverage')])
   ].join('');
 }
 
@@ -148,7 +149,8 @@ function renderImportPipeline(state) {
     card('Import command', 'npm run import:oracles -- ./path/to/oracles.json', [badge('workspace CLI')]),
     card('Export command', 'npm run export:oracle -- oracle-oryonos-saturn', [badge('canonical package')]),
     card('Template paths', 'app/data/import-template.json • app/data/oracle-package-template.json', [badge('starter schemas')]),
-    card('Why it matters', `Current oracle count in state: ${state.oracles.length}. The desktop app is becoming the oracle source engine for future Pantheon products.`, [badge('franchise leverage')])
+    card('Why it matters', `Current oracle count in state: ${state.oracles.length}. The desktop app is becoming the oracle source engine for future Pantheon products.`, [badge('franchise leverage')]),
+    card('Continuity promise', 'A future user should be able to meet an oracle here, then encounter that same oracle again inside other Pantheon products without losing its core identity.', [badge('oracle persistence')])
   ].join('');
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "clawdbot-console",
+  "name": "pantheon-of-oracles-desktop",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,7 +15,7 @@
   },
   "build": {
     "appId": "ai.clawdbot.console",
-    "productName": "Clawdbot Console",
+    "productName": "Pantheon of Oracles",
     "directories": {
       "output": "dist"
     },

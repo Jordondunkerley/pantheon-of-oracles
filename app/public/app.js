@@ -22,6 +22,7 @@ const newOracleNextActionEl = document.getElementById('newOracleNextAction');
 const productVisionEl = document.getElementById('productVision');
 const oracleViewFilterEl = document.getElementById('oracleViewFilter');
 const oracleSearchEl = document.getElementById('oracleSearch');
+const onboardingFlowEl = document.getElementById('onboardingFlow');
 const currentUserEl = document.getElementById('currentUser');
 const llmProvidersEl = document.getElementById('llmProviders');
 const astrologyProfileEl = document.getElementById('astrologyProfile');
@@ -50,6 +51,16 @@ function card(title, body, meta = []) {
 function formatDate(value) {
   if (!value) return 'No updates yet';
   return new Date(value).toLocaleString();
+}
+
+function renderOnboarding(state) {
+  onboardingFlowEl.innerHTML = [
+    card('Step 1 — Create account', 'Collect identity, birth data, and baseline preferences for the player profile.', [badge('active')]),
+    card('Step 2 — Generate astrology profile', 'Compute planets, angles, houses, decans, motion, and chart anomalies from birth data.', [badge('prototype core')]),
+    card('Step 3 — Connect AI provider', 'Let the user bring an OpenAI-compatible or future self-hosted model into the system.', [badge('model-agnostic')]),
+    card('Step 4 — Awaken the Pantheon', `Generate and sync the user\'s initial council. Current seeded oracles: ${state.currentUser.oracles_owned.length}.`, [badge('personalized')]),
+    card('Step 5 — Enter Oracle Workspace', 'Open persistent interaction sessions, guidance flows, and future transit-aware behavior.', [badge('product hook')])
+  ].join('');
 }
 
 function renderCurrentUser(user) {
@@ -243,6 +254,7 @@ async function loadState(selectedOracleId) {
     .map(entry => card(entry.message, formatDate(entry.timestamp), [badge(entry.type)]))
     .join('');
 
+  renderOnboarding(state);
   renderCurrentUser(state.currentUser);
   renderProviders(state.llmProviders);
   renderAstrology(state.astrologyProfile);
@@ -256,7 +268,7 @@ async function loadState(selectedOracleId) {
     .join('');
 
   productVisionEl.innerHTML = [
-    card('Elevator pitch', state.productVision.elevatorPitch, [badge('marketable product'), badge('independent voices')]),
+    card('Elevator pitch', state.productVision.elevatorPitch, [badge('marketable product'), badge('Pantheon-first')]),
     card('What this becomes', state.productVision.description, state.productVision.pillars.map(pillar => badge(pillar))),
     card('Traction', `Alpha users: ${state.productVision.traction.alphaUsers} • Saturn Rising users: ${state.productVision.traction.saturnRisingUsers} • Prototype: ${state.productVision.traction.prototypeSizeKb} KB • Beta: ${state.productVision.traction.betaStatus}`, [badge(state.productVision.traction.backend)]),
     card('Market position', state.productVision.marketPosition.advantage, [badge(state.productVision.marketPosition.category)]),

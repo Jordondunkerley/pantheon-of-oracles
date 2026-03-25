@@ -1,6 +1,6 @@
-# Clawdbot Console
+# Pantheon of Oracles Desktop Prototype
 
-A desktop-friendly operations dashboard for tracking Clawdbot projects, tasks, schedule, and activity.
+A desktop-first prototype for creating, managing, and interacting with astrology-shaped oracle agents.
 
 ## Modes
 
@@ -18,7 +18,7 @@ http://127.0.0.1:4317
 ```
 
 ### 2. Desktop mode (Windows target)
-This project includes an Electron wrapper so the dashboard can open like a normal desktop app.
+This project includes an Electron wrapper so the Pantheon of Oracles prototype can open like a normal desktop app.
 
 ## Install
 

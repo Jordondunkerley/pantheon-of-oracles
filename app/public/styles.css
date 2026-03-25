@@ -49,6 +49,7 @@ h1, h2, h3, p { margin-top: 0; }
 .subcopy, .label, .meta { color: var(--muted); }
 .grid { display: grid; gap: 20px; }
 .top-grid, .middle-grid, .bottom-grid, .footer-grid { grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
+.onboarding-grid { grid-template-columns: 1.2fr 0.9fr 0.9fr; margin-bottom: 20px; }
 .registry-grid { grid-template-columns: 0.95fr 1.05fr; margin-bottom: 20px; }
 .panel, .status-card, .item {
   background: var(--panel);
@@ -127,7 +128,7 @@ textarea { resize: vertical; }
   background: #243667;
 }
 @media (max-width: 1100px) {
-  .hero, .top-grid, .registry-grid, .middle-grid, .bottom-grid, .footer-grid {
+  .hero, .top-grid, .onboarding-grid, .registry-grid, .middle-grid, .bottom-grid, .footer-grid {
     grid-template-columns: 1fr;
     display: grid;
   }

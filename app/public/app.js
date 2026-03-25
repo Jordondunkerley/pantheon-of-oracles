@@ -101,6 +101,24 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
+function getOracleAccessState(oracle, entitlements) {
+  const access = entitlements?.oracleAccess || {};
+  const payment = entitlements?.paymentAccess || {};
+  const included = access.includedOracleIds || [];
+  const isCoreIncluded = included.includes(oracle.oracle_id);
+  const isHighCouncilLocked = !payment.highCouncilUnlocked && !isCoreIncluded;
+  const isExpandedLocked = !payment.expandedCouncilUnlocked && oracle.council_type === 'Expanded Council';
+  const locked = isHighCouncilLocked || isExpandedLocked;
+  const reason = isCoreIncluded
+    ? 'Included in current plan'
+    : isExpandedLocked
+      ? 'Unlock Expanded Council Access'
+      : isHighCouncilLocked
+        ? 'Unlock High Council Access'
+        : 'Available in current plan';
+  return { locked, reason, isCoreIncluded };
+}
+
 function getCouncilPriority(oracles, sessions) {
   const seededOrder = ['oracle-oryonos-saturn', 'oracle-lunos-moon', 'oracle-arcures-mercury', 'oracle-valeya-venus'];
   const byId = new Map(oracles.map(oracle => [oracle.oracle_id, oracle]));
@@ -119,24 +137,28 @@ function getCouncilPriority(oracles, sessions) {
 
 function renderActiveCouncil(state) {
   const prioritized = getCouncilPriority(state.oracles, state.interactionSessions);
-  const visible = councilViewMode === 'all' ? prioritized : prioritized.slice(0, 3);
-  activeCouncilEl.innerHTML = visible.map(({ oracle, session }) => `
-    <div class="item council-presence">
+  const visible = councilViewMode === 'all' ? prioritized : prioritized.filter(({ oracle }) => !getOracleAccessState(oracle, state.currentUser.accountEntitlements).locked).slice(0, 3);
+  activeCouncilEl.innerHTML = visible.map(({ oracle, session }) => {
+    const access = getOracleAccessState(oracle, state.currentUser.accountEntitlements);
+    return `
+    <div class="item council-presence ${access.locked ? 'locked-presence' : ''}">
       <h3>${oracle.oracle_name}</h3>
       <div class="badges">
         ${badge(oracle.astrology_profile?.ruling_planet || 'oracle')}
         ${badge(oracle.astrology_profile?.dominant_sign || 'sign pending')}
         ${badge(session?.mood || 'active presence')}
+        ${badge(access.locked ? 'sealed' : 'available', access.locked ? 'warn' : 'good')}
       </div>
-      <div class="presence-visual">${oracle.visual_attributes?.visual_silhouette || 'Oracle presence forming in chamber'}</div>
+      <div class="presence-visual">${access.locked ? 'Chamber veil active' : (oracle.visual_attributes?.visual_silhouette || 'Oracle presence forming in chamber')}</div>
       <p class="meta"><strong>Why present now:</strong> ${session?.useCase || oracle.visual_attributes?.role_in_pantheon || 'Oracle guidance is available.'}</p>
+      <p class="meta"><strong>Access:</strong> ${access.reason}</p>
       <p class="meta"><strong>Chamber tone:</strong> ${session?.atmosphere || 'Atmosphere still taking shape.'}</p>
       <div class="presence-actions">
-        <button class="focus-oracle-btn" data-oracle-id="${oracle.oracle_id}">Focus oracle</button>
-        <button class="open-chamber-btn" data-oracle-id="${oracle.oracle_id}">Open chamber</button>
+        <button class="focus-oracle-btn" data-oracle-id="${oracle.oracle_id}">${access.locked ? 'Inspect seal' : 'Focus oracle'}</button>
+        <button class="open-chamber-btn" data-oracle-id="${oracle.oracle_id}">${access.locked ? 'View unlock path' : 'Open chamber'}</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function renderSourceEngine(state) {
@@ -188,6 +210,9 @@ function renderOnboarding(state) {
 
 function renderCurrentUser(user) {
   const founder = user.founderIdentity || {};
+  const coreOracleNames = (user.accountEntitlements?.oracleAccess?.includedOracleIds || [])
+    .map(id => currentState?.oracles?.find(oracle => oracle.oracle_id === id)?.oracle_name || id)
+    .join(' • ');
   currentUserEl.innerHTML = [
     card(user.username, `${user.birth_location} • ${user.birthday} ${user.birth_time}`, [badge(user.access_tier), badge(user.founder_status ? 'Founder' : 'Standard')]),
     card('Immediate product framing', 'This seeded profile demonstrates how the product can preload a player\'s astrology and awaken a personalized oracle council from day one.', [badge('demo mode')]),
@@ -196,6 +221,7 @@ function renderCurrentUser(user) {
     card('Founder access model', `${founder.recognized ? 'Recognized founder account' : 'Standard account'} • Role: ${founder.role || 'Founder / Creator / CEO'} • Access mode: ${founder.accessMode || 'account-recognized'}`, [badge(founder.recognized ? 'founder access enabled' : 'standard access', founder.recognized ? 'good' : 'warn')]),
     card('Founder features', (founder.featureFlags || []).join(' • ') || 'No founder-only features assigned yet', [badge('single product build')]),
     card('Entitlement model', `${user.accountEntitlements?.tier || 'standard'} • Grants: ${(user.accountEntitlements?.grants || []).length} • Promotion flags: ${(user.accountEntitlements?.promotionFlags || []).join(' • ') || 'none'} • Payment plan: ${user.accountEntitlements?.paymentAccess?.plan || 'unassigned'}`, [badge('account benefits')]),
+    card('Current council access', `Core included now: ${coreOracleNames || 'none assigned'} • High Council: ${user.accountEntitlements?.paymentAccess?.highCouncilUnlocked ? 'unlocked' : 'locked'} • Expanded Council: ${user.accountEntitlements?.paymentAccess?.expandedCouncilUnlocked ? 'unlocked' : 'locked'}`, [badge('chamber access')]),
     card('Oracle sync', `Council initiated: ${user.oracle_sync_status.council_initiated ? 'yes' : 'no'} • Throne World: ${user.oracle_sync_status.throne_world_access ? 'yes' : 'no'} • Leviathan: ${user.oracle_sync_status.leviathan_unlocked ? 'yes' : 'no'}`)
   ].join('');
 
@@ -394,8 +420,9 @@ function oracleMatchesSearch(oracle, query) {
 
 function oracleCard(oracle) {
   const astro = oracle.astrology_profile || {};
+  const access = getOracleAccessState(oracle, currentState?.currentUser?.accountEntitlements);
   return `
-    <button class="item oracle-card oracle-select ${oracle.oracle_id === currentOracleId ? 'selected' : ''}" data-oracle-id="${oracle.oracle_id}">
+    <button class="item oracle-card oracle-select ${oracle.oracle_id === currentOracleId ? 'selected' : ''} ${access.locked ? 'locked-presence' : ''}" data-oracle-id="${oracle.oracle_id}">
       <h3>${oracle.oracle_name}</h3>
       <div class="badges">
         ${badge(astro.ruling_planet)}
@@ -403,8 +430,10 @@ function oracleCard(oracle) {
         ${badge(`House ${astro.house_placement}`)}
         ${badge(oracle.archetype)}
         ${badge(oracle.council_type)}
+        ${badge(access.locked ? 'locked' : 'available', access.locked ? 'warn' : 'good')}
       </div>
       <p class="meta oracle-mission">${oracle.visual_attributes?.role_in_pantheon || oracle.oracle_voice || 'No role yet'}</p>
+      <p class="meta"><strong>Access:</strong> ${access.reason}</p>
       <p class="meta"><strong>Weapon:</strong> ${oracle.visual_attributes?.weapons?.weapon_1 || '—'} • <strong>Tier:</strong> ${oracle.tier}</p>
       <p class="meta"><strong>Form:</strong> ${oracle.oracle_form} • <strong>Rank:</strong> ${oracle.ascended_rank}</p>
     </button>
@@ -422,6 +451,7 @@ function renderOracleDetail(oracle) {
   const desc = visuals.visual_description || {};
   const weapons = visuals.weapons || {};
 
+  const access = getOracleAccessState(oracle, currentState?.currentUser?.accountEntitlements);
   const views = {
     identity: `
       <h3>${oracle.oracle_name}</h3>
@@ -439,6 +469,7 @@ function renderOracleDetail(oracle) {
       <p class="meta"><strong>Tone overlay:</strong> ${oracle.tone_overlay || '—'}</p>
       <p class="meta"><strong>Degree:</strong> ${astro.degree || '—'} • <strong>Motion:</strong> ${astro.motion || '—'} ${astro.stationary ? `• <strong>Stationary:</strong> ${astro.stationary}` : ''}</p>
       <p class="meta"><strong>Rising overlay:</strong> ${astro.rising_decan_sign || '—'}</p>
+      <p class="meta"><strong>Access status:</strong> ${access.locked ? `Locked — ${access.reason}` : 'Available in current plan'}</p>
     `,
     gameplay: `
       <h3>${oracle.oracle_name} — Gameplay</h3>

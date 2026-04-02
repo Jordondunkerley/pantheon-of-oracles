@@ -7,6 +7,14 @@
     "name": "Pantheon of Oracles: The Council Chamber",
     "subtitle": "Founder-testable desktop-first Oracle Source Engine",
     "framing": "A game-like oracle hub and source engine for future Pantheon products.",
+    "sceneFlow": [
+      "title-screen",
+      "first-entrance",
+      "chart-awakening",
+      "council-formation",
+      "chamber-hub",
+      "oracle-room"
+    ],
     "firstEntranceRitual": {
       "title": "First Entrance Ritual",
       "invocation": "Enter the chamber, declare your birth data, connect your chosen intelligence, and awaken the council that will know you by the sky.",
@@ -502,6 +510,33 @@
     }
   ],
   "sessions": [],
+  "progressionState": {
+    "currentScene": "title-screen",
+    "completedScenes": ["title-screen"],
+    "nextRecommendedScene": "first-entrance",
+    "unlockedScenes": [
+      "title-screen",
+      "first-entrance",
+      "chart-awakening"
+    ],
+    "milestones": [
+      {
+        "title": "Threshold Crossed",
+        "description": "The chamber has been restored and can now unfold as a guided experience.",
+        "status": "complete"
+      },
+      {
+        "title": "First Council Awakened",
+        "description": "The core chamber presences are available for progression and oracle-room entry.",
+        "status": "active"
+      },
+      {
+        "title": "High Council Expansion",
+        "description": "Later scenes should deepen council revelation and progression rewards.",
+        "status": "locked"
+      }
+    ]
+  },
   "releaseReadiness": {
     "windowsPackaging": "pending",
     "providerInference": "pending",

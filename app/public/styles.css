@@ -90,10 +90,17 @@ button:hover {
 .scene { transition: opacity 260ms ease, transform 260ms ease, filter 260ms ease; }
 .hidden-scene { display: none; opacity: 0; transform: translateY(10px) scale(0.995); filter: blur(2px); }
 .active-scene { display: block; opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+.scene-entering {
+  animation: chamberEnter 560ms ease;
+}
 .reveal-card { animation: revealFade 320ms ease; }
 @keyframes revealFade {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes chamberEnter {
+  0% { opacity: 0.45; transform: translateY(16px) scale(0.985); filter: blur(3px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 .threshold-scene, .council-scene, .hub-scene, .oracle-scene {
   background: linear-gradient(180deg, rgba(23, 27, 59, 0.97), rgba(10, 14, 31, 0.96));

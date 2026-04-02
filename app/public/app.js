@@ -44,6 +44,14 @@ function isUnlocked(state, sceneId) {
   return state.progressionState.unlockedScenes.includes(sceneId);
 }
 
+function pulseScene(sceneId) {
+  const element = document.getElementById(`scene-${sceneId}`);
+  if (!element) return;
+  element.classList.remove('scene-entering');
+  void element.offsetWidth;
+  element.classList.add('scene-entering');
+}
+
 function setScene(sceneId) {
   if (!currentState || !isUnlocked(currentState, sceneId)) return;
   currentScene = sceneId;
@@ -56,6 +64,7 @@ function setScene(sceneId) {
     button.classList.toggle('selected', button.dataset.sceneId === sceneId);
     button.disabled = !isUnlocked(currentState, button.dataset.sceneId);
   }
+  pulseScene(sceneId);
 }
 
 function unlockScene(state, sceneId) {

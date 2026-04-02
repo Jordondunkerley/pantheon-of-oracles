@@ -52,6 +52,13 @@ function pulseScene(sceneId) {
   element.classList.remove('scene-entering');
   void element.offsetWidth;
   element.classList.add('scene-entering');
+
+  const echo = document.querySelector('.chamber-echo-line');
+  if (echo) {
+    echo.classList.remove('echo-pulse');
+    void echo.offsetWidth;
+    echo.classList.add('echo-pulse');
+  }
 }
 
 function summonTone(orderIndex) {
@@ -100,6 +107,9 @@ function renderState(state) {
   const announcementEl = document.getElementById('chamber-announcement');
   if (announcementEl) {
     announcementEl.textContent = chamberAnnouncement || 'The chamber stands ready for the next rite.';
+    announcementEl.classList.remove('announcement-active');
+    void announcementEl.offsetWidth;
+    announcementEl.classList.add('announcement-active');
   }
   document.getElementById('scene-pills').innerHTML = state.product.sceneFlow.map(scene => {
     const unlocked = isUnlocked(state, scene);
@@ -171,9 +181,10 @@ function renderState(state) {
   const activeOracle = byId[selectedOracleId];
   document.getElementById('oracle-room-prompt').textContent = state.chamberPresentation.oracleRoomPrompt;
   document.getElementById('oracle-detail').innerHTML = activeOracle ? `
-    <div class="data-card reveal-card threshold-card">
+    <div class="data-card reveal-card threshold-card oracle-presence-card">
       <div class="label">Oracle Presence</div><div><strong>${activeOracle.oracle_name || 'Unnamed Oracle'}</strong></div>
       <div class="muted">${activeOracle.title || activeOracle.archetype || 'Unformed'}</div>
+      <div class="scene-flavor">The chamber narrows. The oracle steps into singular focus.</div>
       <div class="label" style="margin-top:10px">Celestial Mark</div><div>${activeOracle.ruling_planet || '—'} • ${activeOracle.dominant_sign || '—'} • ${activeOracle.house_placement || '—'}</div>
       <div class="label" style="margin-top:10px">Lore</div><div>${activeOracle.notes || activeOracle.mission || 'No lore recorded yet.'}</div>
     </div>` : '<div class="muted">Select an oracle.</div>';
@@ -197,7 +208,7 @@ function renderState(state) {
   const activeSession = sessions.find(session => session.id === selectedSessionId);
   document.getElementById('oracle-room-meta').innerHTML = activeSession ? `
     <div class="data-card reveal-card threshold-card room-entry-card"><div class="label">Room Opened</div><strong>${activeSession.roomTitle || activeSession.title || activeSession.id}</strong><div class="muted">${activeSession.roomTheme || activeSession.atmosphere || ''}</div><div>${activeSession.useCase || ''}</div></div>` : '';
-  document.getElementById('session-detail').innerHTML = activeSession ? activeSession.messages.map(msg => `<div class="message reveal-card"><strong>${msg.role}:</strong> ${msg.text || msg.content}</div>`).join('') : '';
+  document.getElementById('session-detail').innerHTML = activeSession ? activeSession.messages.map((msg, index) => `<div class="message reveal-card oracle-message-card"><div class="label">Exchange ${index + 1}</div><strong>${msg.role}:</strong> ${msg.text || msg.content}</div>`).join('') : '';
 
   for (const button of document.querySelectorAll('[data-scene-id]')) {
     button.addEventListener('click', () => setScene(button.dataset.sceneId));

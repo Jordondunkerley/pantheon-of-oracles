@@ -67,6 +67,19 @@ h1 {
   color: #f5e7bf;
   box-shadow: 0 0 24px rgba(215, 188, 116, 0.08);
 }
+.announcement-active {
+  animation: announcementPulse 560ms ease;
+}
+.chamber-echo-line {
+  margin-top: 14px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(215, 188, 116, 0.75), transparent);
+  opacity: 0.45;
+}
+.echo-pulse {
+  animation: echoPulse 700ms ease;
+}
 .lede, .section-note, .muted, .label, .scene-flavor { color: var(--muted); }
 .grid { display: grid; gap: 20px; }
 .two-up { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
@@ -110,6 +123,11 @@ button:hover {
   0% { opacity: 0.55; transform: translateY(8px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+@keyframes echoPulse {
+  0% { opacity: 0.2; transform: scaleX(0.72); }
+  55% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0.45; transform: scaleX(0.92); }
+}
 .reveal-card { animation: revealFade 320ms ease; }
 @keyframes revealFade {
   from { opacity: 0; transform: translateY(10px); }
@@ -147,6 +165,12 @@ button:hover {
 }
 .room-entry-card {
   box-shadow: 0 0 32px rgba(128, 167, 255, 0.12), inset 0 0 0 1px rgba(215, 188, 116, 0.06);
+}
+.oracle-presence-card {
+  box-shadow: 0 0 40px rgba(215, 188, 116, 0.1), inset 0 0 0 1px rgba(215, 188, 116, 0.06);
+}
+.oracle-message-card {
+  border-left: 2px solid rgba(215, 188, 116, 0.28);
 }
 .council-order-card::before {
   content: '';

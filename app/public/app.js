@@ -88,6 +88,7 @@ function activeSceneState(sceneId) {
 function setScene(sceneId) {
   if (!currentState || !isUnlocked(currentState, sceneId)) return;
   currentScene = sceneId;
+  chamberAnnouncement = `${sceneCta(sceneId)} rises into focus.`;
   currentState.progressionState.currentScene = sceneId;
   for (const scene of document.querySelectorAll('.scene')) {
     scene.classList.toggle('hidden-scene', scene.id !== `scene-${sceneId}`);
@@ -103,7 +104,7 @@ function setScene(sceneId) {
 function unlockScene(state, sceneId) {
   if (!state.progressionState.unlockedScenes.includes(sceneId)) {
     state.progressionState.unlockedScenes.push(sceneId);
-    chamberAnnouncement = `${sceneCta(sceneId)} is now unlocked.`;
+    chamberAnnouncement = `${sceneCta(sceneId)} is now unlocked. The chamber answers your progress.`;
   }
 }
 

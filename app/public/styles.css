@@ -221,6 +221,10 @@ button:hover {
 .reward-card.locked .label { color: var(--warn); }
 .reward-card {
   background: linear-gradient(180deg, rgba(33, 30, 63, 0.98), rgba(17, 19, 39, 0.98));
+  box-shadow: 0 0 24px rgba(159, 124, 255, 0.08);
+}
+.reward-card.earned {
+  box-shadow: 0 0 28px rgba(88, 193, 149, 0.14), inset 0 0 0 1px rgba(88, 193, 149, 0.08);
 }
 .scene-flavor {
   display: block;

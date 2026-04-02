@@ -28,6 +28,18 @@ function sceneCta(scene) {
   return map[scene] || sceneLabel(scene);
 }
 
+function sceneFlavor(scene) {
+  const map = {
+    'title-screen': 'The threshold hums before the first deliberate step.',
+    'first-entrance': 'The chamber listens as the founder names themself to the rite.',
+    'chart-awakening': 'The sky is translated into structure, omen, and council logic.',
+    'council-formation': 'Presences gather closer to the throne of guidance.',
+    'chamber-hub': 'The chamber settles into a navigable living center.',
+    'oracle-room': 'A single oracle steps forward and the room narrows around their presence.'
+  };
+  return map[scene] || '';
+}
+
 function isUnlocked(state, sceneId) {
   return state.progressionState.unlockedScenes.includes(sceneId);
 }
@@ -61,7 +73,7 @@ function renderState(state) {
   document.getElementById('product-framing').textContent = state.product.framing;
   document.getElementById('scene-pills').innerHTML = state.product.sceneFlow.map(scene => {
     const unlocked = isUnlocked(state, scene);
-    return `<button data-scene-id="${scene}" ${unlocked ? '' : 'disabled'}>${sceneCta(scene)}${unlocked ? '' : ' 🔒'}</button>`;
+    return `<button data-scene-id="${scene}" ${unlocked ? '' : 'disabled'}>${sceneCta(scene)}${unlocked ? '' : ' 🔒'}<span class="scene-flavor">${sceneFlavor(scene)}</span></button>`;
   }).join('');
 
   document.getElementById('milestones').innerHTML = state.progressionState.milestones.map(item => `
@@ -72,8 +84,9 @@ function renderState(state) {
   document.getElementById('title-screen-content').innerHTML = [
     { title: 'Recovered Chamber', body: 'The chamber has been reclaimed and now awaits a more ceremonial flow.' },
     { title: 'Current Pulse', body: 'Scene-based progression, rite language, and reveal-driven UX are actively forming.' },
-    { title: 'Next Rite', body: sceneCta(state.progressionState.nextRecommendedScene) }
-  ].map(item => `<div class="data-card reveal-card"><strong>${item.title}</strong><div class="muted">${item.body}</div></div>`).join('');
+    { title: 'Next Rite', body: sceneCta(state.progressionState.nextRecommendedScene) },
+    { title: 'Threshold Feeling', body: sceneFlavor(currentScene) }
+  ].map(item => `<div class="data-card reveal-card threshold-card"><strong>${item.title}</strong><div class="muted">${item.body}</div></div>`).join('');
 
   document.getElementById('ritual-invocation').textContent = state.product.firstEntranceRitual.invocation;
   document.getElementById('ritual-steps').innerHTML = state.product.firstEntranceRitual.steps.map(step => `<li>${step}</li>`).join('');
@@ -89,7 +102,7 @@ function renderState(state) {
 
   const byId = Object.fromEntries(state.oracles.map(oracle => [oracle.oracle_id, oracle]));
   const anointed = byId[state.councilStructure.anointedRuler];
-  document.getElementById('anointed-ruler').innerHTML = anointed ? `<div class="data-card reveal-card"><strong>Anointed Ruler: ${anointed.oracle_name}</strong><div class="muted">${anointed.title || anointed.archetype}</div></div>` : '';
+  document.getElementById('anointed-ruler').innerHTML = anointed ? `<div class="data-card reveal-card threshold-card"><strong>Anointed Ruler: ${anointed.oracle_name}</strong><div class="muted">${anointed.title || anointed.archetype}</div></div>` : '';
   document.getElementById('crowned-candidates').innerHTML = state.councilStructure.crownedCandidates.map(item => `
     <div class="data-card reveal-card"><strong>${byId[item.oracleId]?.oracle_name || item.oracleId}</strong><div class="muted">${item.reason}</div></div>`).join('');
 
@@ -109,6 +122,7 @@ function renderState(state) {
       <strong>${oracle.oracle_name || 'Unnamed Oracle'}</strong>
       <div class="muted">${oracle.title || oracle.archetype || 'Unformed'}</div>
       <div>${oracle.ruling_planet || '—'} • ${oracle.dominant_sign || '—'}</div>
+      <div class="scene-flavor">Choose this presence to narrow the chamber around them.</div>
     </button>`).join('');
   document.getElementById('current-user').innerHTML = `
     <div class="data-card reveal-card"><strong>${state.currentUser.displayName || state.currentUser.username || '—'}</strong><div class="muted">${state.currentUser.founderIdentity?.role || ''}</div><div>${state.currentUser.accountEntitlements?.tier || ''}</div></div>`;
@@ -116,7 +130,7 @@ function renderState(state) {
   const activeOracle = byId[selectedOracleId];
   document.getElementById('oracle-room-prompt').textContent = state.chamberPresentation.oracleRoomPrompt;
   document.getElementById('oracle-detail').innerHTML = activeOracle ? `
-    <div class="data-card reveal-card">
+    <div class="data-card reveal-card threshold-card">
       <div class="label">Oracle Presence</div><div><strong>${activeOracle.oracle_name || 'Unnamed Oracle'}</strong></div>
       <div class="muted">${activeOracle.title || activeOracle.archetype || 'Unformed'}</div>
       <div class="label" style="margin-top:10px">Celestial Mark</div><div>${activeOracle.ruling_planet || '—'} • ${activeOracle.dominant_sign || '—'} • ${activeOracle.house_placement || '—'}</div>
@@ -135,12 +149,13 @@ function renderState(state) {
       <button class="session-card reveal-card ${session.id === selectedSessionId ? 'selected' : ''}" data-session-id="${session.id}">
         <strong>${session.title || oracle?.oracle_name || session.id}</strong>
         <div class="muted">${session.mood || 'oracle presence'}</div>
+        <div class="scene-flavor">${session.atmosphere || ''}</div>
       </button>`;
   }).join('');
 
   const activeSession = sessions.find(session => session.id === selectedSessionId);
   document.getElementById('oracle-room-meta').innerHTML = activeSession ? `
-    <div class="data-card reveal-card"><strong>${activeSession.roomTitle || activeSession.title || activeSession.id}</strong><div class="muted">${activeSession.roomTheme || activeSession.atmosphere || ''}</div><div>${activeSession.useCase || ''}</div></div>` : '';
+    <div class="data-card reveal-card threshold-card"><strong>${activeSession.roomTitle || activeSession.title || activeSession.id}</strong><div class="muted">${activeSession.roomTheme || activeSession.atmosphere || ''}</div><div>${activeSession.useCase || ''}</div></div>` : '';
   document.getElementById('session-detail').innerHTML = activeSession ? activeSession.messages.map(msg => `<div class="message reveal-card"><strong>${msg.role}:</strong> ${msg.text || msg.content}</div>`).join('') : '';
 
   for (const button of document.querySelectorAll('[data-scene-id]')) {

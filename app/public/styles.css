@@ -33,7 +33,7 @@ body {
 .data-card, .oracle-card, .session-card, .council-card, .flow-stage-card, .message { padding: 14px; }
 .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); font-size: 12px; margin: 0 0 8px; }
 h1, h2, h3, p { margin-top: 0; }
-.lede, .section-note, .muted, .label { color: var(--muted); }
+.lede, .section-note, .muted, .label, .scene-flavor { color: var(--muted); }
 .grid { display: grid; gap: 20px; }
 .two-up { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
 .roster-grid, .session-list, .council-structure, .flow-stage-list { display: grid; gap: 12px; }
@@ -63,6 +63,9 @@ button:hover { background: #22315f; transform: translateY(-1px); }
 .threshold-scene, .council-scene, .hub-scene, .oracle-scene {
   background: linear-gradient(180deg, rgba(20, 24, 52, 0.96), rgba(11, 15, 30, 0.96));
 }
+.threshold-card {
+  background: linear-gradient(180deg, rgba(31, 35, 70, 0.96), rgba(15, 17, 36, 0.96));
+}
 .compact-scene .data-card,
 .compact-scene .oracle-card,
 .compact-scene .session-card,
@@ -77,6 +80,12 @@ button:hover { background: #22315f; transform: translateY(-1px); }
 .reward-card.locked .label { color: var(--warn); }
 .reward-card {
   background: linear-gradient(180deg, rgba(26, 30, 62, 0.96), rgba(16, 18, 38, 0.96));
+}
+.scene-flavor {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.45;
 }
 .top-gap { margin-top: 14px; }
 .label { text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; }

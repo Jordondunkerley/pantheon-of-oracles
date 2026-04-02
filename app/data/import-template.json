@@ -1,0 +1,37 @@
+{
+  "currentUser": {
+    "displayName": "",
+    "oracleVoiceStyle": "",
+    "oracleConversationTone": ""
+  },
+  "astrologyProfile": {
+    "status": "ready",
+    "summary": "",
+    "birthData": {
+      "date": "",
+      "time": "",
+      "location": ""
+    }
+  },
+  "oracles": [
+    {
+      "oracle_id": "oracle-example",
+      "oracle_name": "",
+      "title": "",
+      "archetype": "",
+      "ruling_planet": "",
+      "dominant_sign": "",
+      "house_placement": "",
+      "voice": "",
+      "faction": "",
+      "planetary_faction": "",
+      "weapon": "",
+      "color_scheme": "",
+      "spirit_animal": "",
+      "mission": "",
+      "combat_style": "",
+      "guidance_style": "",
+      "notes": ""
+    }
+  ]
+}

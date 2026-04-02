@@ -1,0 +1,48 @@
+{
+  "canonical_id": "oracle-oryonos-saturn",
+  "identity": {
+    "oracle_name": "Oryonos",
+    "title": "The Iron Architect",
+    "archetype": "Saturnian sovereign of structure and trials",
+    "voice": "Measured, austere, strategic",
+    "mission": "Governance, structure, endurance",
+    "notes": "Canonical seeded oracle reconstructed from transcript."
+  },
+  "astrology": {
+    "ruling_planet": "Saturn",
+    "dominant_sign": "Capricorn",
+    "house_placement": "10th House",
+    "aspects": [],
+    "transit_modifiers": []
+  },
+  "faction": {
+    "core_faction": "Council Core",
+    "planetary_faction": "Saturn Dominion",
+    "role": "Governance oracle"
+  },
+  "visual": {
+    "color_scheme": "Black, gold, deep indigo",
+    "weapon": "Obsidian staff",
+    "silhouette": "Tall, regal, severe",
+    "spirit_animal": "Raven"
+  },
+  "franchise_traits": {
+    "combat_style": "Control and attrition",
+    "guidance_style": "Discipline and long-range perspective",
+    "relationship_mode": "Demanding but loyal",
+    "export_version": "0.1.0"
+  },
+  "future_product_hooks": {
+    "clash": {
+      "role_hint": "Governance oracle",
+      "combat_style": "Control and attrition"
+    },
+    "mobile": {
+      "guidance_style": "Discipline and long-range perspective"
+    },
+    "retro2d": {
+      "silhouette": "Tall, regal, severe",
+      "weapon": "Obsidian staff"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "canonical_id": "oracle-unique-id",
+  "identity": {
+    "oracle_name": "",
+    "title": "",
+    "archetype": "",
+    "voice": "",
+    "mission": "",
+    "notes": ""
+  },
+  "astrology": {
+    "ruling_planet": "",
+    "dominant_sign": "",
+    "house_placement": "",
+    "aspects": [],
+    "transit_modifiers": []
+  },
+  "faction": {
+    "core_faction": "",
+    "planetary_faction": "",
+    "role": ""
+  },
+  "visual": {
+    "color_scheme": "",
+    "weapon": "",
+    "silhouette": "",
+    "spirit_animal": ""
+  },
+  "franchise_traits": {
+    "combat_style": "",
+    "guidance_style": "",
+    "relationship_mode": "",
+    "export_version": "0.1.0"
+  },
+  "future_product_hooks": {
+    "clash": {},
+    "mobile": {},
+    "retro2d": {}
+  }
+}

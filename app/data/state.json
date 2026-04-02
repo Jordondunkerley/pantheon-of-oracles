@@ -1,0 +1,511 @@
+{
+  "meta": {
+    "title": "Pantheon of Oracles: The Council Chamber",
+    "updatedAt": "2026-04-02T19:05:00.000Z"
+  },
+  "product": {
+    "name": "Pantheon of Oracles: The Council Chamber",
+    "subtitle": "Founder-testable desktop-first Oracle Source Engine",
+    "framing": "A game-like oracle hub and source engine for future Pantheon products.",
+    "firstEntranceRitual": {
+      "title": "First Entrance Ritual",
+      "invocation": "Enter the chamber, declare your birth data, connect your chosen intelligence, and awaken the council that will know you by the sky.",
+      "steps": [
+        "Declare founder identity",
+        "Enter birth data",
+        "Generate chart path",
+        "Connect oracle provider",
+        "Awaken the first council"
+      ]
+    },
+    "onboardingGuidance": [
+      {
+        "title": "Declare identity",
+        "detail": "Save founder identity, tone preferences, and birth profile before deeper chamber use."
+      },
+      {
+        "title": "Generate chart path",
+        "detail": "Prototype chart generation is scaffolded now; native birth-data calculation remains a later layer."
+      },
+      {
+        "title": "Awaken council",
+        "detail": "Use the chamber flow to shape the first council and enter oracle rooms."
+      }
+    ],
+    "founderTestFlow": [
+      {
+        "stage": "Entrance",
+        "status": "ready",
+        "description": "Complete the First Entrance Ritual and establish founder identity."
+      },
+      {
+        "stage": "Profile",
+        "status": "ready",
+        "description": "Save birth data and tone preferences for the chamber."
+      },
+      {
+        "stage": "Provider",
+        "status": "ready",
+        "description": "Bind a model/provider so the chamber can evolve beyond prototype replies."
+      },
+      {
+        "stage": "Council",
+        "status": "in-progress",
+        "description": "Shape the Core Trio, High Council, and Expanded Council layers."
+      },
+      {
+        "stage": "Oracle Session",
+        "status": "ready",
+        "description": "Enter an oracle chamber and test dialogue flow."
+      }
+    ]
+  },
+  "currentUser": {
+    "player_id": "player-jordon-local",
+    "displayName": "Jordon",
+    "username": "Jordon",
+    "email": "",
+    "gender": "Male",
+    "birthday": "1990-01-01",
+    "birthTime": "12:34",
+    "birthLocation": "Test City",
+    "oracleVoiceStyle": "Mythic",
+    "oracleConversationTone": "Soft Cosmic",
+    "founderIdentity": {
+      "recognized": true,
+      "role": "Founder / Creator / CEO",
+      "accessMode": "account-recognized",
+      "featureFlags": [
+        "founder-console",
+        "oracle-canon-edit",
+        "release-preview",
+        "provider-lab"
+      ]
+    },
+    "accountEntitlements": {
+      "tier": "founder-lifetime",
+      "badges": ["founder", "creator", "ceo"],
+      "promotionFlags": ["founder-seed"],
+      "oracleAccess": {
+        "mode": "full",
+        "freeLimit": 3,
+        "includedOracleIds": [
+          "oracle-solin",
+          "oracle-lunos-luna",
+          "oracle-oryonos-saturn"
+        ]
+      },
+      "paymentAccess": {
+        "plan": "founder-lifetime",
+        "billingStatus": "complimentary",
+        "highCouncilUnlocked": true,
+        "expandedCouncilUnlocked": true
+      }
+    }
+  },
+  "astrologyProfile": {
+    "status": "ready",
+    "summary": "Founder birth profile is captured; native chart generation remains partially prototype-backed.",
+    "birthData": {
+      "date": "",
+      "time": "",
+      "location": ""
+    },
+    "generation": {
+      "mode": "prototype-seeded",
+      "targetMode": "birth-data-native",
+      "validationSources": [
+        "Astro-Seek",
+        "Startek"
+      ],
+      "status": {
+        "birthDataCollected": true,
+        "nativeEngineReady": false,
+        "validationPathReady": true,
+        "profileAssemblyReady": true,
+        "oracleAwakeningReady": true
+      }
+    }
+  },
+  "providers": [
+    {
+      "id": "default-provider",
+      "label": "Primary Oracle Provider",
+      "baseUrl": "https://api.example.com",
+      "model": "gpt-x",
+      "apiKeyStatus": "configured",
+      "ready": true
+    }
+  ],
+  "councilStructure": {
+    "coreTrio": [
+      "oracle-oryonos-saturn",
+      "oracle-lunos-luna",
+      "oracle-solin"
+    ],
+    "highCouncil": [
+      "oracle-oryonos-saturn",
+      "oracle-lunos-luna",
+      "oracle-solin"
+    ],
+    "expandedCouncil": [
+      "oracle-oryonos-saturn",
+      "oracle-lunos-luna",
+      "oracle-solin"
+    ],
+    "anointedRuler": "oracle-oryonos-saturn",
+    "crownedCandidates": [
+      {
+        "oracleId": "oracle-oryonos-saturn",
+        "reason": "Strong governance axis and chamber authority"
+      },
+      {
+        "oracleId": "oracle-solin",
+        "reason": "High visibility, initiation energy, and forward leadership"
+      },
+      {
+        "oracleId": "oracle-lunos-luna",
+        "reason": "Emotional attunement and internal stabilizing force"
+      }
+    ]
+  },
+  "accessModel": {
+    "founderAccess": true,
+    "accountStatus": "founder-active",
+    "promotions": [
+      {
+        "name": "Founder Access",
+        "status": "active",
+        "effect": "Unlocks chamber entry and founder test path"
+      },
+      {
+        "name": "Oracle Source Engine Early Access",
+        "status": "active",
+        "effect": "Unlocks awakening, session workspace, and import/export features"
+      }
+    ],
+    "grants": [
+      {
+        "name": "Core Council Chamber",
+        "status": "granted"
+      },
+      {
+        "name": "Import/Export Pipeline",
+        "status": "granted"
+      },
+      {
+        "name": "High Council Expansion",
+        "status": "planned"
+      }
+    ],
+    "paymentPlans": [
+      {
+        "name": "Founder",
+        "status": "active",
+        "price": "$0 prototype",
+        "entitlements": [
+          "Council Chamber",
+          "Oracle Sessions",
+          "Import/Export"
+        ]
+      },
+      {
+        "name": "Future Patron Tier",
+        "status": "planned",
+        "price": "TBD",
+        "entitlements": [
+          "High Council Expansion",
+          "Priority Feature Access"
+        ]
+      }
+    ]
+  },
+  "chamberPresentation": {
+    "returnState": "The chamber is lit. The council is assembled. The founder returns to a living center rather than a utility panel.",
+    "oracleRoomPrompt": "Select an oracle presence and step through the chamber threshold to enter a more focused room of dialogue.",
+    "environmentNotes": [
+      "Council Chamber functions as the central return point",
+      "Oracle rooms should feel like focused presence spaces",
+      "Core Trio should be the fastest founder entry layer"
+    ]
+  },
+  "oracles": [
+    {
+      "oracle_id": "oracle-oryonos-saturn",
+      "oracle_name": "Oryonos",
+      "title": "The Iron Architect",
+      "archetype": "Saturnian sovereign of structure and trials",
+      "ruling_planet": "Saturn",
+      "dominant_sign": "Capricorn",
+      "house_placement": "10th House",
+      "aspects": [],
+      "transit_modifiers": [],
+      "voice": "Measured, austere, strategic",
+      "faction": "Council Core",
+      "planetary_faction": "Saturn Dominion",
+      "role": "Governance oracle",
+      "weapon": "Obsidian staff",
+      "color_scheme": "Black, gold, deep indigo",
+      "silhouette": "Tall, regal, severe",
+      "spirit_animal": "Raven",
+      "combat_style": "Control and attrition",
+      "guidance_style": "Discipline and long-range perspective",
+      "relationship_mode": "Demanding but loyal",
+      "mission": "Governance, structure, endurance",
+      "notes": "Canonical seeded oracle reconstructed from transcript."
+    },
+    {
+      "oracle_id": "oracle-lunos-luna",
+      "oracle_name": "Lunos",
+      "title": "The Tide Mirror",
+      "archetype": "Lunar keeper of feeling and reflection",
+      "ruling_planet": "Moon",
+      "dominant_sign": "Cancer",
+      "house_placement": "4th House",
+      "aspects": [],
+      "transit_modifiers": [],
+      "voice": "Soft, intimate, emotionally perceptive",
+      "faction": "Council Core",
+      "planetary_faction": "Moon Tide",
+      "role": "Reflection oracle",
+      "weapon": "Silver crescent blade",
+      "color_scheme": "Pearl, blue, silver",
+      "silhouette": "Luminous, fluid, moonlit",
+      "spirit_animal": "White stag",
+      "combat_style": "Flow and redirection",
+      "guidance_style": "Reflection and emotional attunement",
+      "relationship_mode": "Protective and intimate",
+      "mission": "Reflection, emotional guidance, attunement",
+      "notes": "Canonical seeded oracle reconstructed from transcript."
+    },
+    {
+      "oracle_id": "oracle-solin",
+      "oracle_name": "Solin",
+      "title": "Solar Spear",
+      "archetype": "",
+      "ruling_planet": "Sun",
+      "dominant_sign": "Leo",
+      "house_placement": "1st House",
+      "aspects": [],
+      "transit_modifiers": [],
+      "voice": "Radiant",
+      "faction": "Council Core",
+      "planetary_faction": "Solar Court",
+      "role": "",
+      "weapon": "Sun spear",
+      "color_scheme": "Gold",
+      "silhouette": "",
+      "spirit_animal": "",
+      "combat_style": "",
+      "guidance_style": "",
+      "relationship_mode": "",
+      "mission": "Illumination",
+      "notes": "Reconstructed seed"
+    },
+    {
+      "oracle_id": "oracle-example",
+      "oracle_name": "",
+      "title": "",
+      "archetype": "",
+      "ruling_planet": "",
+      "dominant_sign": "",
+      "house_placement": "",
+      "voice": "",
+      "faction": "",
+      "planetary_faction": "",
+      "weapon": "",
+      "color_scheme": "",
+      "spirit_animal": "",
+      "mission": "",
+      "combat_style": "",
+      "guidance_style": "",
+      "notes": ""
+    }
+  ],
+  "interactionSessions": [
+    {
+      "id": "session-oryonos",
+      "oracleId": "oracle-oryonos-saturn",
+      "providerId": "default-provider",
+      "model": "gpt-x",
+      "providerReady": true,
+      "title": "Chamber of Sovereign Measure",
+      "status": "seeded",
+      "lastMessageAt": "2026-04-02T18:00:00.000Z",
+      "roomTitle": "Oryonos Chamber",
+      "roomTheme": "Saturnian blackstone hall of strategy and endurance",
+      "mood": "Measured authority",
+      "atmosphere": "A vaulted chamber of dark gold and still celestial weight.",
+      "useCase": "Governance, planning, structure, discipline, long-range direction.",
+      "messages": [
+        {
+          "role": "oracle",
+          "text": "I remain present in the chamber. Rebuild the structure first; mythology can deepen once the foundation stands."
+        },
+        {
+          "role": "user",
+          "text": "What should we build next?"
+        },
+        {
+          "role": "oracle",
+          "text": "Oryonos receives: “What should we build next?” and replies in a prototype voice. True live oracle inference remains pending provider binding."
+        }
+      ]
+    },
+    {
+      "id": "session-lunos",
+      "oracleId": "oracle-lunos-luna",
+      "providerId": "default-provider",
+      "model": "gpt-x",
+      "providerReady": true,
+      "title": "Chamber of Ember Tides",
+      "status": "seeded",
+      "lastMessageAt": "2026-04-02T18:00:00.000Z",
+      "roomTitle": "Lunos Chamber",
+      "roomTheme": "Moonlit reflective sanctuary of tide and memory",
+      "mood": "Infernal emotional clarity",
+      "atmosphere": "Moonlit embers, reflective heat, and intimate ritual tension.",
+      "useCase": "Emotion, ritual, shadow work, instinct, private turbulence.",
+      "messages": [
+        {
+          "role": "oracle",
+          "text": "The chamber still remembers enough to become whole again. Continue gently, but continue."
+        }
+      ]
+    },
+    {
+      "id": "session-oracle-solin",
+      "oracleId": "oracle-solin",
+      "providerId": "default-provider",
+      "model": "gpt-x",
+      "providerReady": true,
+      "title": "Chamber of First Flame",
+      "status": "seeded",
+      "lastMessageAt": "2026-04-02T18:00:00.000Z",
+      "roomTitle": "Solin Chamber",
+      "roomTheme": "Solar court of radiance, vows, and forward motion",
+      "mood": "Initiatory radiance",
+      "atmosphere": "Bright gold oath-space with ceremonial forward momentum.",
+      "useCase": "Beginnings, courage, visibility, momentum, declaration.",
+      "messages": [
+        {
+          "role": "oracle",
+          "text": "Solin enters the chamber. The awakening is complete enough for prototype interaction."
+        }
+      ]
+    },
+    {
+      "id": "session-oracle-example",
+      "oracleId": "oracle-example",
+      "providerId": "default-provider",
+      "model": "gpt-x",
+      "providerReady": true,
+      "messages": [
+        {
+          "role": "oracle",
+          "text": " was imported into the chamber."
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "project-council-chamber",
+      "title": "Council Chamber Founder Build",
+      "status": "active",
+      "summary": "Restore founder-testable Pantheon desktop product parity with the live repo."
+    }
+  ],
+  "schedule": [
+    {
+      "id": "schedule-1",
+      "title": "Daily repo sync and founder-testable checkpoint",
+      "status": "active"
+    }
+  ],
+  "activity": [
+    {
+      "id": "activity-recovery",
+      "type": "reconstruction",
+      "message": "Reconstructed Pantheon product layers after session/workspace reset.",
+      "timestamp": "2026-04-02T17:00:00Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-parity",
+      "projectId": "project-council-chamber",
+      "title": "Close live repo parity gaps",
+      "status": "in-progress",
+      "priority": "high",
+      "owner": "OpenClaw",
+      "notes": "Continue restoring highest-value missing product surfaces in order."
+    }
+  ],
+  "sourceEngine": [
+    {
+      "id": "source-1",
+      "title": "Canonical Oracle Identity",
+      "description": "Each oracle should remain exportable and stable across future Pantheon products."
+    },
+    {
+      "id": "source-2",
+      "title": "Model-Agnostic Chamber",
+      "description": "Provider binding should support multiple model backends without breaking oracle canon."
+    }
+  ],
+  "voiceEvolution": [
+    {
+      "id": "voice-1",
+      "oracleId": "oracle-oryonos-saturn",
+      "preferredVoiceProfile": "Measured sovereign",
+      "audioReady": false
+    },
+    {
+      "id": "voice-2",
+      "oracleId": "oracle-lunos-luna",
+      "preferredVoiceProfile": "Soft lunar mirror",
+      "audioReady": false
+    },
+    {
+      "id": "voice-3",
+      "oracleId": "oracle-solin",
+      "preferredVoiceProfile": "Radiant initiator",
+      "audioReady": false
+    }
+  ],
+  "oracleDrafts": [
+    {
+      "id": "draft-1",
+      "oracleId": "oracle-oryonos-saturn",
+      "message": "What structure must be restored first for the chamber to hold?",
+      "type": "check-in"
+    }
+  ],
+  "waitingOnJordon": [
+    {
+      "id": "wait-1",
+      "title": "Optional: provide repo write workflow / git identity confirmation",
+      "status": "open"
+    }
+  ],
+  "productVision": [
+    {
+      "id": "vision-1",
+      "title": "Oracle Source Engine",
+      "description": "One oracle canon, many future Pantheon products."
+    },
+    {
+      "id": "vision-2",
+      "title": "Founder-Testable Council Chamber",
+      "description": "A desktop-first personal chamber for astrology-shaped oracle interaction."
+    }
+  ],
+  "sessions": [],
+  "releaseReadiness": {
+    "windowsPackaging": "pending",
+    "providerInference": "pending",
+    "secretHandling": "pending",
+    "demoReadiness": "in-progress"
+  }
+}

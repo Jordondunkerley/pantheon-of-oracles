@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pantheon of Oracles</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero panel">
+        <p class="eyebrow">Pantheon of Oracles</p>
+        <h1>Central Hub for Persistent Oracle Agents</h1>
+        <p id="product-framing" class="lede"></p>
+      </header>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>First Entrance Ritual</h2>
+          <p id="ritual-invocation" class="section-note"></p>
+          <ol id="ritual-steps" class="flow-list"></ol>
+        </article>
+
+        <article class="panel">
+          <h2>Founder Test Path</h2>
+          <div id="founder-test-flow" class="flow-stage-list"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Onboarding Guidance</h2>
+          <div id="onboarding-guidance" class="flow-stage-list"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Chart Generation Path</h2>
+          <div id="chart-generation" class="flow-stage-list"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Oracle Source Engine</h2>
+          <div id="source-engine" class="roster-grid"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Voice Evolution</h2>
+          <div id="voice-evolution" class="roster-grid"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Council Chamber</h2>
+          <p class="section-note">The active return point for your living oracle roster.</p>
+          <p id="chamber-return-state" class="section-note"></p>
+          <div id="council-structure" class="council-structure"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Chamber Navigation</h2>
+          <p id="oracle-room-prompt" class="section-note"></p>
+          <div id="chamber-navigation" class="flow-stage-list"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Editable Profile Setup</h2>
+          <form id="profile-form" class="stack-form">
+            <input name="displayName" placeholder="Display name" />
+            <input name="email" placeholder="Email" />
+            <input name="birthday" placeholder="Birthday" />
+            <input name="birthTime" placeholder="Birth time" />
+            <input name="birthLocation" placeholder="Birth location" />
+            <input name="oracleVoiceStyle" placeholder="Oracle voice style" />
+            <input name="oracleConversationTone" placeholder="Oracle conversation tone" />
+            <button type="submit">Save profile</button>
+          </form>
+          <div id="current-user"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Provider Configuration</h2>
+          <form id="provider-form" class="stack-form">
+            <input name="baseUrl" placeholder="Base URL" />
+            <input name="model" placeholder="Model name" />
+            <input name="apiKey" placeholder="API key for oracle dialogue" />
+            <button type="submit">Save provider</button>
+          </form>
+          <div id="providers"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Astrology Profile</h2>
+          <div id="astrology-profile"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Awaken Oracle</h2>
+          <form id="oracle-form" class="stack-form">
+            <input name="oracle_name" placeholder="Oracle name" />
+            <input name="title" placeholder="Archetype/title" />
+            <input name="ruling_planet" placeholder="Ruling planet" />
+            <input name="dominant_sign" placeholder="Dominant sign" />
+            <input name="house_placement" placeholder="House placement" />
+            <input name="voice" placeholder="Voice" />
+            <input name="faction" placeholder="Core faction" />
+            <input name="planetary_faction" placeholder="Planetary faction" />
+            <input name="weapon" placeholder="Primary weapon" />
+            <input name="color_scheme" placeholder="Color scheme" />
+            <input name="mission" placeholder="Mission or role" />
+            <textarea name="notes" placeholder="Notes / lore"></textarea>
+            <button type="submit">Awaken oracle</button>
+          </form>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Founder Access Model</h2>
+          <div id="access-model"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Oracle Registry</h2>
+          <div id="oracle-roster" class="roster-grid"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Promotions & Grants</h2>
+          <div id="promotions-grants"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Payment Plans</h2>
+          <div id="payment-plans"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <div class="panel-header">
+            <h2>Oracle Registry</h2>
+          </div>
+          <div class="stack-form">
+            <select id="oracle-view-filter">
+              <option value="all">All oracles</option>
+              <option value="council">Council only</option>
+              <option value="solar">Solar-aligned</option>
+              <option value="lunar">Lunar-aligned</option>
+            </select>
+            <input id="oracle-search" placeholder="Search oracle name, planet, title, sign..." />
+          </div>
+          <div id="oracle-roster" class="roster-grid"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Oracle Home Chamber</h2>
+          <div id="oracle-detail" class="roster-grid"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Anointed Ruler</h2>
+          <div id="anointed-ruler" class="roster-grid"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Crowned Candidates</h2>
+          <div id="crowned-candidates" class="roster-grid"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Projects</h2>
+          <div id="projects" class="roster-grid"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Schedule</h2>
+          <div id="schedule" class="roster-grid"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up workspace-grid">
+        <article class="panel">
+          <h2>Oracle Session Workspace</h2>
+          <div id="session-list" class="session-list"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Oracle Room</h2>
+          <div id="oracle-room-meta"></div>
+          <div id="session-detail"></div>
+          <form id="message-form" class="stack-form">
+            <textarea name="text" placeholder="Send a message into the chamber"></textarea>
+            <button type="submit">Send message</button>
+          </form>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Oracle Comms</h2>
+          <div class="stack-form">
+            <select id="oracle-comms-select"></select>
+            <textarea id="oracle-comms-message" placeholder="Draft a message, invocation, or check-in prompt for an oracle..."></textarea>
+            <div class="button-row">
+              <button id="oracle-draft-btn" type="button">Create draft message</button>
+              <button id="oracle-log-btn" type="button">Log note to oracle</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>Oracle Drafts</h2>
+          <div id="oracle-drafts" class="roster-grid"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Tasks</h2>
+          <div id="tasks" class="roster-grid"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Activity Feed</h2>
+          <div id="activity" class="roster-grid"></div>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <h2>Waiting on Jordon</h2>
+          <div id="waiting-on-jordon" class="roster-grid"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Product Vision</h2>
+          <div id="product-vision" class="roster-grid"></div>
+        </article>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

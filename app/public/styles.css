@@ -27,6 +27,9 @@ body {
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
 }
 .hero, .panel { padding: 20px; }
+.threshold-hero {
+  background: linear-gradient(180deg, rgba(24, 26, 58, 0.96), rgba(10, 12, 28, 0.96));
+}
 .data-card, .oracle-card, .session-card, .council-card, .flow-stage-card, .message { padding: 14px; }
 .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); font-size: 12px; margin: 0 0 8px; }
 h1, h2, h3, p { margin-top: 0; }
@@ -57,6 +60,9 @@ button:hover { background: #22315f; transform: translateY(-1px); }
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.threshold-scene, .council-scene, .hub-scene, .oracle-scene {
+  background: linear-gradient(180deg, rgba(20, 24, 52, 0.96), rgba(11, 15, 30, 0.96));
+}
 .compact-scene .data-card,
 .compact-scene .oracle-card,
 .compact-scene .session-card,
@@ -64,9 +70,14 @@ button:hover { background: #22315f; transform: translateY(-1px); }
 .compact-scene .message {
   padding: 12px;
 }
-.data-card.complete .label { color: var(--good); }
+.data-card.complete .label,
+.reward-card.earned .label { color: var(--good); }
 .data-card.active .label { color: var(--accent-2); }
-.data-card.locked .label { color: var(--warn); }
+.data-card.locked .label,
+.reward-card.locked .label { color: var(--warn); }
+.reward-card {
+  background: linear-gradient(180deg, rgba(26, 30, 62, 0.96), rgba(16, 18, 38, 0.96));
+}
 .top-gap { margin-top: 14px; }
 .label { text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; }
 @media (max-width: 1100px) { .two-up { grid-template-columns: 1fr; } }

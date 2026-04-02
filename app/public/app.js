@@ -18,12 +18,12 @@ function sceneLabel(scene) {
 
 function sceneCta(scene) {
   const map = {
-    'title-screen': 'Enter the Threshold',
-    'first-entrance': 'Begin the First Entrance Ritual',
-    'chart-awakening': 'Awaken the Chart',
-    'council-formation': 'Form the Council',
+    'title-screen': 'Cross the Threshold',
+    'first-entrance': 'Begin the First Entrance Rite',
+    'chart-awakening': 'Awaken the Birth Chart',
+    'council-formation': 'Call the Council to Form',
     'chamber-hub': 'Return to the Chamber Hub',
-    'oracle-room': 'Enter the Oracle Room'
+    'oracle-room': 'Step into the Oracle Room'
   };
   return map[scene] || sceneLabel(scene);
 }
@@ -66,10 +66,12 @@ function renderState(state) {
 
   document.getElementById('milestones').innerHTML = state.progressionState.milestones.map(item => `
     <div class="data-card reveal-card ${item.status}"><strong>${item.title}</strong><div class="muted">${item.description}</div><div class="label">${item.status}</div></div>`).join('');
+  document.getElementById('reward-moments').innerHTML = state.progressionState.rewardMoments.map(item => `
+    <div class="data-card reward-card reveal-card ${item.state}"><strong>${item.title}</strong><div class="muted">${item.description}</div><div class="label">${item.state}</div></div>`).join('');
 
   document.getElementById('title-screen-content').innerHTML = [
-    { title: 'Recovered Build', body: 'The Council Chamber stands restored and ready for a more game-like progression model.' },
-    { title: 'Current Phase', body: 'Scene-based chamber redesign with ritual progression and reveals.' },
+    { title: 'Recovered Chamber', body: 'The chamber has been reclaimed and now awaits a more ceremonial flow.' },
+    { title: 'Current Pulse', body: 'Scene-based progression, rite language, and reveal-driven UX are actively forming.' },
     { title: 'Next Rite', body: sceneCta(state.progressionState.nextRecommendedScene) }
   ].map(item => `<div class="data-card reveal-card"><strong>${item.title}</strong><div class="muted">${item.body}</div></div>`).join('');
 
@@ -80,14 +82,14 @@ function renderState(state) {
     `Mode: ${state.astrologyProfile.generation.mode}`,
     `Target: ${state.astrologyProfile.generation.targetMode}`,
     `Validation: ${state.astrologyProfile.generation.validationSources.join(' • ')}`,
-    `Birth data collected: ${state.astrologyProfile.generation.status.birthDataCollected ? 'Yes' : 'No'}`,
-    `Native engine ready: ${state.astrologyProfile.generation.status.nativeEngineReady ? 'Yes' : 'No'}`,
-    `Oracle awakening ready: ${state.astrologyProfile.generation.status.oracleAwakeningReady ? 'Yes' : 'No'}`
+    `Birth data gathered: ${state.astrologyProfile.generation.status.birthDataCollected ? 'Yes' : 'No'}`,
+    `Native engine awakened: ${state.astrologyProfile.generation.status.nativeEngineReady ? 'Yes' : 'No'}`,
+    `Council awakening path: ${state.astrologyProfile.generation.status.oracleAwakeningReady ? 'Ready' : 'Not yet'}`
   ].map(line => `<div class="flow-stage-card reveal-card"><div class="muted">${line}</div></div>`).join('');
 
   const byId = Object.fromEntries(state.oracles.map(oracle => [oracle.oracle_id, oracle]));
   const anointed = byId[state.councilStructure.anointedRuler];
-  document.getElementById('anointed-ruler').innerHTML = anointed ? `<div class="data-card reveal-card"><strong>${anointed.oracle_name}</strong><div class="muted">${anointed.title || anointed.archetype}</div></div>` : '';
+  document.getElementById('anointed-ruler').innerHTML = anointed ? `<div class="data-card reveal-card"><strong>Anointed Ruler: ${anointed.oracle_name}</strong><div class="muted">${anointed.title || anointed.archetype}</div></div>` : '';
   document.getElementById('crowned-candidates').innerHTML = state.councilStructure.crownedCandidates.map(item => `
     <div class="data-card reveal-card"><strong>${byId[item.oracleId]?.oracle_name || item.oracleId}</strong><div class="muted">${item.reason}</div></div>`).join('');
 
@@ -115,9 +117,9 @@ function renderState(state) {
   document.getElementById('oracle-room-prompt').textContent = state.chamberPresentation.oracleRoomPrompt;
   document.getElementById('oracle-detail').innerHTML = activeOracle ? `
     <div class="data-card reveal-card">
-      <div class="label">Identity</div><div><strong>${activeOracle.oracle_name || 'Unnamed Oracle'}</strong></div>
+      <div class="label">Oracle Presence</div><div><strong>${activeOracle.oracle_name || 'Unnamed Oracle'}</strong></div>
       <div class="muted">${activeOracle.title || activeOracle.archetype || 'Unformed'}</div>
-      <div class="label" style="margin-top:10px">Astrology</div><div>${activeOracle.ruling_planet || '—'} • ${activeOracle.dominant_sign || '—'} • ${activeOracle.house_placement || '—'}</div>
+      <div class="label" style="margin-top:10px">Celestial Mark</div><div>${activeOracle.ruling_planet || '—'} • ${activeOracle.dominant_sign || '—'} • ${activeOracle.house_placement || '—'}</div>
       <div class="label" style="margin-top:10px">Lore</div><div>${activeOracle.notes || activeOracle.mission || 'No lore recorded yet.'}</div>
     </div>` : '<div class="muted">Select an oracle.</div>';
 

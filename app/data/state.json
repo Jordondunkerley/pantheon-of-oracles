@@ -535,6 +535,23 @@
         "description": "Later scenes should deepen council revelation and progression rewards.",
         "status": "locked"
       }
+    ],
+    "rewardMoments": [
+      {
+        "title": "Threshold Recognition",
+        "description": "You have crossed from recovery mode into forward chamber design.",
+        "state": "earned"
+      },
+      {
+        "title": "Oracle Room Access",
+        "description": "Selecting an oracle now opens a more focused presence-space.",
+        "state": "earned"
+      },
+      {
+        "title": "High Council Revelation",
+        "description": "Reserved for a later deeper progression pass.",
+        "state": "locked"
+      }
     ]
   },
   "releaseReadiness": {

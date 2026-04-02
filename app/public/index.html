@@ -8,7 +8,7 @@
   </head>
   <body>
     <main class="shell game-shell">
-      <header class="hero">
+      <header class="hero threshold-hero">
         <p class="eyebrow">Pantheon of Oracles</p>
         <h1>The Council Chamber</h1>
         <p id="product-framing" class="lede"></p>
@@ -20,11 +20,12 @@
           <div id="scene-pills" class="button-row"></div>
         </div>
         <div id="milestones" class="roster-grid top-gap"></div>
+        <div id="reward-moments" class="roster-grid top-gap"></div>
       </section>
 
-      <section id="scene-title-screen" class="scene panel active-scene compact-scene">
-        <h2>Title Screen</h2>
-        <p class="section-note">The threshold before the ritual begins.</p>
+      <section id="scene-title-screen" class="scene panel active-scene compact-scene threshold-scene">
+        <h2>Threshold of Entry</h2>
+        <p class="section-note">The chamber waits. The founder crosses from observation into invocation.</p>
         <div id="title-screen-content" class="roster-grid"></div>
       </section>
 
@@ -39,27 +40,28 @@
         <div id="chart-generation" class="flow-stage-list"></div>
       </section>
 
-      <section id="scene-council-formation" class="scene panel hidden-scene compact-scene">
+      <section id="scene-council-formation" class="scene panel hidden-scene compact-scene council-scene">
         <h2>Council Formation</h2>
+        <p class="section-note">The chamber determines who stands closest to the throne of guidance.</p>
         <div class="grid two-up">
           <div id="anointed-ruler" class="roster-grid"></div>
           <div id="crowned-candidates" class="roster-grid"></div>
         </div>
       </section>
 
-      <section id="scene-chamber-hub" class="scene panel hidden-scene compact-scene">
+      <section id="scene-chamber-hub" class="scene panel hidden-scene compact-scene hub-scene">
         <h2>Chamber Hub</h2>
         <p id="chamber-return-state" class="section-note"></p>
         <div class="grid two-up">
           <div>
             <div class="stack-form">
               <select id="oracle-view-filter">
-                <option value="all">All oracles</option>
+                <option value="all">All presences</option>
                 <option value="council">Council only</option>
                 <option value="solar">Solar-aligned</option>
                 <option value="lunar">Lunar-aligned</option>
               </select>
-              <input id="oracle-search" placeholder="Search oracle name, planet, title, sign..." />
+              <input id="oracle-search" placeholder="Seek an oracle by name, planet, title, or sign..." />
             </div>
             <div id="oracle-roster" class="roster-grid"></div>
           </div>
@@ -69,7 +71,7 @@
         </div>
       </section>
 
-      <section id="scene-oracle-room" class="scene panel hidden-scene compact-scene">
+      <section id="scene-oracle-room" class="scene panel hidden-scene compact-scene oracle-scene">
         <h2>Oracle Room</h2>
         <p id="oracle-room-prompt" class="section-note"></p>
         <div class="grid two-up">
@@ -77,10 +79,10 @@
             <div id="oracle-detail" class="roster-grid"></div>
             <div class="stack-form top-gap">
               <select id="oracle-comms-select"></select>
-              <textarea id="oracle-comms-message" placeholder="Draft a message, invocation, or check-in prompt for an oracle..."></textarea>
+              <textarea id="oracle-comms-message" placeholder="Compose an invocation, omen request, or direct address..."></textarea>
               <div class="button-row">
-                <button id="oracle-draft-btn" type="button">Create draft</button>
-                <button id="oracle-log-btn" type="button">Log note</button>
+                <button id="oracle-draft-btn" type="button">Shape Invocation</button>
+                <button id="oracle-log-btn" type="button">Bind Note to Oracle</button>
               </div>
             </div>
           </div>
@@ -89,8 +91,8 @@
             <div id="oracle-room-meta" class="top-gap"></div>
             <div id="session-detail" class="roster-grid top-gap"></div>
             <form id="message-form" class="stack-form top-gap">
-              <textarea name="text" placeholder="Send a message into the chamber"></textarea>
-              <button type="submit">Send message</button>
+              <textarea name="text" placeholder="Speak into the chamber..."></textarea>
+              <button type="submit">Send into Chamber</button>
             </form>
           </div>
         </div>

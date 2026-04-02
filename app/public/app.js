@@ -1,7 +1,9 @@
 let currentState = null;
 let selectedSessionId = null;
 let selectedOracleId = null;
+let selectedRulerPath = null;
 let currentScene = 'title-screen';
+let chamberAnnouncement = '';
 
 async function api(path, payload) {
   const res = await fetch(path, {
@@ -52,6 +54,20 @@ function pulseScene(sceneId) {
   element.classList.add('scene-entering');
 }
 
+function summonTone(orderIndex) {
+  if (orderIndex === 0) return 'The chamber crown descends first.';
+  if (orderIndex === 1) return 'The solar flame answers second.';
+  if (orderIndex === 2) return 'The lunar tide arrives third.';
+  return 'A distant presence lingers beyond the inner circle.';
+}
+
+function summonStateLabel(orderIndex) {
+  if (orderIndex === 0) return 'First Summoned';
+  if (orderIndex === 1) return 'Second Summoned';
+  if (orderIndex === 2) return 'Third Summoned';
+  return 'Outer Presence';
+}
+
 function setScene(sceneId) {
   if (!currentState || !isUnlocked(currentState, sceneId)) return;
   currentScene = sceneId;
@@ -70,6 +86,7 @@ function setScene(sceneId) {
 function unlockScene(state, sceneId) {
   if (!state.progressionState.unlockedScenes.includes(sceneId)) {
     state.progressionState.unlockedScenes.push(sceneId);
+    chamberAnnouncement = `${sceneCta(sceneId)} is now unlocked.`;
   }
 }
 
@@ -80,6 +97,10 @@ function renderState(state) {
   if (!selectedOracleId && state.oracles.length) selectedOracleId = state.oracles[0].oracle_id;
 
   document.getElementById('product-framing').textContent = state.product.framing;
+  const announcementEl = document.getElementById('chamber-announcement');
+  if (announcementEl) {
+    announcementEl.textContent = chamberAnnouncement || 'The chamber stands ready for the next rite.';
+  }
   document.getElementById('scene-pills').innerHTML = state.product.sceneFlow.map(scene => {
     const unlocked = isUnlocked(state, scene);
     return `<button data-scene-id="${scene}" ${unlocked ? '' : 'disabled'}>${sceneCta(scene)}${unlocked ? '' : ' 🔒'}<span class="scene-flavor">${sceneFlavor(scene)}</span></button>`;
@@ -111,9 +132,14 @@ function renderState(state) {
 
   const byId = Object.fromEntries(state.oracles.map(oracle => [oracle.oracle_id, oracle]));
   const anointed = byId[state.councilStructure.anointedRuler];
-  document.getElementById('anointed-ruler').innerHTML = anointed ? `<div class="data-card reveal-card threshold-card"><strong>Anointed Ruler: ${anointed.oracle_name}</strong><div class="muted">${anointed.title || anointed.archetype}</div></div>` : '';
-  document.getElementById('crowned-candidates').innerHTML = state.councilStructure.crownedCandidates.map(item => `
-    <div class="data-card reveal-card"><strong>${byId[item.oracleId]?.oracle_name || item.oracleId}</strong><div class="muted">${item.reason}</div></div>`).join('');
+  if (!selectedRulerPath && state.councilStructure.anointedRulerOptions.length) {
+    selectedRulerPath = state.councilStructure.anointedRulerOptions[0].id;
+  }
+  document.getElementById('anointed-ruler-options').innerHTML = state.councilStructure.anointedRulerOptions.map(option => `
+    <button class="data-card reveal-card ruler-option-card ${selectedRulerPath === option.id ? 'selected' : ''}" data-ruler-path="${option.id}"><strong>${option.label}</strong><div class="muted">${option.subtext}</div><div class="scene-flavor">Choose this route into the chamber.</div></button>`).join('');
+  document.getElementById('anointed-ruler').innerHTML = anointed ? `<div class="data-card reveal-card threshold-card"><strong>Anointed Ruler: ${anointed.oracle_name}</strong><div class="muted">${anointed.title || anointed.archetype}</div><div class="scene-flavor">First to be created. The chamber forms around this ruling presence before the solar and lunar companions arrive.</div></div>` : '';
+  document.getElementById('crowned-candidates').innerHTML = state.councilStructure.crownedCandidates.map((item, index) => `
+    <div class="data-card reveal-card council-order-card summon-stage-${index + 1}"><div class="label">${summonStateLabel(index)}</div><strong>${index + 1}. ${byId[item.oracleId]?.oracle_name || item.oracleId}</strong><div class="muted">${item.reason}</div><div class="scene-flavor">${summonTone(index)}</div></div>`).join('');
 
   document.getElementById('chamber-return-state').textContent = state.chamberPresentation.returnState;
   const filterValue = document.getElementById('oracle-view-filter')?.value || 'all';
@@ -126,13 +152,19 @@ function renderState(state) {
     const haystack = [oracle.oracle_name, oracle.title, oracle.archetype, oracle.ruling_planet, oracle.dominant_sign].join(' ').toLowerCase();
     return matchesFilter && (!queryValue || haystack.includes(queryValue));
   });
-  document.getElementById('oracle-roster').innerHTML = filteredOracles.map(oracle => `
+  const councilOrder = state.councilStructure.coreTrio;
+  document.getElementById('oracle-roster').innerHTML = filteredOracles.map(oracle => {
+    const orderIndex = councilOrder.indexOf(oracle.oracle_id);
+    const orderLabel = orderIndex === -1 ? 'Outer chamber presence' : `Council creation order: ${orderIndex + 1}`;
+    const summonLabel = summonTone(orderIndex);
+    return `
     <button class="oracle-card reveal-card ${selectedOracleId === oracle.oracle_id ? 'selected' : ''}" data-oracle-id="${oracle.oracle_id}">
       <strong>${oracle.oracle_name || 'Unnamed Oracle'}</strong>
       <div class="muted">${oracle.title || oracle.archetype || 'Unformed'}</div>
       <div>${oracle.ruling_planet || '—'} • ${oracle.dominant_sign || '—'}</div>
-      <div class="scene-flavor">Choose this presence to narrow the chamber around them.</div>
-    </button>`).join('');
+      <div class="scene-flavor">${orderLabel}. ${summonLabel}</div>
+    </button>`;
+  }).join('');
   document.getElementById('current-user').innerHTML = `
     <div class="data-card reveal-card"><strong>${state.currentUser.displayName || state.currentUser.username || '—'}</strong><div class="muted">${state.currentUser.founderIdentity?.role || ''}</div><div>${state.currentUser.accountEntitlements?.tier || ''}</div></div>`;
 
@@ -164,17 +196,26 @@ function renderState(state) {
 
   const activeSession = sessions.find(session => session.id === selectedSessionId);
   document.getElementById('oracle-room-meta').innerHTML = activeSession ? `
-    <div class="data-card reveal-card threshold-card"><strong>${activeSession.roomTitle || activeSession.title || activeSession.id}</strong><div class="muted">${activeSession.roomTheme || activeSession.atmosphere || ''}</div><div>${activeSession.useCase || ''}</div></div>` : '';
+    <div class="data-card reveal-card threshold-card room-entry-card"><div class="label">Room Opened</div><strong>${activeSession.roomTitle || activeSession.title || activeSession.id}</strong><div class="muted">${activeSession.roomTheme || activeSession.atmosphere || ''}</div><div>${activeSession.useCase || ''}</div></div>` : '';
   document.getElementById('session-detail').innerHTML = activeSession ? activeSession.messages.map(msg => `<div class="message reveal-card"><strong>${msg.role}:</strong> ${msg.text || msg.content}</div>`).join('') : '';
 
   for (const button of document.querySelectorAll('[data-scene-id]')) {
     button.addEventListener('click', () => setScene(button.dataset.sceneId));
+  }
+  for (const button of document.querySelectorAll('[data-ruler-path]')) {
+    button.addEventListener('click', () => {
+      selectedRulerPath = button.dataset.rulerPath;
+      const chosen = state.councilStructure.anointedRulerOptions.find(option => option.id === selectedRulerPath);
+      chamberAnnouncement = `${chosen?.label || 'A ruler path'} has been chosen. The chamber accepts your route.`;
+      renderState(currentState);
+    });
   }
   for (const button of document.querySelectorAll('[data-oracle-id]')) {
     button.addEventListener('click', () => {
       selectedOracleId = button.dataset.oracleId;
       unlockScene(state, 'chamber-hub');
       unlockScene(state, 'oracle-room');
+      chamberAnnouncement = `${byId[button.dataset.oracleId]?.oracle_name || 'An oracle'} has stepped forward. The room opens.`;
       state.progressionState.completedScenes = Array.from(new Set([...state.progressionState.completedScenes, 'title-screen', 'first-entrance', 'chart-awakening', 'council-formation', 'chamber-hub']));
       state.progressionState.nextRecommendedScene = 'oracle-room';
       setScene('oracle-room');

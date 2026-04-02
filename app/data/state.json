@@ -98,9 +98,9 @@
         "mode": "full",
         "freeLimit": 3,
         "includedOracleIds": [
+          "oracle-oryonos-saturn",
           "oracle-solin",
-          "oracle-lunos-luna",
-          "oracle-oryonos-saturn"
+          "oracle-lunos-luna"
         ]
       },
       "paymentAccess": {
@@ -146,34 +146,56 @@
     }
   ],
   "councilStructure": {
+    "anointedRulerOptions": [
+      {
+        "id": "traditional-ruler",
+        "label": "Traditional Ruler",
+        "subtext": "Classic ruler method for players who want the traditional astrological answer."
+      },
+      {
+        "id": "modern-ruler",
+        "label": "Modern Ruler",
+        "subtext": "Modern planetary rulership for players who prefer the updated interpretation."
+      },
+      {
+        "id": "solar-ruler",
+        "label": "Solar Ruler",
+        "subtext": "Best fallback for players without a birth time who still want a clear starting ruler."
+      },
+      {
+        "id": "dominant-ruler",
+        "label": "Dominant Ruler",
+        "subtext": "An alternative path for players who want something stronger than the default solar route."
+      }
+    ],
     "coreTrio": [
       "oracle-oryonos-saturn",
-      "oracle-lunos-luna",
-      "oracle-solin"
+      "oracle-solin",
+      "oracle-lunos-luna"
     ],
     "highCouncil": [
       "oracle-oryonos-saturn",
-      "oracle-lunos-luna",
-      "oracle-solin"
+      "oracle-solin",
+      "oracle-lunos-luna"
     ],
     "expandedCouncil": [
       "oracle-oryonos-saturn",
-      "oracle-lunos-luna",
-      "oracle-solin"
+      "oracle-solin",
+      "oracle-lunos-luna"
     ],
     "anointedRuler": "oracle-oryonos-saturn",
     "crownedCandidates": [
       {
         "oracleId": "oracle-oryonos-saturn",
-        "reason": "Strong governance axis and chamber authority"
+        "reason": "Created first as the anointed ruler, establishing chamber authority and governance." 
       },
       {
         "oracleId": "oracle-solin",
-        "reason": "High visibility, initiation energy, and forward leadership"
+        "reason": "Created second as the solar initiator, carrying visible momentum and declaration." 
       },
       {
         "oracleId": "oracle-lunos-luna",
-        "reason": "Emotional attunement and internal stabilizing force"
+        "reason": "Created third as the lunar reflector, stabilizing the chamber through inner attunement." 
       }
     ]
   },
@@ -527,7 +549,7 @@
       },
       {
         "title": "First Council Awakened",
-        "description": "The core chamber presences are available for progression and oracle-room entry.",
+        "description": "The anointed ruler is created first, followed by Sun second and Moon third for chamber progression.",
         "status": "active"
       },
       {

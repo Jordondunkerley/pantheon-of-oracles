@@ -253,6 +253,13 @@ button:hover {
   font-size: 13px;
   line-height: 1.45;
 }
+.room-threshold-mark {
+  margin-bottom: 12px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245, 231, 191, 0.72);
+}
 .message {
   background: linear-gradient(180deg, rgba(23, 29, 57, 0.98), rgba(15, 18, 36, 0.98));
 }

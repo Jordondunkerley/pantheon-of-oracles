@@ -186,14 +186,46 @@ button:hover {
 .threshold-scene {
   background: linear-gradient(180deg, rgba(29, 31, 66, 0.97), rgba(11, 13, 29, 0.96));
 }
+.threshold-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  pointer-events: none;
+  background: radial-gradient(circle at top, rgba(128, 167, 255, 0.08), transparent 55%);
+}
 .council-scene {
   background: linear-gradient(180deg, rgba(39, 27, 55, 0.97), rgba(15, 13, 29, 0.96));
+}
+.council-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  pointer-events: none;
+  background: radial-gradient(circle at top, rgba(215, 188, 116, 0.08), transparent 55%);
 }
 .hub-scene {
   background: linear-gradient(180deg, rgba(23, 34, 58, 0.97), rgba(10, 16, 31, 0.96));
 }
+.hub-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  pointer-events: none;
+  background: radial-gradient(circle at top, rgba(88, 193, 149, 0.06), transparent 55%);
+}
 .oracle-scene {
   background: linear-gradient(180deg, rgba(27, 24, 58, 0.97), rgba(10, 12, 31, 0.96));
+}
+.oracle-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  pointer-events: none;
+  background: radial-gradient(circle at top, rgba(159, 124, 255, 0.08), transparent 55%);
 }
 .threshold-scene.active-scene,
 .council-scene.active-scene,

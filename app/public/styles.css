@@ -117,6 +117,12 @@ h1 {
 .flow-list { margin: 0; padding-left: 18px; color: var(--muted); }
 .stack-form { display: grid; gap: 10px; }
 .button-row, .panel-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.progression-rite-line {
+  margin-top: 12px;
+  color: rgba(245, 231, 191, 0.82);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
 input, textarea, button, select {
   width: 100%;
   border: 1px solid var(--border);

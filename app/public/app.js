@@ -92,6 +92,13 @@ function chamberConsequence(state) {
   return 'The chamber now bears the marks of repeated rites and answered thresholds.';
 }
 
+function chamberMemoryText(state) {
+  const unlocked = state.progressionState.unlockedScenes.length;
+  if (unlocked <= 2) return 'Only the earliest thresholds bear your trace.';
+  if (unlocked <= 4) return 'Several rooms now hold the memory of your crossings.';
+  return 'The chamber remembers your path in nearly every inner state.';
+}
+
 function setScene(sceneId) {
   if (!currentState || !isUnlocked(currentState, sceneId)) return;
   currentScene = sceneId;
@@ -146,6 +153,7 @@ function renderState(state) {
 
   document.getElementById('progression-payoff').innerHTML = `<div class="label">Progression Payoff</div><strong>${progressionPayoff(state)}</strong><div class="scene-flavor">The chamber should make advancement feel earned, counted, and real.</div>`;
   document.getElementById('active-scene-state').innerHTML = `<div class="label">Active Scene</div><strong>${activeSceneState(currentScene)}</strong><div class="scene-flavor">${chamberConsequence(state)}</div>`;
+  document.getElementById('chamber-memory').innerHTML = `<div class="label">Chamber Memory</div><strong>${chamberMemoryText(state)}</strong><div class="scene-flavor">The world should feel changed by what has already been opened.</div>`;
   document.getElementById('milestones').innerHTML = state.progressionState.milestones.map(item => `
     <div class="data-card reveal-card ${item.status}"><strong>${item.title}</strong><div class="muted">${item.description}</div><div class="label">${item.status}</div></div>`).join('');
   document.getElementById('reward-moments').innerHTML = state.progressionState.rewardMoments.map(item => `

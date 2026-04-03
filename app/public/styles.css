@@ -32,7 +32,24 @@ body::before {
   background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 16%, transparent 82%, rgba(255,255,255,0.02));
   opacity: 0.7;
 }
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(215, 188, 116, 0.03), transparent 55%);
+  opacity: 0.9;
+}
 .shell { max-width: 1200px; margin: 0 auto; padding: 32px 20px 56px; position: relative; z-index: 1; }
+.game-shell[data-scene="title-screen"] {
+  filter: saturate(1);
+}
+.game-shell[data-scene="council-formation"] {
+  filter: saturate(1.05) brightness(1.02);
+}
+.game-shell[data-scene="oracle-room"] {
+  filter: saturate(1.08) brightness(1.03);
+}
 .hero, .panel, .data-card, .oracle-card, .session-card, .council-card, .flow-stage-card, .message {
   background: var(--panel);
   border: 1px solid var(--border);

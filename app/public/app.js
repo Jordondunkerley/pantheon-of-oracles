@@ -128,6 +128,10 @@ function renderState(state) {
     void announcementEl.offsetWidth;
     announcementEl.classList.add('announcement-active');
   }
+  const shell = document.querySelector('.game-shell');
+  if (shell) {
+    shell.dataset.scene = currentScene;
+  }
   document.getElementById('scene-pills').innerHTML = state.product.sceneFlow.map(scene => {
     const unlocked = isUnlocked(state, scene);
     return `<button data-scene-id="${scene}" ${unlocked ? '' : 'disabled'}>${sceneCta(scene)}${unlocked ? '' : ' 🔒'}<span class="scene-flavor">${sceneFlavor(scene)}</span></button>`;

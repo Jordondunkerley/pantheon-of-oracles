@@ -260,6 +260,15 @@ button:hover {
   text-transform: uppercase;
   color: rgba(245, 231, 191, 0.72);
 }
+.room-entry-rite {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(42, 30, 62, 0.88), rgba(18, 16, 34, 0.88));
+  border: 1px solid rgba(215, 188, 116, 0.14);
+  color: rgba(245, 231, 191, 0.86);
+  box-shadow: 0 0 26px rgba(215, 188, 116, 0.08);
+}
 .message {
   background: linear-gradient(180deg, rgba(23, 29, 57, 0.98), rgba(15, 18, 36, 0.98));
 }

@@ -301,6 +301,7 @@ button:hover {
   font-size: 13px;
   line-height: 1.45;
 }
+.scene-state-mark,
 .room-threshold-mark {
   margin-bottom: 12px;
   font-size: 11px;

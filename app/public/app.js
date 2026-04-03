@@ -88,7 +88,7 @@ function activeSceneState(sceneId) {
 function setScene(sceneId) {
   if (!currentState || !isUnlocked(currentState, sceneId)) return;
   currentScene = sceneId;
-  chamberAnnouncement = `${sceneCta(sceneId)} rises into focus.`;
+  chamberAnnouncement = `${sceneCta(sceneId)} rises into focus. The chamber shifts around you.`;
   currentState.progressionState.currentScene = sceneId;
   for (const scene of document.querySelectorAll('.scene')) {
     scene.classList.toggle('hidden-scene', scene.id !== `scene-${sceneId}`);

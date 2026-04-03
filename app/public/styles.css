@@ -43,12 +43,15 @@ body::after {
 .shell { max-width: 1200px; margin: 0 auto; padding: 32px 20px 56px; position: relative; z-index: 1; }
 .game-shell[data-scene="title-screen"] {
   filter: saturate(1);
+  transform: scale(1);
 }
 .game-shell[data-scene="council-formation"] {
   filter: saturate(1.05) brightness(1.02);
+  transform: scale(1.003);
 }
 .game-shell[data-scene="oracle-room"] {
   filter: saturate(1.08) brightness(1.03);
+  transform: scale(1.005);
 }
 .hero, .panel, .data-card, .oracle-card, .session-card, .council-card, .flow-stage-card, .message {
   background: var(--panel);

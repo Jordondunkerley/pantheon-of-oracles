@@ -105,6 +105,12 @@ function unlockScene(state, sceneId) {
   if (!state.progressionState.unlockedScenes.includes(sceneId)) {
     state.progressionState.unlockedScenes.push(sceneId);
     chamberAnnouncement = `${sceneCta(sceneId)} is now unlocked. The chamber answers your progress.`;
+    const payoff = document.getElementById('progression-payoff');
+    if (payoff) {
+      payoff.classList.remove('payoff-pulse');
+      void payoff.offsetWidth;
+      payoff.classList.add('payoff-pulse');
+    }
   }
 }
 

@@ -149,6 +149,11 @@ button:hover {
   55% { opacity: 1; transform: scaleX(1); }
   100% { opacity: 0.45; transform: scaleX(0.92); }
 }
+@keyframes payoffPulse {
+  0% { transform: scale(0.985); box-shadow: 0 0 0 rgba(215, 188, 116, 0); }
+  50% { transform: scale(1.01); box-shadow: 0 0 30px rgba(215, 188, 116, 0.14); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(215, 188, 116, 0); }
+}
 .reveal-card { animation: revealFade 320ms ease; }
 @keyframes revealFade {
   from { opacity: 0; transform: translateY(10px); }
@@ -246,6 +251,9 @@ button:hover {
 }
 .reward-card.earned {
   box-shadow: 0 0 28px rgba(88, 193, 149, 0.14), inset 0 0 0 1px rgba(88, 193, 149, 0.08);
+}
+.payoff-pulse {
+  animation: payoffPulse 620ms ease;
 }
 .scene-flavor {
   display: block;

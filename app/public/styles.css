@@ -123,6 +123,52 @@ h1 {
   font-size: 13px;
   letter-spacing: 0.04em;
 }
+#progression-payoff,
+#active-scene-state,
+#chamber-memory,
+#world-persistence,
+#ritual-residue,
+#invoked-presence {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(3px);
+}
+#progression-payoff::before,
+#active-scene-state::before,
+#chamber-memory::before,
+#world-persistence::before,
+#ritual-residue::before,
+#invoked-presence::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent 35%);
+}
+#progression-payoff::after,
+#active-scene-state::after,
+#chamber-memory::after,
+#world-persistence::after,
+#ritual-residue::after,
+#invoked-presence::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(215, 188, 116, 0.16), transparent);
+  pointer-events: none;
+}
+#active-scene-state,
+#chamber-memory,
+#world-persistence,
+#ritual-residue,
+#invoked-presence {
+  border-color: rgba(215, 188, 116, 0.12);
+  background: linear-gradient(180deg, rgba(32, 26, 58, 0.96), rgba(16, 16, 33, 0.96));
+}
 input, textarea, button, select {
   width: 100%;
   border: 1px solid var(--border);

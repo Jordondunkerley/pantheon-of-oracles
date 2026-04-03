@@ -99,6 +99,27 @@ function chamberMemoryText(state) {
   return 'The chamber remembers your path in nearly every inner state.';
 }
 
+function worldPersistenceText(state) {
+  const completed = state.progressionState.completedScenes.length;
+  if (completed <= 1) return 'The world has barely shifted yet.';
+  if (completed <= 3) return 'The chamber world is beginning to hold its altered shape.';
+  return 'The chamber now feels persistently changed by your rites.';
+}
+
+function ritualResidueText(state) {
+  const completed = state.progressionState.completedScenes.length;
+  if (completed <= 1) return 'Only a faint afterglow clings to the earliest threshold.';
+  if (completed <= 3) return 'Several rites now leave echoes that do not fully fade.';
+  return 'The chamber is saturated with residue from repeated crossings and summoned presences.';
+}
+
+function invokedPresenceText(state) {
+  const core = state.councilStructure.coreTrio.length;
+  if (core <= 1) return 'Only one presence has truly rooted itself in the chamber.';
+  if (core <= 2) return 'More than one invoked force now lingers in the chamber air.';
+  return 'The chamber holds a layered field of invoked presences, not just empty architecture.';
+}
+
 function setScene(sceneId) {
   if (!currentState || !isUnlocked(currentState, sceneId)) return;
   currentScene = sceneId;
@@ -154,6 +175,9 @@ function renderState(state) {
   document.getElementById('progression-payoff').innerHTML = `<div class="label">Progression Payoff</div><strong>${progressionPayoff(state)}</strong><div class="scene-flavor">The chamber should make advancement feel earned, counted, and real.</div>`;
   document.getElementById('active-scene-state').innerHTML = `<div class="label">Active Scene</div><strong>${activeSceneState(currentScene)}</strong><div class="scene-flavor">${chamberConsequence(state)}</div>`;
   document.getElementById('chamber-memory').innerHTML = `<div class="label">Chamber Memory</div><strong>${chamberMemoryText(state)}</strong><div class="scene-flavor">The world should feel changed by what has already been opened.</div>`;
+  document.getElementById('world-persistence').innerHTML = `<div class="label">World Persistence</div><strong>${worldPersistenceText(state)}</strong><div class="scene-flavor">The chamber should feel like it keeps the shape of prior rites even while scenes change.</div>`;
+  document.getElementById('ritual-residue').innerHTML = `<div class="label">Ritual Residue</div><strong>${ritualResidueText(state)}</strong><div class="scene-flavor">The chamber should carry traces of what has already been invoked.</div>`;
+  document.getElementById('invoked-presence').innerHTML = `<div class="label">Invoked Presence</div><strong>${invokedPresenceText(state)}</strong><div class="scene-flavor">The chamber should feel inhabited by what has already been called.</div>`;
   document.getElementById('milestones').innerHTML = state.progressionState.milestones.map(item => `
     <div class="data-card reveal-card ${item.status}"><strong>${item.title}</strong><div class="muted">${item.description}</div><div class="label">${item.status}</div></div>`).join('');
   document.getElementById('reward-moments').innerHTML = state.progressionState.rewardMoments.map(item => `

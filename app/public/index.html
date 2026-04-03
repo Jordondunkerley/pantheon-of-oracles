@@ -8,66 +8,102 @@
   </head>
   <body>
     <main class="shell game-shell">
-      <header class="hero threshold-hero">
-        <p class="eyebrow">Pantheon of Oracles</p>
-        <h1>The Council Chamber</h1>
-        <p id="product-framing" class="lede"></p>
-        <div id="chamber-announcement" class="chamber-announcement">The chamber stands ready for the next rite.</div>
-        <div class="chamber-echo-line"></div>
+      <header class="hero threshold-hero cinematic-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Pantheon of Oracles</p>
+          <h1>The Council Chamber</h1>
+          <p id="product-framing" class="lede"></p>
+          <div id="chamber-announcement" class="chamber-announcement">The chamber stands ready for the next rite.</div>
+          <div class="chamber-echo-line"></div>
+        </div>
+        <div class="hero-orbital">
+          <div class="orbital-ring orbital-ring-a"></div>
+          <div class="orbital-ring orbital-ring-b"></div>
+          <div class="orbital-core"></div>
+          <div class="orbital-shard orbital-shard-a"></div>
+          <div class="orbital-shard orbital-shard-b"></div>
+          <div class="orbital-shard orbital-shard-c"></div>
+        </div>
       </header>
 
-      <section class="scene-nav panel">
-        <div class="panel-header">
-          <h2>Chamber Progression</h2>
-          <div id="scene-pills" class="button-row"></div>
-        </div>
-        <div class="progression-rite-line">Each rite crossed changes the chamber that follows.</div>
-        <div id="progression-payoff" class="data-card threshold-card top-gap"></div>
-        <div id="active-scene-state" class="data-card reward-card top-gap"></div>
-        <div id="chamber-memory" class="data-card threshold-card top-gap"></div>
-        <div id="world-persistence" class="data-card reward-card top-gap"></div>
-        <div id="ritual-residue" class="data-card threshold-card top-gap"></div>
-        <div id="invoked-presence" class="data-card reward-card top-gap"></div>
-        <div id="milestones" class="roster-grid top-gap"></div>
-        <div id="reward-moments" class="roster-grid top-gap"></div>
-      </section>
-
-      <section id="scene-title-screen" class="scene panel active-scene compact-scene threshold-scene">
-        <div class="scene-state-mark">STATE // THRESHOLD</div>
-        <h2>Threshold of Entry</h2>
-        <p class="section-note">The chamber waits. The founder crosses from observation into invocation.</p>
-        <div id="title-screen-content" class="roster-grid"></div>
-      </section>
-
-      <section id="scene-first-entrance" class="scene panel hidden-scene compact-scene">
-        <h2>First Entrance Ritual</h2>
-        <p id="ritual-invocation" class="section-note"></p>
-        <ol id="ritual-steps" class="flow-list"></ol>
-      </section>
-
-      <section id="scene-chart-awakening" class="scene panel hidden-scene compact-scene">
-        <h2>Chart Awakening</h2>
-        <div id="chart-generation" class="flow-stage-list"></div>
-      </section>
-
-      <section id="scene-council-formation" class="scene panel hidden-scene compact-scene council-scene">
-        <div class="scene-state-mark">STATE // COUNCIL</div>
-        <h2>Council Formation</h2>
-        <p class="section-note">The chamber determines who stands closest to the throne of guidance.</p>
-        <div id="anointed-ruler-options" class="roster-grid top-gap"></div>
-        <div class="grid two-up top-gap">
-          <div id="anointed-ruler" class="roster-grid"></div>
-          <div id="crowned-candidates" class="roster-grid"></div>
-        </div>
-      </section>
-
-      <section id="scene-chamber-hub" class="scene panel hidden-scene compact-scene hub-scene">
-        <div class="scene-state-mark">STATE // HUB</div>
-        <h2>Chamber Hub</h2>
-        <p id="chamber-return-state" class="section-note"></p>
-        <div class="grid two-up">
+      <section class="scene-top-rail panel compact-rail">
+        <div class="rail-row">
           <div>
-            <div class="stack-form">
+            <div class="label">Current Rite</div>
+            <strong id="rail-current-rite"></strong>
+          </div>
+          <div>
+            <div class="label">Next Rite</div>
+            <strong id="rail-next-rite"></strong>
+          </div>
+          <div>
+            <div class="label">Progress</div>
+            <strong id="rail-progress"></strong>
+          </div>
+        </div>
+        <div id="scene-pills" class="button-row top-gap"></div>
+      </section>
+
+      <section id="scene-title-screen" class="scene panel active-scene cinematic-scene threshold-scene">
+        <div class="scene-stage hero-stage">
+          <div class="scene-stage-copy">
+            <div class="scene-state-mark">STATE // THRESHOLD</div>
+            <h2>Threshold of Entry</h2>
+            <p class="section-note">The chamber waits. The founder crosses from observation into invocation.</p>
+            <div class="threshold-manifesto">A living ritual chamber for awakening, council formation, and oracle encounter.</div>
+            <div id="title-screen-content" class="cinematic-stack"></div>
+          </div>
+          <div class="scene-monument">
+            <div class="monument-core"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-first-entrance" class="scene panel hidden-scene cinematic-scene entrance-scene">
+        <div class="scene-stage narrow-stage">
+          <div class="scene-stage-copy">
+            <div class="scene-state-mark">STATE // FIRST ENTRANCE</div>
+            <h2>First Entrance Ritual</h2>
+            <p id="ritual-invocation" class="section-note"></p>
+            <ol id="ritual-steps" class="flow-list"></ol>
+            <div id="founder-test-path" class="cinematic-grid top-gap"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-chart-awakening" class="scene panel hidden-scene cinematic-scene awakening-scene">
+        <div class="scene-stage narrow-stage">
+          <div class="scene-stage-copy">
+            <div class="scene-state-mark">STATE // AWAKENING</div>
+            <h2>Chart Awakening</h2>
+            <div id="chart-generation" class="cinematic-grid"></div>
+            <div id="awakening-readiness" class="cinematic-grid top-gap"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-council-formation" class="scene panel hidden-scene cinematic-scene council-scene">
+        <div class="scene-stage">
+          <div class="scene-stage-copy full-width">
+            <div class="scene-state-mark">STATE // COUNCIL</div>
+            <h2>Council Formation</h2>
+            <p class="section-note">The chamber determines who stands closest to the throne of guidance.</p>
+            <div id="anointed-ruler-options" class="cinematic-grid top-gap"></div>
+            <div class="council-stage-layout top-gap">
+              <div id="anointed-ruler" class="roster-grid"></div>
+              <div id="crowned-candidates" class="roster-grid"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-chamber-hub" class="scene panel hidden-scene cinematic-scene hub-scene">
+        <div class="scene-stage">
+          <div class="scene-stage-copy full-width">
+            <div class="scene-state-mark">STATE // HUB</div>
+            <h2>Chamber Hub</h2>
+            <p id="chamber-return-state" class="section-note"></p>
+            <div class="hub-controls top-gap">
               <select id="oracle-view-filter">
                 <option value="all">All presences</option>
                 <option value="council">Council only</option>
@@ -76,42 +112,47 @@
               </select>
               <input id="oracle-search" placeholder="Seek an oracle by name, planet, title, or sign..." />
             </div>
-            <div id="oracle-roster" class="roster-grid"></div>
-          </div>
-          <div>
-            <div id="current-user" class="roster-grid"></div>
+            <div class="hub-stage-layout top-gap">
+              <div id="current-user" class="roster-grid"></div>
+              <div id="oracle-roster" class="cinematic-grid"></div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="scene-oracle-room" class="scene panel hidden-scene compact-scene oracle-scene">
-        <div class="room-threshold-mark">THRESHOLD // ORACLE ROOM</div>
-        <div class="room-entry-rite">Cross with intent. Speak carefully. The chosen presence is already listening.</div>
-        <h2>Oracle Room</h2>
-        <p id="oracle-room-prompt" class="section-note"></p>
-        <div class="grid two-up">
-          <div>
-            <div id="oracle-detail" class="roster-grid"></div>
-            <div class="stack-form top-gap">
-              <select id="oracle-comms-select"></select>
-              <textarea id="oracle-comms-message" placeholder="Compose an invocation, omen request, or direct address..."></textarea>
-              <div class="button-row">
-                <button id="oracle-draft-btn" type="button">Shape Invocation</button>
-                <button id="oracle-log-btn" type="button">Bind Note to Oracle</button>
+      <section id="scene-oracle-room" class="scene panel hidden-scene cinematic-scene oracle-scene">
+        <div class="scene-stage">
+          <div class="scene-stage-copy full-width">
+            <div class="room-threshold-mark">THRESHOLD // ORACLE ROOM</div>
+            <div class="room-entry-rite">Cross with intent. Speak carefully. The chosen presence is already listening.</div>
+            <h2>Oracle Room</h2>
+            <p id="oracle-room-prompt" class="section-note"></p>
+            <div class="oracle-encounter-layout top-gap">
+              <div class="oracle-encounter-left">
+                <div id="oracle-detail" class="roster-grid"></div>
+                <div id="oracle-room-meta" class="top-gap"></div>
+              </div>
+              <div class="oracle-encounter-right">
+                <div class="oracle-encounter-line">The realm answers through presence before it answers through words.</div>
+                <div id="session-detail" class="roster-grid"></div>
+                <form id="message-form" class="stack-form top-gap">
+                  <textarea name="text" placeholder="Speak into the chamber..."></textarea>
+                  <button type="submit">Send into Chamber</button>
+                </form>
+                <div class="stack-form top-gap">
+                  <select id="oracle-comms-select"></select>
+                  <textarea id="oracle-comms-message" placeholder="Compose an invocation, omen request, or direct address..."></textarea>
+                  <div class="button-row">
+                    <button id="oracle-draft-btn" type="button">Shape Invocation</button>
+                    <button id="oracle-log-btn" type="button">Bind Note to Oracle</button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div>
-            <div id="session-list" class="session-list"></div>
-            <div id="oracle-room-meta" class="top-gap"></div>
-            <div id="session-detail" class="roster-grid top-gap"></div>
-            <form id="message-form" class="stack-form top-gap">
-              <textarea name="text" placeholder="Speak into the chamber..."></textarea>
-              <button type="submit">Send into Chamber</button>
-            </form>
+            <div id="session-list" class="session-list top-gap"></div>
+            <div id="oracle-drafts" class="cinematic-grid top-gap"></div>
           </div>
         </div>
-        <div id="oracle-drafts" class="roster-grid top-gap"></div>
       </section>
     </main>
     <script src="/app.js"></script>

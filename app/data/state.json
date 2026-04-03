@@ -252,7 +252,7 @@
   },
   "chamberPresentation": {
     "returnState": "The chamber is lit. The council is assembled. The founder returns to a living center rather than a utility panel.",
-    "oracleRoomPrompt": "Select an oracle presence and step through the chamber threshold to enter a more focused room of dialogue.",
+    "oracleRoomPrompt": "Select an oracle presence and step through the threshold into a personal realm that extends from that oracle’s nature.",
     "environmentNotes": [
       "Council Chamber functions as the central return point",
       "Oracle rooms should feel like focused presence spaces",

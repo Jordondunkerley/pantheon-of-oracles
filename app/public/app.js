@@ -85,6 +85,13 @@ function activeSceneState(sceneId) {
   return `${sceneCta(sceneId)} is active. ${sceneFlavor(sceneId)}`;
 }
 
+function chamberConsequence(state) {
+  const completed = state.progressionState.completedScenes.length;
+  if (completed <= 1) return 'The chamber is only beginning to remember you.';
+  if (completed <= 3) return 'The chamber has started to reshape itself around your passage.';
+  return 'The chamber now bears the marks of repeated rites and answered thresholds.';
+}
+
 function setScene(sceneId) {
   if (!currentState || !isUnlocked(currentState, sceneId)) return;
   currentScene = sceneId;
@@ -138,7 +145,7 @@ function renderState(state) {
   }).join('');
 
   document.getElementById('progression-payoff').innerHTML = `<div class="label">Progression Payoff</div><strong>${progressionPayoff(state)}</strong><div class="scene-flavor">The chamber should make advancement feel earned, counted, and real.</div>`;
-  document.getElementById('active-scene-state').innerHTML = `<div class="label">Active Scene</div><strong>${activeSceneState(currentScene)}</strong><div class="scene-flavor">The chamber should always make the current rite feel alive and present.</div>`;
+  document.getElementById('active-scene-state').innerHTML = `<div class="label">Active Scene</div><strong>${activeSceneState(currentScene)}</strong><div class="scene-flavor">${chamberConsequence(state)}</div>`;
   document.getElementById('milestones').innerHTML = state.progressionState.milestones.map(item => `
     <div class="data-card reveal-card ${item.status}"><strong>${item.title}</strong><div class="muted">${item.description}</div><div class="label">${item.status}</div></div>`).join('');
   document.getElementById('reward-moments').innerHTML = state.progressionState.rewardMoments.map(item => `

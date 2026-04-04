@@ -258,6 +258,26 @@ function oracleRealmExchangeFrameText(oracle) {
   return map[oracle.oracle_id] || 'Exchange here follows the realm’s nature.';
 }
 
+function oraclePortraitThemeClass(oracle) {
+  if (!oracle) return 'portrait-theme-default';
+  const map = {
+    'oracle-oryonos-saturn': 'portrait-theme-oryonos',
+    'oracle-solin': 'portrait-theme-solin',
+    'oracle-lunos-luna': 'portrait-theme-lunos'
+  };
+  return map[oracle.oracle_id] || 'portrait-theme-default';
+}
+
+function oraclePortraitSymbol(oracle) {
+  if (!oracle) return '✦';
+  const map = {
+    'oracle-oryonos-saturn': '♄',
+    'oracle-solin': '☉',
+    'oracle-lunos-luna': '☽'
+  };
+  return map[oracle.oracle_id] || '✦';
+}
+
 function setScene(sceneId) {
   if (!currentState || !isUnlocked(currentState, sceneId)) return;
   currentScene = sceneId;
@@ -373,14 +393,19 @@ function renderState(state) {
   const councilOrder = state.councilStructure.coreTrio;
   document.getElementById('oracle-roster').innerHTML = filteredOracles.map(oracle => {
     const orderIndex = councilOrder.indexOf(oracle.oracle_id);
-    const orderLabel = orderIndex === -1 ? 'Outer chamber presence' : `Council creation order: ${orderIndex + 1}`;
-    const summonLabel = summonTone(orderIndex);
+    const orderLabel = orderIndex === -1 ? 'Outer chamber presence' : `Council ${orderIndex + 1}`;
+    const portraitLabel = oracle.oracle_name ? oracle.oracle_name.charAt(0).toUpperCase() : 'O';
     return `
-    <button class="oracle-card reveal-card ${selectedOracleId === oracle.oracle_id ? 'selected' : ''}" data-oracle-id="${oracle.oracle_id}">
-      <strong>${oracle.oracle_name || 'Unnamed Oracle'}</strong>
-      <div class="muted">${oracle.title || oracle.archetype || 'Unformed'}</div>
-      <div>${oracle.ruling_planet || '—'} • ${oracle.dominant_sign || '—'}</div>
-      <div class="scene-flavor">${orderLabel}. Enter the personal realm that extends from this oracle.</div>
+    <button class="oracle-card portrait-card reveal-card ${oraclePortraitThemeClass(oracle)} ${selectedOracleId === oracle.oracle_id ? 'selected' : ''}" data-oracle-id="${oracle.oracle_id}">
+      <div class="oracle-portrait"><span>${oraclePortraitSymbol(oracle)}</span></div>
+      <div class="oracle-card-body">
+        <strong>${oracle.oracle_name || 'Unnamed Oracle'}</strong>
+        <div class="muted oracle-subtitle">${oracle.title || oracle.archetype || 'Unformed Oracle'}</div>
+        <div class="oracle-meta-row">
+          <div class="oracle-meta-line">${oracle.ruling_planet || '—'} • ${oracle.dominant_sign || '—'}</div>
+          <div class="oracle-meta-chip">${orderLabel}</div>
+        </div>
+      </div>
     </button>`;
   }).join('');
   document.getElementById('current-user').innerHTML = `

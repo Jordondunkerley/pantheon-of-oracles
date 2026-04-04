@@ -1,11 +1,11 @@
 :root {
   color-scheme: dark;
-  --bg: #07101c;
-  --panel: rgba(14, 22, 45, 0.92);
-  --text: #edf3ff;
-  --muted: #9db0d4;
-  --accent: #80a7ff;
-  --accent-2: #9f7cff;
+  --bg: #000000;
+  --panel: rgba(10, 10, 10, 0.94);
+  --text: #ffffff;
+  --muted: #b7b7b7;
+  --accent: #f2f2f2;
+  --accent-2: #d6d6d6;
   --gold: #d7bc74;
   --border: rgba(255, 255, 255, 0.08);
   --good: #58c195;
@@ -16,10 +16,9 @@ body {
   margin: 0;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   background:
-    radial-gradient(circle at top, rgba(101, 82, 170, 0.25), transparent 30%),
-    radial-gradient(circle at 20% 20%, rgba(103, 155, 255, 0.16), transparent 25%),
-    radial-gradient(circle at 80% 10%, rgba(215, 188, 116, 0.09), transparent 20%),
-    linear-gradient(180deg, #0d1430 0%, #08101d 45%, #050913 100%);
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 25%),
+    radial-gradient(circle at 80% 10%, rgba(215, 188, 116, 0.06), transparent 20%),
+    linear-gradient(180deg, #050505 0%, #000000 100%);
   color: var(--text);
 }
 body::before,
@@ -45,10 +44,10 @@ body::after {
   z-index: 1;
 }
 .hero, .panel, .data-card, .oracle-card, .session-card, .flow-stage-card, .message {
-  background: rgba(14, 22, 45, 0.92);
+  background: rgba(10, 10, 10, 0.94);
   border: 1px solid var(--border);
   border-radius: 24px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.38);
 }
 .hero, .panel { padding: 24px; }
 .data-card, .oracle-card, .session-card, .flow-stage-card, .message { padding: 16px; }
@@ -78,8 +77,8 @@ h2 { font-size: clamp(2rem, 3vw, 3rem); }
   grid-template-columns: 1.2fr 0.8fr;
   gap: 24px;
   min-height: 360px;
-  background: linear-gradient(180deg, rgba(30, 27, 68, 0.97), rgba(11, 12, 28, 0.96));
-  box-shadow: 0 18px 60px rgba(59, 77, 160, 0.22), inset 0 0 0 1px rgba(255,255,255,0.03);
+  background: linear-gradient(180deg, rgba(14, 14, 14, 0.98), rgba(4, 4, 4, 0.98));
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255,255,255,0.03);
   position: relative;
   overflow: hidden;
 }
@@ -168,7 +167,7 @@ h2 { font-size: clamp(2rem, 3vw, 3rem); }
 input, textarea, button, select {
   width: 100%;
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(33, 44, 86, 0.95), rgba(22, 30, 57, 0.95));
+  background: linear-gradient(180deg, rgba(24, 24, 24, 0.96), rgba(12, 12, 12, 0.96));
   color: var(--text);
   border-radius: 14px;
   padding: 12px 14px;
@@ -179,9 +178,9 @@ button {
   transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 button:hover {
-  background: linear-gradient(180deg, rgba(48, 64, 119, 0.96), rgba(30, 41, 76, 0.96));
+  background: linear-gradient(180deg, rgba(38, 38, 38, 0.96), rgba(20, 20, 20, 0.96));
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(128, 167, 255, 0.16);
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.08);
 }
 .selected {
   border-color: rgba(215, 188, 116, 0.66) !important;
@@ -262,6 +261,10 @@ button:hover {
 .cinematic-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
+#oracle-roster.cinematic-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
 .flow-list {
   margin: 0;
   padding-left: 20px;
@@ -291,6 +294,12 @@ button:hover {
   display: grid;
   gap: 12px;
 }
+.hub-controls {
+  max-width: 560px;
+}
+#oracle-search {
+  min-height: 52px;
+}
 .hub-stage-layout {
   display: grid;
   grid-template-columns: minmax(260px, 0.75fr) minmax(420px, 1.25fr);
@@ -312,11 +321,20 @@ button:hover {
   letter-spacing: 0.04em;
 }
 .threshold-manifesto {
-  margin: 20px 0 22px;
+  margin: 20px 0 10px;
   max-width: 680px;
   font-size: clamp(1.05rem, 1.6vw, 1.25rem);
   line-height: 1.5;
   color: rgba(245, 231, 191, 0.92);
+}
+.threshold-callout,
+.council-callout,
+.oracle-callout {
+  margin-bottom: 22px;
+  max-width: 620px;
+  color: rgba(237, 243, 255, 0.82);
+  font-size: 0.98rem;
+  letter-spacing: 0.02em;
 }
 .room-entry-rite {
   margin-bottom: 14px;
@@ -331,12 +349,12 @@ button:hover {
   color: rgba(245, 231, 191, 0.86);
   letter-spacing: 0.03em;
 }
-.threshold-scene { background: linear-gradient(180deg, rgba(29, 31, 66, 0.97), rgba(11, 13, 29, 0.96)); }
-.entrance-scene { background: linear-gradient(180deg, rgba(28, 27, 58, 0.97), rgba(12, 12, 28, 0.96)); }
-.awakening-scene { background: linear-gradient(180deg, rgba(23, 31, 58, 0.97), rgba(9, 15, 29, 0.96)); }
-.council-scene { background: linear-gradient(180deg, rgba(39, 27, 55, 0.97), rgba(15, 13, 29, 0.96)); }
-.hub-scene { background: linear-gradient(180deg, rgba(23, 34, 58, 0.97), rgba(10, 16, 31, 0.96)); }
-.oracle-scene { background: linear-gradient(180deg, rgba(27, 24, 58, 0.97), rgba(10, 12, 31, 0.96)); }
+.threshold-scene { background: linear-gradient(180deg, rgba(16, 16, 16, 0.98), rgba(6, 6, 6, 0.98)); }
+.entrance-scene { background: linear-gradient(180deg, rgba(14, 14, 14, 0.98), rgba(5, 5, 5, 0.98)); }
+.awakening-scene { background: linear-gradient(180deg, rgba(15, 15, 15, 0.98), rgba(6, 6, 6, 0.98)); }
+.council-scene { background: linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(7, 7, 7, 0.98)); }
+.hub-scene { background: linear-gradient(180deg, rgba(17, 17, 17, 0.98), rgba(6, 6, 6, 0.98)); }
+.oracle-scene { background: linear-gradient(180deg, rgba(13, 13, 13, 0.98), rgba(4, 4, 4, 0.98)); }
 .threshold-scene::before,
 .entrance-scene::before,
 .awakening-scene::before,
@@ -378,8 +396,8 @@ button:hover {
 .session-card,
 .oracle-presence-card,
 .room-entry-card {
-  background: linear-gradient(180deg, rgba(28, 32, 61, 0.98), rgba(18, 20, 39, 0.98));
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+  background: linear-gradient(180deg, rgba(22, 22, 22, 0.98), rgba(10, 10, 10, 0.98));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.30);
 }
 .ruler-option-card:hover,
 .council-order-card:hover,
@@ -417,6 +435,115 @@ button:hover {
 }
 .oracle-card, .session-card, .ruler-option-card {
   text-align: left;
+}
+.portrait-card {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.portrait-card.selected {
+  border-color: rgba(215, 188, 116, 0.34);
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.40), 0 0 28px rgba(215, 188, 116, 0.10);
+}
+.oracle-portrait {
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  font-size: 4rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.92);
+  background: linear-gradient(180deg, rgba(40,40,40,0.96), rgba(12,12,12,0.98));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  position: relative;
+  overflow: hidden;
+}
+.oracle-portrait::before {
+  content: '';
+  position: absolute;
+  inset: 10% 14%;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.10);
+  opacity: 0.7;
+}
+.oracle-portrait::after {
+  content: '';
+  position: absolute;
+  inset: auto 15% 12% 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+}
+.oracle-portrait span {
+  position: relative;
+  z-index: 2;
+  font-size: 5rem;
+  text-shadow: 0 0 28px rgba(255,255,255,0.16);
+}
+.portrait-theme-oryonos .oracle-portrait {
+  background:
+    radial-gradient(circle at 50% 24%, rgba(215, 188, 116, 0.18), transparent 24%),
+    radial-gradient(circle at 50% 60%, rgba(255,255,255,0.06), transparent 22%),
+    linear-gradient(180deg, rgba(30,30,30,0.98), rgba(8,8,8,0.98));
+}
+.portrait-theme-solin .oracle-portrait {
+  background:
+    radial-gradient(circle at 50% 24%, rgba(255, 220, 140, 0.22), transparent 24%),
+    radial-gradient(circle at 50% 60%, rgba(255,255,255,0.06), transparent 22%),
+    linear-gradient(180deg, rgba(40,28,10,0.98), rgba(10,10,10,0.98));
+}
+.portrait-theme-lunos .oracle-portrait {
+  background:
+    radial-gradient(circle at 50% 24%, rgba(210, 220, 255, 0.18), transparent 24%),
+    radial-gradient(circle at 50% 60%, rgba(255,255,255,0.06), transparent 22%),
+    linear-gradient(180deg, rgba(20,20,26,0.98), rgba(8,8,12,0.98));
+}
+.portrait-theme-default .oracle-portrait {
+  background: linear-gradient(180deg, rgba(40,40,40,0.96), rgba(12,12,12,0.98));
+}
+.oracle-card-body {
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(12,12,12,0.94), rgba(6,6,6,0.98));
+}
+.portrait-card strong {
+  font-size: 1.08rem;
+  letter-spacing: 0.01em;
+}
+.oracle-subtitle {
+  font-size: 0.93rem;
+  line-height: 1.4;
+  max-width: 28ch;
+}
+.oracle-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+.oracle-card-body::before {
+  content: '';
+  display: block;
+  width: 42px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(215,188,116,0.42), rgba(255,255,255,0));
+}
+.oracle-meta-line {
+  color: rgba(255,255,255,0.76);
+  font-size: 0.9rem;
+}
+.oracle-meta-chip {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.82);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .oracle-presence-card .scene-flavor {
   color: rgba(237, 243, 255, 0.78);
